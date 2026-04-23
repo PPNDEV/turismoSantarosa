@@ -19,9 +19,9 @@ const MIN_SECONDS_BETWEEN_ROUTE_COUNTS = 4;
 
 const VISITS_API_URL = import.meta.env.VITE_VISITS_API_URL || "/api/visits";
 const VISITS_BACKEND_MODE =
-  import.meta.env.VITE_VISITS_BACKEND_MODE || "function";
+  import.meta.env.VITE_VISITS_BACKEND_MODE || "firestore-direct";
 const VISITS_ALLOW_DIRECT_FALLBACK =
-  import.meta.env.VITE_VISITS_ALLOW_DIRECT_FALLBACK === "true";
+  import.meta.env.VITE_VISITS_ALLOW_DIRECT_FALLBACK !== "false";
 
 const analyticsRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOCUMENT);
 
