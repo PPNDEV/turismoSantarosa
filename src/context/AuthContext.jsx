@@ -547,41 +547,58 @@ export function AuthProvider({ children }) {
       .toLowerCase();
     const safePassword = String(password || "");
 
-    try {
-      const credential = await signInWithEmailAndPassword(
-        auth,
-        normalizedEmail,
-        safePassword,
-      );
-      const profile = await ensureUserProfile(credential.user);
-      await ensureOwnPrivateProfileIfAdmin(credential.user, profile.role);
-
-      if (profile.active === false || profile.deletedAt) {
-        await signOut(auth);
-        throw new Error("Usuario inactivo");
-      }
-
-      const sessionUser = createSessionUser(profile, "firebase");
-      setUser(sessionUser);
-      persistLocalSession(null);
-      return sessionUser;
-    } catch {
-      const fallbackAccount = defaultUsers.find(
-        (entry) =>
-          entry.email.toLowerCase() === normalizedEmail &&
-          entry.password === safePassword,
-      );
-
-      if (!fallbackAccount) {
-        throw new Error("Credenciales incorrectas");
-      }
-
-      const localSession = createSessionUser(fallbackAccount, "local");
-      setUser(localSession);
-      setUsers(clone(fallbackProfiles));
-      persistLocalSession(localSession);
-      return localSession;
+    if (!normalizedEmail || !safePassword) {
+      throw new Error("Por favor completa todos los campos");
     }
+
+    // Primero intentar con fallback local (más rápido y confiable)
+    const fallbackAccount = defaultUsers.find(
+      (entry) =>
+        entry.email.toLowerCase() === normalizedEmail &&
+        entry.password === safePassword,
+    );
+
+    if (!fallbackAccount) {
+      throw new Error(
+        "Credenciales incorrectas. Verifica tu email y contraseña.",
+      );
+    }
+
+    try {
+      // Intentar con Firebase Auth si está disponible
+      if (auth && normalizedEmail) {
+        const credential = await signInWithEmailAndPassword(
+          auth,
+          normalizedEmail,
+          safePassword,
+        );
+        const profile = await ensureUserProfile(credential.user);
+        await ensureOwnPrivateProfileIfAdmin(credential.user, profile.role);
+
+        if (profile.active === false || profile.deletedAt) {
+          await signOut(auth);
+          throw new Error("Usuario inactivo en Firebase");
+        }
+
+        const sessionUser = createSessionUser(profile, "firebase");
+        setUser(sessionUser);
+        persistLocalSession(null);
+        return sessionUser;
+      }
+    } catch (firebaseError) {
+      // Si Firebase falla, usar el fallback local
+      console.warn(
+        "Firebase Auth no disponible, usando credenciales locales",
+        firebaseError,
+      );
+    }
+
+    // Usar fallback local
+    const localSession = createSessionUser(fallbackAccount, "local");
+    setUser(localSession);
+    setUsers(clone(fallbackProfiles));
+    persistLocalSession(localSession);
+    return localSession;
   };
 
   const logout = async () => {
