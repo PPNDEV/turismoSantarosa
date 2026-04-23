@@ -3,13 +3,14 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getDatabase } from "firebase/database";
 
 // Las credenciales se leen de variables de entorno (.env)
-// Vite expone solo las que empiezan con VITE_
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
@@ -18,8 +19,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Analytics solo se inicializa si el navegador lo soporta y la config es válida.
-// Evita errores 403 cuando la API key tiene restricciones.
+// Analytics – solo si el navegador lo soporta
 let analytics = null;
 if (typeof window !== "undefined") {
   isSupported()
@@ -28,13 +28,12 @@ if (typeof window !== "undefined") {
         analytics = getAnalytics(app);
       }
     })
-    .catch(() => {
-      // Analytics no disponible, la app sigue funcionando normalmente.
-    });
+    .catch(() => {});
 }
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = getFirestore(app);       // Admin: usuarios, mensajes, encuestas, analytics
+export const rtdb = getDatabase(app);      // Público: contenido CMS (0 lecturas Firestore)
 export const storage = getStorage(app);
 export { analytics, firebaseConfig };
 

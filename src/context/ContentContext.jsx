@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+// Realtime Database – lectura pública (0 lecturas Firestore)
 import {
-  collection,
-  doc,
-  onSnapshot,
+  ref,
+  onValue,
+  set,
+  push,
+  remove,
+  serverTimestamp as rtdbTimestamp,
+} from "firebase/database";
+// Firestore – solo para colecciones administrativas
+import {
+  collection as fsCollection,
   addDoc,
-  setDoc,
-  deleteDoc,
-  serverTimestamp,
-  GeoPoint,
+  serverTimestamp as fsTimestamp,
 } from "firebase/firestore";
 import {
   demoBlog,
@@ -22,29 +27,27 @@ import {
 } from "../data/demoData";
 import { ContentContext } from "./content-context";
 import { normalizeDestinoIcon } from "../utils/destinoIcons";
-import { db } from "../services/firebase";
+import { db, rtdb } from "../services/firebase";
 
 // ---------------------------------------------------------------------------
-// Collection names – mapped to Firestore top‑level collections
+// Nodos en Realtime Database (contenido público)
+// Estructura: /content/{nodo}/{id}
 // ---------------------------------------------------------------------------
-const COLLECTIONS = {
-  actividades: "actividades",
-  gastronomia: "gastronomia",
-  hospedajes: "hospedajes",
-  eventos: "eventos",
-  floraFauna: "flora_fauna",
-  transporte: "transporte",
-  galeria: "galeria",
-  destinos: "destinos",
-  blog: "blog",
-  heroSlides: "heroSlides",
-  cooperativas: "cooperativas",
-  mensajesContacto: "mensajes_contacto",
-  encuestasSatisfaccion: "encuestas_satisfaccion",
-};
+const RTDB_NODES = [
+  "actividades",
+  "gastronomia",
+  "hospedajes",
+  "eventos",
+  "floraFauna",
+  "galeria",
+  "destinos",
+  "blog",
+  "heroSlides",
+  "cooperativas",
+];
 
 // ---------------------------------------------------------------------------
-// Demo / seed data per collection
+// Demo / seed data por nodo
 // ---------------------------------------------------------------------------
 const SEED_DATA = {
   actividades: demoActividades,
@@ -64,6 +67,7 @@ const SEED_DATA = {
       sub: "Playas vírgenes, manglares y fauna única te esperan en el sur de Ecuador.",
       cta: "Explorar Destinos",
       ctaTo: "/destinos",
+      order: 0,
     },
     {
       id: "hero-2",
@@ -73,6 +77,7 @@ const SEED_DATA = {
       sub: "Puerto Jelí y sus mariscos frescos, cebiches y la auténtica parihuela orense.",
       cta: "Ver Blog",
       ctaTo: "/blog",
+      order: 1,
     },
     {
       id: "hero-3",
@@ -82,6 +87,7 @@ const SEED_DATA = {
       sub: "Isla Santa Clara: el santuario marino donde la naturaleza deslumbra cada año.",
       cta: "Ver Eventos",
       ctaTo: "/eventos",
+      order: 2,
     },
   ],
   cooperativas: demoCooperativas,
@@ -97,48 +103,15 @@ function cleanHeroTag(tag) {
     .trim();
 }
 
-/** Convert a Firestore doc snapshot to a plain object with `id`. */
-function docToObject(docSnap) {
-  const data = docSnap.data();
-  const obj = { id: docSnap.id };
+/** Convierte un snapshot de RTDB (objeto) a array con `id`. */
+function rtdbSnapshotToArray(snapshot) {
+  const val = snapshot.val();
+  if (!val || typeof val !== "object") return [];
 
-  for (const [key, value] of Object.entries(data)) {
-    if (value instanceof GeoPoint) {
-      obj.lat = value.latitude;
-      obj.lng = value.longitude;
-    } else if (key === "platos_tipicos" || key === "servicios") {
-      // Arrays from Firestore come through fine
-      obj[key] = Array.isArray(value) ? value : [];
-    } else if (value && typeof value === "object" && value.toDate) {
-      // Convert Firestore Timestamps to ISO strings for display
-      obj[key] = value.toDate().toISOString();
-    } else {
-      obj[key] = value;
-    }
-  }
-
-  return obj;
-}
-
-/** Prepare an object for Firestore write – converts lat/lng to GeoPoint. */
-function objectToDoc(item) {
-  const out = { ...item };
-  delete out.id; // Firestore uses the doc ID
-
-  // Convert lat/lng to GeoPoint if both are present
-  const lat = Number(out.lat);
-  const lng = Number(out.lng);
-
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    out.coordenadas = new GeoPoint(lat, lng);
-  }
-
-  delete out.lat;
-  delete out.lng;
-
-  out.updatedAt = serverTimestamp();
-
-  return out;
+  return Object.entries(val).map(([id, data]) => ({
+    ...data,
+    id,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -158,7 +131,6 @@ export function ContentProvider({ children }) {
   const [cooperativas, setCooperativas] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Map of stateKey → setter for dynamic dispatch
   const setters = useMemo(
     () => ({
       actividades: setActividades,
@@ -176,227 +148,205 @@ export function ContentProvider({ children }) {
   );
 
   // -----------------------------------------------------------------------
-  // Real-time listeners for each collection
+  // Real-time listeners desde RTDB (NO consume lecturas de Firestore)
   // -----------------------------------------------------------------------
   useEffect(() => {
     const unsubscribes = [];
     let loadedCount = 0;
-    const totalCollections = Object.keys(setters).length;
+    const totalNodes = RTDB_NODES.length;
 
-    for (const [stateKey, setter] of Object.entries(setters)) {
-      const collectionName = COLLECTIONS[stateKey];
-      if (!collectionName) continue;
+    for (const nodeKey of RTDB_NODES) {
+      const setter = setters[nodeKey];
+      if (!setter) continue;
 
-      const colRef = collection(db, collectionName);
+      const nodeRef = ref(rtdb, `content/${nodeKey}`);
 
-      const unsub = onSnapshot(
-        colRef,
+      const unsub = onValue(
+        nodeRef,
         (snapshot) => {
-          const items = snapshot.docs.map(docToObject);
+          let items = rtdbSnapshotToArray(snapshot);
 
-          // Normalize destinos icons
-          if (stateKey === "destinos") {
+          // Si no hay datos en RTDB, usar seed data
+          if (items.length === 0) {
+            const seed = SEED_DATA[nodeKey];
+            if (seed) {
+              items = seed;
+            }
+          }
+
+          // Normalizar destinos
+          if (nodeKey === "destinos") {
             items.forEach((item) => {
               item.icono = normalizeDestinoIcon(item.icono);
             });
           }
 
-          // Normalize hero slide tags
-          if (stateKey === "heroSlides") {
+          // Normalizar hero slides
+          if (nodeKey === "heroSlides") {
             items.forEach((item) => {
               item.tag = cleanHeroTag(item.tag);
             });
-            // Sort by order field if present
             items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
           }
 
           setter(items);
           loadedCount++;
 
-          if (loadedCount >= totalCollections) {
+          if (loadedCount >= totalNodes) {
             setLoading(false);
           }
         },
         (error) => {
-          console.warn(
-            `Firestore listener error for ${collectionName}:`,
-            error,
-          );
-          // Fall back to seed data if Firestore is unavailable
-          const seed = SEED_DATA[stateKey];
-          if (seed) {
-            setter(seed);
-          }
+          console.warn(`RTDB listener error for content/${nodeKey}:`, error);
+          const seed = SEED_DATA[nodeKey];
+          if (seed) setter(seed);
           loadedCount++;
-
-          if (loadedCount >= totalCollections) {
-            setLoading(false);
-          }
+          if (loadedCount >= totalNodes) setLoading(false);
         },
       );
 
-      unsubscribes.push(unsub);
+      // onValue returns an unsubscribe function
+      unsubscribes.push(() => unsub());
     }
 
     return () => {
-      for (const unsub of unsubscribes) {
-        unsub();
-      }
+      for (const unsub of unsubscribes) unsub();
     };
   }, [setters]);
 
   // -----------------------------------------------------------------------
-  // CRUD helpers
+  // CRUD helpers – escriben a Realtime Database
   // -----------------------------------------------------------------------
 
-  /** Upsert a document into a Firestore collection. */
-  const upsertToCollection = useCallback(async (stateKey, item) => {
-    const collectionName = COLLECTIONS[stateKey];
-    if (!collectionName) return;
+  /** Upsert: crea o actualiza en RTDB → /content/{nodeKey}/{id} */
+  const upsertToRTDB = useCallback(async (nodeKey, item) => {
+    const itemData = { ...item };
+    const id = itemData.id || push(ref(rtdb, `content/${nodeKey}`)).key;
+    delete itemData.id;
+    itemData.updatedAt = rtdbTimestamp();
 
-    const docData = objectToDoc(item);
-
-    if (item.id) {
-      // Update existing
-      const docRef = doc(db, collectionName, item.id);
-      await setDoc(docRef, docData, { merge: true });
-    } else {
-      // Create new
-      docData.createdAt = serverTimestamp();
-      await addDoc(collection(db, collectionName), docData);
-    }
+    await set(ref(rtdb, `content/${nodeKey}/${id}`), itemData);
   }, []);
 
-  /** Delete a document from a Firestore collection. */
-  const deleteFromCollection = useCallback(async (stateKey, id) => {
-    const collectionName = COLLECTIONS[stateKey];
-    if (!collectionName || !id) return;
-
-    const docRef = doc(db, collectionName, id);
-    await deleteDoc(docRef);
+  /** Delete: elimina de RTDB → /content/{nodeKey}/{id} */
+  const deleteFromRTDB = useCallback(async (nodeKey, id) => {
+    if (!id) return;
+    await remove(ref(rtdb, `content/${nodeKey}/${id}`));
   }, []);
 
   // -----------------------------------------------------------------------
-  // Public API – same interface as before so admin panels work unchanged
+  // Public API – CRUD por colección (misma interfaz que antes)
   // -----------------------------------------------------------------------
 
   // Actividades
   const upsertActividad = useCallback(
-    (item) => upsertToCollection("actividades", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("actividades", item),
+    [upsertToRTDB],
   );
   const deleteActividad = useCallback(
-    (id) => deleteFromCollection("actividades", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("actividades", id),
+    [deleteFromRTDB],
   );
 
   // Gastronomía
   const upsertGastronomia = useCallback(
-    (item) => upsertToCollection("gastronomia", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("gastronomia", item),
+    [upsertToRTDB],
   );
   const deleteGastronomia = useCallback(
-    (id) => deleteFromCollection("gastronomia", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("gastronomia", id),
+    [deleteFromRTDB],
   );
 
   // Hospedajes
   const upsertHospedaje = useCallback(
-    (item) => upsertToCollection("hospedajes", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("hospedajes", item),
+    [upsertToRTDB],
   );
   const deleteHospedaje = useCallback(
-    (id) => deleteFromCollection("hospedajes", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("hospedajes", id),
+    [deleteFromRTDB],
   );
 
   // Eventos
   const upsertEvento = useCallback(
-    (item) => upsertToCollection("eventos", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("eventos", item),
+    [upsertToRTDB],
   );
   const deleteEvento = useCallback(
-    (id) => deleteFromCollection("eventos", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("eventos", id),
+    [deleteFromRTDB],
   );
 
   // Flora y Fauna
   const upsertFloraFauna = useCallback(
-    (item) => upsertToCollection("floraFauna", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("floraFauna", item),
+    [upsertToRTDB],
   );
   const deleteFloraFauna = useCallback(
-    (id) => deleteFromCollection("floraFauna", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("floraFauna", id),
+    [deleteFromRTDB],
   );
 
   // Galería
   const upsertGaleria = useCallback(
-    (item) => upsertToCollection("galeria", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("galeria", item),
+    [upsertToRTDB],
   );
   const deleteGaleria = useCallback(
-    (id) => deleteFromCollection("galeria", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("galeria", id),
+    [deleteFromRTDB],
   );
 
   // Destinos
   const upsertDestino = useCallback(
-    (item) => upsertToCollection("destinos", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("destinos", item),
+    [upsertToRTDB],
   );
   const deleteDestino = useCallback(
-    (id) => deleteFromCollection("destinos", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("destinos", id),
+    [deleteFromRTDB],
   );
 
   // Blog
   const upsertBlog = useCallback(
-    (item) => upsertToCollection("blog", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("blog", item),
+    [upsertToRTDB],
   );
   const deleteBlog = useCallback(
-    (id) => deleteFromCollection("blog", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("blog", id),
+    [deleteFromRTDB],
   );
 
   // Hero Slides
   const upsertHeroSlide = useCallback(
-    (item) => upsertToCollection("heroSlides", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("heroSlides", item),
+    [upsertToRTDB],
   );
   const deleteHeroSlide = useCallback(
-    (id) => deleteFromCollection("heroSlides", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("heroSlides", id),
+    [deleteFromRTDB],
   );
   const setHeroSlides = useCallback(
     async (nextSlides) => {
       const slides =
-        typeof nextSlides === "function"
-          ? nextSlides(heroSlides)
-          : nextSlides;
-      // Write each slide as a separate doc with order
+        typeof nextSlides === "function" ? nextSlides(heroSlides) : nextSlides;
       for (let i = 0; i < slides.length; i++) {
-        await upsertToCollection("heroSlides", {
-          ...slides[i],
-          order: i,
-        });
+        await upsertToRTDB("heroSlides", { ...slides[i], order: i });
       }
     },
-    [heroSlides, upsertToCollection],
+    [heroSlides, upsertToRTDB],
   );
   const moveHeroSlide = useCallback(
     async (id, direction) => {
       const currentIndex = heroSlides.findIndex((s) => s.id === id);
       const targetIndex = currentIndex + direction;
-
       if (
         currentIndex < 0 ||
         targetIndex < 0 ||
         targetIndex >= heroSlides.length
-      ) {
+      )
         return;
-      }
 
       const reordered = [...heroSlides];
       [reordered[currentIndex], reordered[targetIndex]] = [
@@ -405,66 +355,62 @@ export function ContentProvider({ children }) {
       ];
 
       for (let i = 0; i < reordered.length; i++) {
-        await upsertToCollection("heroSlides", {
-          ...reordered[i],
-          order: i,
-        });
+        await upsertToRTDB("heroSlides", { ...reordered[i], order: i });
       }
     },
-    [heroSlides, upsertToCollection],
+    [heroSlides, upsertToRTDB],
   );
 
   // Cooperativas / Transporte
   const upsertCooperativa = useCallback(
-    (item) => upsertToCollection("cooperativas", item),
-    [upsertToCollection],
+    (item) => upsertToRTDB("cooperativas", item),
+    [upsertToRTDB],
   );
   const deleteCooperativa = useCallback(
-    (id) => deleteFromCollection("cooperativas", id),
-    [deleteFromCollection],
+    (id) => deleteFromRTDB("cooperativas", id),
+    [deleteFromRTDB],
   );
 
   // -----------------------------------------------------------------------
-  // Mensajes de contacto (RF11) – write-only for visitors
+  // Mensajes de contacto y Encuestas → siguen en Firestore
+  // (necesitan reglas de seguridad + serverTimestamp de Firestore)
   // -----------------------------------------------------------------------
   const enviarMensajeContacto = useCallback(async (mensaje) => {
-    await addDoc(collection(db, COLLECTIONS.mensajesContacto), {
+    await addDoc(fsCollection(db, "mensajes_contacto"), {
       remitente: mensaje.remitente || "",
       correo: mensaje.correo || "",
       consulta_sugerencia: mensaje.consulta_sugerencia || "",
-      fecha: serverTimestamp(),
+      fecha: fsTimestamp(),
     });
   }, []);
 
-  // -----------------------------------------------------------------------
-  // Encuesta de satisfacción (RF15) – write-only for visitors
-  // -----------------------------------------------------------------------
   const enviarEncuesta = useCallback(async (encuesta) => {
-    await addDoc(collection(db, COLLECTIONS.encuestasSatisfaccion), {
+    await addDoc(fsCollection(db, "encuestas_satisfaccion"), {
       puntuacion: Number(encuesta.puntuacion) || 0,
       comentarios: encuesta.comentarios || "",
-      fecha: serverTimestamp(),
+      fecha: fsTimestamp(),
     });
   }, []);
 
   // -----------------------------------------------------------------------
-  // Reset content – seed all collections with demo data
+  // Reset content – seed RTDB con datos demo
   // -----------------------------------------------------------------------
   const resetContent = useCallback(async () => {
-    for (const [stateKey, seedItems] of Object.entries(SEED_DATA)) {
-      const collectionName = COLLECTIONS[stateKey];
-      if (!collectionName || !seedItems) continue;
+    for (const [nodeKey, seedItems] of Object.entries(SEED_DATA)) {
+      if (!seedItems) continue;
 
+      // Limpiar nodo completo y reescribir
+      const nodeData = {};
       for (const item of seedItems) {
-        const docData = objectToDoc(item);
-        docData.createdAt = serverTimestamp();
-
-        if (item.id) {
-          await setDoc(doc(db, collectionName, item.id), docData);
-        } else {
-          await addDoc(collection(db, collectionName), docData);
-        }
+        const id = item.id || push(ref(rtdb, `content/${nodeKey}`)).key;
+        const data = { ...item };
+        delete data.id;
+        data.updatedAt = Date.now();
+        data.createdAt = Date.now();
+        nodeData[id] = data;
       }
+
+      await set(ref(rtdb, `content/${nodeKey}`), nodeData);
     }
   }, []);
 
@@ -473,7 +419,6 @@ export function ContentProvider({ children }) {
   // -----------------------------------------------------------------------
   const value = useMemo(
     () => ({
-      // Data arrays
       actividades,
       gastronomia,
       hospedajes,
@@ -486,53 +431,30 @@ export function ContentProvider({ children }) {
       cooperativas,
       loading,
 
-      // CRUD – actividades
       upsertActividad,
       deleteActividad,
-
-      // CRUD – gastronomía
       upsertGastronomia,
       deleteGastronomia,
-
-      // CRUD – hospedajes
       upsertHospedaje,
       deleteHospedaje,
-
-      // CRUD – eventos
       upsertEvento,
       deleteEvento,
-
-      // CRUD – flora/fauna
       upsertFloraFauna,
       deleteFloraFauna,
-
-      // CRUD – galería
       upsertGaleria,
       deleteGaleria,
-
-      // CRUD – destinos
       upsertDestino,
       deleteDestino,
-
-      // CRUD – blog
       upsertBlog,
       deleteBlog,
-
-      // CRUD – hero slides
       upsertHeroSlide,
       deleteHeroSlide,
       setHeroSlides,
       moveHeroSlide,
-
-      // CRUD – cooperativas
       upsertCooperativa,
       deleteCooperativa,
-
-      // Visitante
       enviarMensajeContacto,
       enviarEncuesta,
-
-      // Admin
       resetContent,
     }),
     [
