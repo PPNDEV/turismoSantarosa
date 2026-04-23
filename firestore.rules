@@ -1,0 +1,159 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function currentUserPublicDoc() {
+      return get(/databases/$(database)/documents/usersPublic/$(request.auth.uid));
+    }
+
+    function currentUserPublicExists() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/usersPublic/$(request.auth.uid));
+    }
+
+    function isRoleAllowed(role) {
+      return role in ["administrador", "editor", "visualizador"];
+    }
+
+    function hasValidPublicProfile(data) {
+      return data.keys().hasOnly([
+          "displayName",
+          "role",
+          "active",
+          "createdAt",
+          "updatedAt"
+        ])
+        && data.displayName is string
+        && data.displayName.size() > 0
+        && data.displayName.size() <= 120
+        && isRoleAllowed(data.role)
+        && data.active is bool
+        && (!("createdAt" in data) || data.createdAt is timestamp)
+        && (!("updatedAt" in data) || data.updatedAt is timestamp);
+    }
+
+    function canSelfCreateRole(role) {
+      return role == "visualizador"
+        || (
+          request.auth.token.email == "admin@santarosa.ec"
+          && role == "administrador"
+        )
+        || (
+          request.auth.token.email == "editor@santarosa.ec"
+          && role == "editor"
+        );
+    }
+
+    function hasValidPrivateProfile(data) {
+      return data.keys().hasOnly([
+          "email",
+          "deletedAt",
+          "createdAt",
+          "updatedAt"
+        ])
+        && data.email is string
+        && data.email.size() > 3
+        && data.email.size() <= 200
+        && (!("deletedAt" in data) || data.deletedAt == null || data.deletedAt is timestamp)
+        && (!("createdAt" in data) || data.createdAt is timestamp)
+        && (!("updatedAt" in data) || data.updatedAt is timestamp);
+    }
+
+    function isAdmin() {
+      return currentUserPublicExists()
+        && currentUserPublicDoc().data.active == true
+        && currentUserPublicDoc().data.role == "administrador";
+    }
+
+    function canEditContent() {
+      return currentUserPublicExists()
+        && currentUserPublicDoc().data.active == true
+        && (
+          currentUserPublicDoc().data.role == "administrador"
+          || currentUserPublicDoc().data.role == "editor"
+        );
+    }
+
+    // CMS principal: público en lectura, edición solo editor/admin.
+    match /siteContent/{docId} {
+      allow read: if docId == "main";
+      allow write: if docId == "main" && canEditContent();
+    }
+
+    // Perfil público: campos visibles para cliente (incluye perfil propio).
+    match /usersPublic/{userId} {
+      allow list: if isAdmin();
+
+      allow get: if isAdmin() || isOwner(userId);
+
+      allow create: if hasValidPublicProfile(request.resource.data)
+        && (
+          isAdmin()
+          || (
+            isOwner(userId)
+            && !exists(/databases/$(database)/documents/usersPublic/$(userId))
+            && request.resource.data.active == true
+            && canSelfCreateRole(request.resource.data.role)
+          )
+        );
+
+      allow update: if hasValidPublicProfile(request.resource.data)
+        && (
+          isAdmin()
+          || (
+            isOwner(userId)
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.active == resource.data.active
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+              "displayName",
+              "updatedAt"
+            ])
+          )
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // Perfil privado: solo administración (correo, marcas de borrado, auditoría).
+    match /usersPrivate/{userId} {
+      allow list, get: if isAdmin();
+
+      allow create, update: if isAdmin()
+        && hasValidPrivateProfile(request.resource.data);
+
+      allow delete: if isAdmin();
+    }
+
+    // Colección legacy bloqueada explícitamente para evitar fugas durante migración.
+    match /users/{userId} {
+      allow read, write: if false;
+    }
+
+    // Documento agregado de visitas. Solo lectura para usuarios autenticados.
+    match /analytics/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Colecciones técnicas del contador; solo acceso por Admin SDK (Cloud Functions).
+    match /analyticsSessions/{docId} {
+      allow read, write: if false;
+    }
+
+    match /analyticsRouteSessions/{docId} {
+      allow read, write: if false;
+    }
+
+    // Cierre por defecto: todo lo no declarado arriba se deniega.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
