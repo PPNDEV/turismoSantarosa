@@ -3,12 +3,16 @@ import { useNavigate } from "react-router-dom";
 import {
   FaArrowLeft,
   FaBed,
+  FaBus,
   FaCalendarAlt,
   FaCamera,
   FaChartBar,
+  FaChartPie,
+  FaEnvelope,
   FaExternalLinkAlt,
   FaFileAlt,
   FaGlobe,
+  FaHiking,
   FaImage,
   FaLeaf,
   FaMapMarkerAlt,
@@ -30,6 +34,10 @@ import AdminGastronomia from "../admin/AdminGastronomia";
 import AdminHospedajes from "../admin/AdminHospedajes";
 import AdminFloraFauna from "../admin/AdminFloraFauna";
 import AdminUsuarios from "../admin/AdminUsuarios";
+import AdminActividades from "../admin/AdminActividades";
+import AdminTransporte from "../admin/AdminTransporte";
+import AdminMensajes from "../admin/AdminMensajes";
+import AdminEncuestas from "../admin/AdminEncuestas";
 
 const menuItems = [
   {
@@ -47,6 +55,14 @@ const menuItems = [
     title: "Portada",
     previewPath: "/",
     description: "Edita hero slides, orden y llamados a la acción.",
+  },
+  {
+    key: "actividades",
+    icon: FaHiking,
+    label: "Actividades",
+    title: "Actividades Turísticas",
+    previewPath: "/informacion",
+    description: "Gestiona actividades turísticas con isla y coordenadas.",
   },
   {
     key: "eventos",
@@ -99,12 +115,37 @@ const menuItems = [
       "Publica especies, zonas de observación y estado de conservación.",
   },
   {
+    key: "transporte",
+    icon: FaBus,
+    label: "Transporte",
+    title: "Cooperativas de Transporte",
+    previewPath: "/informacion#transporte",
+    description:
+      "Administra cooperativas, rutas, frecuencias y puntos de salida/llegada.",
+  },
+  {
     key: "galeria",
     icon: FaCamera,
     label: "Galería",
     title: "Galería",
     previewPath: "/galeria",
     description: "Carga imágenes y actualiza la galería visual pública.",
+  },
+  {
+    key: "mensajes",
+    icon: FaEnvelope,
+    label: "Mensajes",
+    title: "Mensajes de Contacto",
+    previewPath: "/admin",
+    description: "Consulta mensajes enviados por los visitantes del sitio.",
+  },
+  {
+    key: "encuestas",
+    icon: FaChartPie,
+    label: "Encuestas",
+    title: "Encuestas de Satisfacción",
+    previewPath: "/admin",
+    description: "Visualiza puntuaciones y comentarios de los visitantes.",
   },
   {
     key: "usuarios",
@@ -192,6 +233,8 @@ export default function AdminLayout() {
     gastronomia,
     hospedajes,
     floraFauna,
+    actividades,
+    cooperativas,
     resetContent,
   } = useContent();
   const navigate = useNavigate();
@@ -204,22 +247,26 @@ export default function AdminLayout() {
   const contentStats = useMemo(
     () => [
       { label: "Slides", value: heroSlides.length },
+      { label: "Actividades", value: actividades.length },
       { label: "Eventos", value: eventos.length },
       { label: "Artículos", value: blog.length },
       { label: "Destinos", value: destinos.length },
       { label: "Gastronomía", value: gastronomia.length },
       { label: "Hospedajes", value: hospedajes.length },
       { label: "Flora/Fauna", value: floraFauna.length },
+      { label: "Transporte", value: cooperativas.length },
       { label: "Galería", value: galeria.length },
     ],
     [
       heroSlides.length,
+      actividades.length,
       eventos.length,
       blog.length,
       destinos.length,
       gastronomia.length,
       hospedajes.length,
       floraFauna.length,
+      cooperativas.length,
       galeria.length,
     ],
   );
@@ -344,6 +391,16 @@ export default function AdminLayout() {
             }
           />
         );
+      case "actividades":
+        return (
+          <AdminActividades
+            canEdit={canEditContent}
+            onLivePreviewChange={handleLivePreviewChange}
+            onDirtyChange={(isDirty) =>
+              handleDirtySectionChange("actividades", isDirty)
+            }
+          />
+        );
       case "eventos":
         return (
           <AdminEventos
@@ -404,6 +461,16 @@ export default function AdminLayout() {
             }
           />
         );
+      case "transporte":
+        return (
+          <AdminTransporte
+            canEdit={canEditContent}
+            onLivePreviewChange={handleLivePreviewChange}
+            onDirtyChange={(isDirty) =>
+              handleDirtySectionChange("transporte", isDirty)
+            }
+          />
+        );
       case "galeria":
         return (
           <AdminGaleria
@@ -411,6 +478,24 @@ export default function AdminLayout() {
             onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={(isDirty) =>
               handleDirtySectionChange("galeria", isDirty)
+            }
+          />
+        );
+      case "mensajes":
+        return (
+          <AdminMensajes
+            onLivePreviewChange={handleLivePreviewChange}
+            onDirtyChange={(isDirty) =>
+              handleDirtySectionChange("mensajes", isDirty)
+            }
+          />
+        );
+      case "encuestas":
+        return (
+          <AdminEncuestas
+            onLivePreviewChange={handleLivePreviewChange}
+            onDirtyChange={(isDirty) =>
+              handleDirtySectionChange("encuestas", isDirty)
             }
           />
         );

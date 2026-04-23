@@ -1,5 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  addDoc,
+  setDoc,
+  deleteDoc,
+  serverTimestamp,
+  GeoPoint,
+} from "firebase/firestore";
 import {
   demoBlog,
   demoCooperativas,
@@ -9,16 +18,43 @@ import {
   demoGastronomia,
   demoGaleria,
   demoHospedajes,
+  demoActividades,
 } from "../data/demoData";
 import { ContentContext } from "./content-context";
 import { normalizeDestinoIcon } from "../utils/destinoIcons";
 import { db } from "../services/firebase";
 
-const STORAGE_KEY = "visit-santa-rosa-content-v1";
-const CONTENT_COLLECTION = "siteContent";
-const CONTENT_DOCUMENT = "main";
+// ---------------------------------------------------------------------------
+// Collection names – mapped to Firestore top‑level collections
+// ---------------------------------------------------------------------------
+const COLLECTIONS = {
+  actividades: "actividades",
+  gastronomia: "gastronomia",
+  hospedajes: "hospedajes",
+  eventos: "eventos",
+  floraFauna: "flora_fauna",
+  transporte: "transporte",
+  galeria: "galeria",
+  destinos: "destinos",
+  blog: "blog",
+  heroSlides: "heroSlides",
+  cooperativas: "cooperativas",
+  mensajesContacto: "mensajes_contacto",
+  encuestasSatisfaccion: "encuestas_satisfaccion",
+};
 
-const initialContent = {
+// ---------------------------------------------------------------------------
+// Demo / seed data per collection
+// ---------------------------------------------------------------------------
+const SEED_DATA = {
+  actividades: demoActividades,
+  gastronomia: demoGastronomia,
+  hospedajes: demoHospedajes,
+  eventos: demoEventos,
+  floraFauna: demoFloraFauna,
+  galeria: demoGaleria,
+  destinos: demoDestinos,
+  blog: demoBlog,
   heroSlides: [
     {
       id: "hero-1",
@@ -48,35 +84,12 @@ const initialContent = {
       ctaTo: "/eventos",
     },
   ],
-  destinos: demoDestinos,
-  eventos: demoEventos,
-  blog: demoBlog,
-  galeria: demoGaleria,
-  gastronomia: demoGastronomia,
-  hospedajes: demoHospedajes,
-  floraFauna: demoFloraFauna,
   cooperativas: demoCooperativas,
 };
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
-function upsertItem(list, item) {
-  const nextItem = { ...item };
-  if (!nextItem.id) {
-    nextItem.id = Date.now().toString();
-  }
-
-  const index = list.findIndex((entry) => entry.id === nextItem.id);
-  if (index === -1) {
-    return [...list, nextItem];
-  }
-
-  const nextList = [...list];
-  nextList[index] = nextItem;
-  return nextList;
-}
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function cleanHeroTag(tag) {
   return String(tag || "")
@@ -84,238 +97,483 @@ function cleanHeroTag(tag) {
     .trim();
 }
 
-function normalizeHeroSlides(slides) {
-  return slides.map((slide) => ({
-    ...slide,
-    tag: cleanHeroTag(slide.tag),
-  }));
-}
+/** Convert a Firestore doc snapshot to a plain object with `id`. */
+function docToObject(docSnap) {
+  const data = docSnap.data();
+  const obj = { id: docSnap.id };
 
-function normalizeDestinos(destinos) {
-  return destinos.map((destino) => ({
-    ...destino,
-    icono: normalizeDestinoIcon(destino.icono),
-  }));
-}
-
-function normalizeContent(rawContent) {
-  if (!rawContent || typeof rawContent !== "object") {
-    return clone(initialContent);
-  }
-
-  return {
-    heroSlides:
-      Array.isArray(rawContent.heroSlides) && rawContent.heroSlides.length > 0
-        ? normalizeHeroSlides(rawContent.heroSlides)
-        : clone(initialContent.heroSlides),
-    destinos: Array.isArray(rawContent.destinos)
-      ? normalizeDestinos(rawContent.destinos)
-      : clone(initialContent.destinos),
-    eventos: Array.isArray(rawContent.eventos)
-      ? rawContent.eventos
-      : clone(initialContent.eventos),
-    blog: Array.isArray(rawContent.blog)
-      ? rawContent.blog
-      : clone(initialContent.blog),
-    galeria: Array.isArray(rawContent.galeria)
-      ? rawContent.galeria
-      : clone(initialContent.galeria),
-    gastronomia: Array.isArray(rawContent.gastronomia)
-      ? rawContent.gastronomia
-      : clone(initialContent.gastronomia),
-    hospedajes: Array.isArray(rawContent.hospedajes)
-      ? rawContent.hospedajes
-      : clone(initialContent.hospedajes),
-    floraFauna: Array.isArray(rawContent.floraFauna)
-      ? rawContent.floraFauna
-      : clone(initialContent.floraFauna),
-    cooperativas: Array.isArray(rawContent.cooperativas)
-      ? rawContent.cooperativas
-      : clone(initialContent.cooperativas),
-  };
-}
-
-function readStoredContent() {
-  if (typeof window === "undefined") {
-    return clone(initialContent);
-  }
-
-  try {
-    const rawContent = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawContent) {
-      return clone(initialContent);
+  for (const [key, value] of Object.entries(data)) {
+    if (value instanceof GeoPoint) {
+      obj.lat = value.latitude;
+      obj.lng = value.longitude;
+    } else if (key === "platos_tipicos" || key === "servicios") {
+      // Arrays from Firestore come through fine
+      obj[key] = Array.isArray(value) ? value : [];
+    } else if (value && typeof value === "object" && value.toDate) {
+      // Convert Firestore Timestamps to ISO strings for display
+      obj[key] = value.toDate().toISOString();
+    } else {
+      obj[key] = value;
     }
-
-    return normalizeContent(JSON.parse(rawContent));
-  } catch {
-    return clone(initialContent);
   }
+
+  return obj;
 }
 
-function persistStoredContent(content) {
-  if (typeof window === "undefined") {
-    return;
+/** Prepare an object for Firestore write – converts lat/lng to GeoPoint. */
+function objectToDoc(item) {
+  const out = { ...item };
+  delete out.id; // Firestore uses the doc ID
+
+  // Convert lat/lng to GeoPoint if both are present
+  const lat = Number(out.lat);
+  const lng = Number(out.lng);
+
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    out.coordenadas = new GeoPoint(lat, lng);
   }
 
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
-  } catch {
-    // Ignorar fallos de almacenamiento local.
-  }
+  delete out.lat;
+  delete out.lng;
+
+  out.updatedAt = serverTimestamp();
+
+  return out;
 }
+
+// ---------------------------------------------------------------------------
+// Provider
+// ---------------------------------------------------------------------------
 
 export function ContentProvider({ children }) {
-  const [content, setContent] = useState(readStoredContent);
+  const [actividades, setActividades] = useState([]);
+  const [gastronomia, setGastronomia] = useState([]);
+  const [hospedajes, setHospedajes] = useState([]);
+  const [eventos, setEventos] = useState([]);
+  const [floraFauna, setFloraFauna] = useState([]);
+  const [galeria, setGaleria] = useState([]);
+  const [destinos, setDestinos] = useState([]);
+  const [blog, setBlog] = useState([]);
+  const [heroSlides, setHeroSlidesState] = useState([]);
+  const [cooperativas, setCooperativas] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const contentRef = useMemo(
-    () => doc(db, CONTENT_COLLECTION, CONTENT_DOCUMENT),
+  // Map of stateKey → setter for dynamic dispatch
+  const setters = useMemo(
+    () => ({
+      actividades: setActividades,
+      gastronomia: setGastronomia,
+      hospedajes: setHospedajes,
+      eventos: setEventos,
+      floraFauna: setFloraFauna,
+      galeria: setGaleria,
+      destinos: setDestinos,
+      blog: setBlog,
+      heroSlides: setHeroSlidesState,
+      cooperativas: setCooperativas,
+    }),
     [],
   );
 
+  // -----------------------------------------------------------------------
+  // Real-time listeners for each collection
+  // -----------------------------------------------------------------------
   useEffect(() => {
-    persistStoredContent(content);
-  }, [content]);
+    const unsubscribes = [];
+    let loadedCount = 0;
+    const totalCollections = Object.keys(setters).length;
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      contentRef,
-      async (snapshot) => {
-        if (snapshot.exists()) {
-          setContent(normalizeContent(snapshot.data()));
-          return;
-        }
+    for (const [stateKey, setter] of Object.entries(setters)) {
+      const collectionName = COLLECTIONS[stateKey];
+      if (!collectionName) continue;
 
-        const seedContent = clone(initialContent);
-        try {
-          await setDoc(contentRef, {
-            ...seedContent,
-            updatedAt: serverTimestamp(),
-          });
-        } catch {
-          // Si Firestore no está disponible, seguimos con el respaldo local.
-        }
-      },
-      () => {
-        setContent(readStoredContent());
-      },
-    );
+      const colRef = collection(db, collectionName);
 
-    return () => unsubscribe();
-  }, [contentRef]);
+      const unsub = onSnapshot(
+        colRef,
+        (snapshot) => {
+          const items = snapshot.docs.map(docToObject);
 
-  const persistContent = (nextContent) => {
-    persistStoredContent(nextContent);
+          // Normalize destinos icons
+          if (stateKey === "destinos") {
+            items.forEach((item) => {
+              item.icono = normalizeDestinoIcon(item.icono);
+            });
+          }
 
-    void setDoc(contentRef, {
-      ...nextContent,
-      updatedAt: serverTimestamp(),
-    }).catch(() => {
-      // Respaldo local ya persistido.
-    });
-  };
+          // Normalize hero slide tags
+          if (stateKey === "heroSlides") {
+            items.forEach((item) => {
+              item.tag = cleanHeroTag(item.tag);
+            });
+            // Sort by order field if present
+            items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          }
 
-  const updateCollection = (key, item) => {
-    setContent((prev) => {
-      const nextContent = {
-        ...prev,
-        [key]: upsertItem(prev[key], item),
-      };
+          setter(items);
+          loadedCount++;
 
-      persistContent(nextContent);
-      return nextContent;
-    });
-  };
+          if (loadedCount >= totalCollections) {
+            setLoading(false);
+          }
+        },
+        (error) => {
+          console.warn(
+            `Firestore listener error for ${collectionName}:`,
+            error,
+          );
+          // Fall back to seed data if Firestore is unavailable
+          const seed = SEED_DATA[stateKey];
+          if (seed) {
+            setter(seed);
+          }
+          loadedCount++;
 
-  const removeFromCollection = (key, id) => {
-    setContent((prev) => {
-      const nextContent = {
-        ...prev,
-        [key]: prev[key].filter((entry) => entry.id !== id),
-      };
+          if (loadedCount >= totalCollections) {
+            setLoading(false);
+          }
+        },
+      );
 
-      persistContent(nextContent);
-      return nextContent;
-    });
-  };
+      unsubscribes.push(unsub);
+    }
 
-  const moveInCollection = (key, id, direction) => {
-    setContent((prev) => {
-      const currentList = prev[key];
-      const currentIndex = currentList.findIndex((entry) => entry.id === id);
+    return () => {
+      for (const unsub of unsubscribes) {
+        unsub();
+      }
+    };
+  }, [setters]);
+
+  // -----------------------------------------------------------------------
+  // CRUD helpers
+  // -----------------------------------------------------------------------
+
+  /** Upsert a document into a Firestore collection. */
+  const upsertToCollection = useCallback(async (stateKey, item) => {
+    const collectionName = COLLECTIONS[stateKey];
+    if (!collectionName) return;
+
+    const docData = objectToDoc(item);
+
+    if (item.id) {
+      // Update existing
+      const docRef = doc(db, collectionName, item.id);
+      await setDoc(docRef, docData, { merge: true });
+    } else {
+      // Create new
+      docData.createdAt = serverTimestamp();
+      await addDoc(collection(db, collectionName), docData);
+    }
+  }, []);
+
+  /** Delete a document from a Firestore collection. */
+  const deleteFromCollection = useCallback(async (stateKey, id) => {
+    const collectionName = COLLECTIONS[stateKey];
+    if (!collectionName || !id) return;
+
+    const docRef = doc(db, collectionName, id);
+    await deleteDoc(docRef);
+  }, []);
+
+  // -----------------------------------------------------------------------
+  // Public API – same interface as before so admin panels work unchanged
+  // -----------------------------------------------------------------------
+
+  // Actividades
+  const upsertActividad = useCallback(
+    (item) => upsertToCollection("actividades", item),
+    [upsertToCollection],
+  );
+  const deleteActividad = useCallback(
+    (id) => deleteFromCollection("actividades", id),
+    [deleteFromCollection],
+  );
+
+  // Gastronomía
+  const upsertGastronomia = useCallback(
+    (item) => upsertToCollection("gastronomia", item),
+    [upsertToCollection],
+  );
+  const deleteGastronomia = useCallback(
+    (id) => deleteFromCollection("gastronomia", id),
+    [deleteFromCollection],
+  );
+
+  // Hospedajes
+  const upsertHospedaje = useCallback(
+    (item) => upsertToCollection("hospedajes", item),
+    [upsertToCollection],
+  );
+  const deleteHospedaje = useCallback(
+    (id) => deleteFromCollection("hospedajes", id),
+    [deleteFromCollection],
+  );
+
+  // Eventos
+  const upsertEvento = useCallback(
+    (item) => upsertToCollection("eventos", item),
+    [upsertToCollection],
+  );
+  const deleteEvento = useCallback(
+    (id) => deleteFromCollection("eventos", id),
+    [deleteFromCollection],
+  );
+
+  // Flora y Fauna
+  const upsertFloraFauna = useCallback(
+    (item) => upsertToCollection("floraFauna", item),
+    [upsertToCollection],
+  );
+  const deleteFloraFauna = useCallback(
+    (id) => deleteFromCollection("floraFauna", id),
+    [deleteFromCollection],
+  );
+
+  // Galería
+  const upsertGaleria = useCallback(
+    (item) => upsertToCollection("galeria", item),
+    [upsertToCollection],
+  );
+  const deleteGaleria = useCallback(
+    (id) => deleteFromCollection("galeria", id),
+    [deleteFromCollection],
+  );
+
+  // Destinos
+  const upsertDestino = useCallback(
+    (item) => upsertToCollection("destinos", item),
+    [upsertToCollection],
+  );
+  const deleteDestino = useCallback(
+    (id) => deleteFromCollection("destinos", id),
+    [deleteFromCollection],
+  );
+
+  // Blog
+  const upsertBlog = useCallback(
+    (item) => upsertToCollection("blog", item),
+    [upsertToCollection],
+  );
+  const deleteBlog = useCallback(
+    (id) => deleteFromCollection("blog", id),
+    [deleteFromCollection],
+  );
+
+  // Hero Slides
+  const upsertHeroSlide = useCallback(
+    (item) => upsertToCollection("heroSlides", item),
+    [upsertToCollection],
+  );
+  const deleteHeroSlide = useCallback(
+    (id) => deleteFromCollection("heroSlides", id),
+    [deleteFromCollection],
+  );
+  const setHeroSlides = useCallback(
+    async (nextSlides) => {
+      const slides =
+        typeof nextSlides === "function"
+          ? nextSlides(heroSlides)
+          : nextSlides;
+      // Write each slide as a separate doc with order
+      for (let i = 0; i < slides.length; i++) {
+        await upsertToCollection("heroSlides", {
+          ...slides[i],
+          order: i,
+        });
+      }
+    },
+    [heroSlides, upsertToCollection],
+  );
+  const moveHeroSlide = useCallback(
+    async (id, direction) => {
+      const currentIndex = heroSlides.findIndex((s) => s.id === id);
       const targetIndex = currentIndex + direction;
 
       if (
         currentIndex < 0 ||
         targetIndex < 0 ||
-        targetIndex >= currentList.length
+        targetIndex >= heroSlides.length
       ) {
-        return prev;
+        return;
       }
 
-      const nextList = [...currentList];
-      [nextList[currentIndex], nextList[targetIndex]] = [
-        nextList[targetIndex],
-        nextList[currentIndex],
+      const reordered = [...heroSlides];
+      [reordered[currentIndex], reordered[targetIndex]] = [
+        reordered[targetIndex],
+        reordered[currentIndex],
       ];
 
-      const nextContent = {
-        ...prev,
-        [key]: nextList,
-      };
+      for (let i = 0; i < reordered.length; i++) {
+        await upsertToCollection("heroSlides", {
+          ...reordered[i],
+          order: i,
+        });
+      }
+    },
+    [heroSlides, upsertToCollection],
+  );
 
-      persistContent(nextContent);
-      return nextContent;
+  // Cooperativas / Transporte
+  const upsertCooperativa = useCallback(
+    (item) => upsertToCollection("cooperativas", item),
+    [upsertToCollection],
+  );
+  const deleteCooperativa = useCallback(
+    (id) => deleteFromCollection("cooperativas", id),
+    [deleteFromCollection],
+  );
+
+  // -----------------------------------------------------------------------
+  // Mensajes de contacto (RF11) – write-only for visitors
+  // -----------------------------------------------------------------------
+  const enviarMensajeContacto = useCallback(async (mensaje) => {
+    await addDoc(collection(db, COLLECTIONS.mensajesContacto), {
+      remitente: mensaje.remitente || "",
+      correo: mensaje.correo || "",
+      consulta_sugerencia: mensaje.consulta_sugerencia || "",
+      fecha: serverTimestamp(),
     });
-  };
+  }, []);
 
-  const setHeroSlides = (nextSlides) => {
-    setContent((prev) => {
-      const nextContent = {
-        ...prev,
-        heroSlides:
-          typeof nextSlides === "function"
-            ? nextSlides(prev.heroSlides)
-            : clone(nextSlides),
-      };
-
-      persistContent(nextContent);
-      return nextContent;
+  // -----------------------------------------------------------------------
+  // Encuesta de satisfacción (RF15) – write-only for visitors
+  // -----------------------------------------------------------------------
+  const enviarEncuesta = useCallback(async (encuesta) => {
+    await addDoc(collection(db, COLLECTIONS.encuestasSatisfaccion), {
+      puntuacion: Number(encuesta.puntuacion) || 0,
+      comentarios: encuesta.comentarios || "",
+      fecha: serverTimestamp(),
     });
-  };
+  }, []);
 
-  const resetContent = () => {
-    const nextContent = clone(initialContent);
-    setContent(nextContent);
-    persistContent(nextContent);
-  };
+  // -----------------------------------------------------------------------
+  // Reset content – seed all collections with demo data
+  // -----------------------------------------------------------------------
+  const resetContent = useCallback(async () => {
+    for (const [stateKey, seedItems] of Object.entries(SEED_DATA)) {
+      const collectionName = COLLECTIONS[stateKey];
+      if (!collectionName || !seedItems) continue;
 
-  const value = {
-    ...content,
-    setHeroSlides,
-    upsertHeroSlide: (slide) => updateCollection("heroSlides", slide),
-    deleteHeroSlide: (id) => removeFromCollection("heroSlides", id),
-    moveHeroSlide: (id, direction) =>
-      moveInCollection("heroSlides", id, direction),
-    upsertDestino: (destino) => updateCollection("destinos", destino),
-    deleteDestino: (id) => removeFromCollection("destinos", id),
-    upsertEvento: (evento) => updateCollection("eventos", evento),
-    deleteEvento: (id) => removeFromCollection("eventos", id),
-    upsertBlog: (articulo) => updateCollection("blog", articulo),
-    deleteBlog: (id) => removeFromCollection("blog", id),
-    upsertGaleria: (item) => updateCollection("galeria", item),
-    deleteGaleria: (id) => removeFromCollection("galeria", id),
-    upsertGastronomia: (restaurante) =>
-      updateCollection("gastronomia", restaurante),
-    deleteGastronomia: (id) => removeFromCollection("gastronomia", id),
-    upsertHospedaje: (hospedaje) => updateCollection("hospedajes", hospedaje),
-    deleteHospedaje: (id) => removeFromCollection("hospedajes", id),
-    upsertFloraFauna: (registro) => updateCollection("floraFauna", registro),
-    deleteFloraFauna: (id) => removeFromCollection("floraFauna", id),
-    upsertCooperativa: (cooperativa) =>
-      updateCollection("cooperativas", cooperativa),
-    deleteCooperativa: (id) => removeFromCollection("cooperativas", id),
-    resetContent,
-  };
+      for (const item of seedItems) {
+        const docData = objectToDoc(item);
+        docData.createdAt = serverTimestamp();
+
+        if (item.id) {
+          await setDoc(doc(db, collectionName, item.id), docData);
+        } else {
+          await addDoc(collection(db, collectionName), docData);
+        }
+      }
+    }
+  }, []);
+
+  // -----------------------------------------------------------------------
+  // Context value
+  // -----------------------------------------------------------------------
+  const value = useMemo(
+    () => ({
+      // Data arrays
+      actividades,
+      gastronomia,
+      hospedajes,
+      eventos,
+      floraFauna,
+      galeria,
+      destinos,
+      blog,
+      heroSlides,
+      cooperativas,
+      loading,
+
+      // CRUD – actividades
+      upsertActividad,
+      deleteActividad,
+
+      // CRUD – gastronomía
+      upsertGastronomia,
+      deleteGastronomia,
+
+      // CRUD – hospedajes
+      upsertHospedaje,
+      deleteHospedaje,
+
+      // CRUD – eventos
+      upsertEvento,
+      deleteEvento,
+
+      // CRUD – flora/fauna
+      upsertFloraFauna,
+      deleteFloraFauna,
+
+      // CRUD – galería
+      upsertGaleria,
+      deleteGaleria,
+
+      // CRUD – destinos
+      upsertDestino,
+      deleteDestino,
+
+      // CRUD – blog
+      upsertBlog,
+      deleteBlog,
+
+      // CRUD – hero slides
+      upsertHeroSlide,
+      deleteHeroSlide,
+      setHeroSlides,
+      moveHeroSlide,
+
+      // CRUD – cooperativas
+      upsertCooperativa,
+      deleteCooperativa,
+
+      // Visitante
+      enviarMensajeContacto,
+      enviarEncuesta,
+
+      // Admin
+      resetContent,
+    }),
+    [
+      actividades,
+      gastronomia,
+      hospedajes,
+      eventos,
+      floraFauna,
+      galeria,
+      destinos,
+      blog,
+      heroSlides,
+      cooperativas,
+      loading,
+      upsertActividad,
+      deleteActividad,
+      upsertGastronomia,
+      deleteGastronomia,
+      upsertHospedaje,
+      deleteHospedaje,
+      upsertEvento,
+      deleteEvento,
+      upsertFloraFauna,
+      deleteFloraFauna,
+      upsertGaleria,
+      deleteGaleria,
+      upsertDestino,
+      deleteDestino,
+      upsertBlog,
+      deleteBlog,
+      upsertHeroSlide,
+      deleteHeroSlide,
+      setHeroSlides,
+      moveHeroSlide,
+      upsertCooperativa,
+      deleteCooperativa,
+      enviarMensajeContacto,
+      enviarEncuesta,
+      resetContent,
+    ],
+  );
 
   return (
     <ContentContext.Provider value={value}>{children}</ContentContext.Provider>

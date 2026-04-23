@@ -1,3 +1,48 @@
+// =========================================================================
+// Datos semilla para las colecciones de Firestore
+// Los campos coinciden con el esquema definido en el README del proyecto.
+// Las coordenadas (lat, lng) se convierten a GeoPoint al escribir a Firestore.
+// =========================================================================
+
+export const demoActividades = [
+  {
+    id: "act-1",
+    nombre: "Paseo en lancha por los manglares",
+    descripcion:
+      "Recorrido guiado a través de los canales de manglar del Archipiélago de Jambelí, ideal para observación de aves y fotografía natural.",
+    isla: "Jambelí",
+    lat: -3.312,
+    lng: -80.083,
+  },
+  {
+    id: "act-2",
+    nombre: "Avistamiento de ballenas jorobadas",
+    descripcion:
+      "Excursión marítima desde Puerto Hualtaco hacia Isla Santa Clara para observar ballenas jorobadas durante la temporada agosto–octubre.",
+    isla: "Costa Rica",
+    lat: -3.173,
+    lng: -80.435,
+  },
+  {
+    id: "act-3",
+    nombre: "Kayak en Laguna La Tembladera",
+    descripcion:
+      "Aventura de kayak en el humedal natural, rodeado de biodiversidad y paisajes impresionantes.",
+    isla: "San Gregorio",
+    lat: -3.595,
+    lng: -79.971,
+  },
+  {
+    id: "act-4",
+    nombre: "Snorkeling en la playa de Jambelí",
+    descripcion:
+      "Descubre la vida marina submarina en las aguas cristalinas de la costa de Jambelí.",
+    isla: "Jambelí",
+    lat: -3.315,
+    lng: -80.080,
+  },
+];
+
 export const demoEventos = [
   {
     id: "1",
@@ -7,12 +52,13 @@ export const demoEventos = [
     fecha: "2026-08-23",
     hora: "18:00",
     lugar: "Parque Central de Santa Rosa",
-    tipo: "Cultural",
+    tipo: "cultural",
     organizador: "GAD Municipal de Santa Rosa",
     contacto: "turismo@santarosa.gob.ec",
     imagen:
       "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=600",
     activo: true,
+    isla: "Jambelí",
   },
   {
     id: "2",
@@ -22,12 +68,13 @@ export const demoEventos = [
     fecha: "2026-08-25",
     hora: "13:00",
     lugar: "Malecón de Santa Rosa",
-    tipo: "Gastronómico",
+    tipo: "festivo",
     organizador: "Asociación de Emprendedores de Santa Rosa",
     contacto: "0981234567",
     imagen:
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
     activo: true,
+    isla: "Jambelí",
   },
   {
     id: "3",
@@ -37,11 +84,12 @@ export const demoEventos = [
     fecha: "2026-08-01",
     hora: "06:30",
     lugar: "Puerto Hualtaco",
-    tipo: "Turístico",
+    tipo: "deportivo",
     organizador: "Operadoras turísticas autorizadas",
     contacto: "info@visitasantarosa.ec",
     imagen: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600",
     activo: true,
+    isla: "Costa Rica",
   },
   {
     id: "4",
@@ -51,12 +99,13 @@ export const demoEventos = [
     fecha: "2026-10-15",
     hora: "16:00",
     lugar: "Casa de la Cultura, Santa Rosa",
-    tipo: "Cultural",
+    tipo: "cultural",
     organizador: "Casa de la Cultura Núcleo de El Oro",
     contacto: "cultura@santarosa.gob.ec",
     imagen:
       "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=600",
     activo: true,
+    isla: "San Gregorio",
   },
 ];
 
@@ -184,57 +233,93 @@ export const demoDestinos = [
 export const demoGaleria = [
   {
     id: "1",
+    url_archivo: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800",
     url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800",
+    tipo_archivo: "foto",
     tipo: "foto",
+    seccion: "galeria_general",
     titulo: "Playas del Archipiélago de Jambelí",
+    isla: "Jambelí",
   },
   {
     id: "2",
+    url_archivo: "https://images.unsplash.com/photo-1559847844-5315695dadae?w=800",
     url: "https://images.unsplash.com/photo-1559847844-5315695dadae?w=800",
+    tipo_archivo: "foto",
     tipo: "foto",
+    seccion: "galeria_general",
     titulo: "Mariscos frescos de Puerto Jelí",
+    isla: "San Gregorio",
   },
   {
     id: "3",
+    url_archivo: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800",
     url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800",
+    tipo_archivo: "foto",
     tipo: "foto",
+    seccion: "galeria_general",
     titulo: "Laguna La Tembladera",
+    isla: "Jambelí",
   },
   {
     id: "4",
+    url_archivo: "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=800",
     url: "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=800",
+    tipo_archivo: "foto",
     tipo: "foto",
+    seccion: "banner_inicio",
     titulo: "Fauna marina de Isla Santa Clara",
+    isla: "Costa Rica",
   },
   {
     id: "5",
+    url_archivo: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800",
     url: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800",
+    tipo_archivo: "foto",
     tipo: "foto",
+    seccion: "galeria_general",
     titulo: "Transporte a las islas",
+    isla: "Jambelí",
   },
   {
     id: "6",
+    url_archivo: "https://images.unsplash.com/photo-1568430462989-44163eb1752f?w=800",
     url: "https://images.unsplash.com/photo-1568430462989-44163eb1752f?w=800",
+    tipo_archivo: "foto",
     tipo: "foto",
+    seccion: "galeria_general",
     titulo: "Avistamiento de ballenas",
+    isla: "Costa Rica",
   },
   {
     id: "7",
+    url_archivo: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800",
     url: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800",
+    tipo_archivo: "foto",
     tipo: "foto",
+    seccion: "galeria_general",
     titulo: "Festival de Santa Rosa de Lima",
+    isla: "Jambelí",
   },
   {
     id: "8",
+    url_archivo: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800",
     url: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800",
+    tipo_archivo: "foto",
     tipo: "foto",
+    seccion: "galeria_general",
     titulo: "Gastronomía típica",
+    isla: "San Gregorio",
   },
   {
     id: "9",
+    url_archivo: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800",
     url: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800",
+    tipo_archivo: "foto",
     tipo: "foto",
+    seccion: "galeria_general",
     titulo: "Cultura y tradiciones",
+    isla: "Jambelí",
   },
 ];
 
@@ -242,8 +327,10 @@ export const demoGastronomia = [
   {
     id: "g-1",
     nombre: "Comedor La Perla del Mar",
+    nombre_local: "Comedor La Perla del Mar",
     isla: "Jambelí",
     platoTipico: "Ceviche mixto y parihuela",
+    platos_tipicos: ["Ceviche mixto", "Parihuela", "Arroz marinero"],
     descripcion:
       "Especialidad en mariscos frescos y recetas tradicionales de la costa orense.",
     ubicacion: "Malecón principal de Isla Jambelí",
@@ -257,8 +344,10 @@ export const demoGastronomia = [
   {
     id: "g-2",
     nombre: "Restaurante Costa Rica Sabores",
+    nombre_local: "Restaurante Costa Rica Sabores",
     isla: "Costa Rica",
     platoTipico: "Arroz marinero y encocado de pescado",
+    platos_tipicos: ["Arroz marinero", "Encocado de pescado", "Ceviche de concha"],
     descripcion:
       "Cocina de autor inspirada en productos locales y pesca artesanal del archipiélago.",
     ubicacion: "Zona de playa, Isla Costa Rica",
@@ -271,8 +360,10 @@ export const demoGastronomia = [
   {
     id: "g-3",
     nombre: "Marisquería San Gregorio",
+    nombre_local: "Marisquería San Gregorio",
     isla: "San Gregorio",
     platoTipico: "Sudado de cangrejo y arroz con concha",
+    platos_tipicos: ["Sudado de cangrejo", "Arroz con concha", "Sopa marinera"],
     descripcion:
       "Ambiente familiar con platos típicos y menú de temporada según captura del día.",
     ubicacion: "Muelle comunitario de San Gregorio",
@@ -328,37 +419,46 @@ export const demoFloraFauna = [
   {
     id: "ff-1",
     nombre: "Piqueros de patas azules",
+    nombre_especie: "Piqueros de patas azules",
     tipo: "Fauna",
+    categoria: "fauna",
     zona: "Isla Santa Clara y áreas marinas cercanas",
     estado: "Especie protegida",
     descripcion:
       "Ave emblemática del Pacífico ecuatoriano observada durante recorridos autorizados.",
     imagen: "https://images.unsplash.com/photo-1546026423-cc4642628d2b?w=700",
+    isla: "Costa Rica",
     lat: -3.174,
     lng: -80.433,
   },
   {
     id: "ff-2",
     nombre: "Manglar rojo",
+    nombre_especie: "Manglar rojo",
     tipo: "Flora",
+    categoria: "flora",
     zona: "Canales de Puerto Jelí y esteros de Santa Rosa",
     estado: "Prioridad de conservación",
     descripcion:
       "Ecosistema clave para crustáceos, peces y aves migratorias en el archipiélago.",
     imagen:
       "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=700",
+    isla: "San Gregorio",
     lat: -3.471,
     lng: -80.051,
   },
   {
     id: "ff-3",
     nombre: "Ballena jorobada",
+    nombre_especie: "Ballena jorobada",
     tipo: "Fauna",
+    categoria: "fauna",
     zona: "Ruta marítima hacia Isla Santa Clara",
     estado: "Avistamiento estacional (agosto-octubre)",
     descripcion:
       "Durante la temporada, diferentes operadoras autorizadas realizan salidas de observación.",
     imagen: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=700",
+    isla: "Costa Rica",
     lat: -3.23,
     lng: -80.31,
   },
@@ -368,7 +468,9 @@ export const demoCooperativas = [
   {
     id: "c-1",
     nombre: "Cooperativa Rutas Orenses",
+    cooperativa: "Cooperativa Rutas Orenses",
     ruta: "Machala - Santa Rosa - Puerto Hualtaco",
+    ruta_hacia_muelle: "Machala - Santa Rosa - Puerto Hualtaco",
     frecuencia: "Cada 30 minutos",
     contacto: "+593 7 295 1450",
     puntoSalida: "Terminal terrestre de Machala",
@@ -379,7 +481,9 @@ export const demoCooperativas = [
   {
     id: "c-2",
     nombre: "Cooperativa TACsa",
+    cooperativa: "Cooperativa TACsa",
     ruta: "El Guabo - Santa Rosa - Puerto Jelí",
+    ruta_hacia_muelle: "El Guabo - Santa Rosa - Puerto Jelí",
     frecuencia: "Cada 45 minutos",
     contacto: "+593 7 294 3311",
     puntoSalida: "Terminal de El Guabo",
@@ -390,7 +494,9 @@ export const demoCooperativas = [
   {
     id: "c-3",
     nombre: "Cooperativa Panamericana",
+    cooperativa: "Cooperativa Panamericana",
     ruta: "Pasaje - Santa Rosa - Muelle turístico",
+    ruta_hacia_muelle: "Pasaje - Santa Rosa - Muelle turístico",
     frecuencia: "Cada 60 minutos",
     contacto: "+593 7 296 8040",
     puntoSalida: "Terminal de Pasaje",

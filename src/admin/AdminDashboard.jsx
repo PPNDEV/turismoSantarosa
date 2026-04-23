@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FaBed,
+  FaBus,
   FaCalendarAlt,
   FaCamera,
+  FaChartPie,
   FaCogs,
+  FaEnvelope,
   FaFileAlt,
-  FaLeaf,
+  FaHiking,
   FaImage,
+  FaLeaf,
   FaMapMarkerAlt,
   FaUserShield,
   FaUtensils,
@@ -35,6 +39,8 @@ export default function AdminDashboard({
     gastronomia,
     hospedajes,
     floraFauna,
+    actividades,
+    cooperativas,
   } = useContent();
   const [visitMetrics, setVisitMetrics] = useState({
     totalPageViews: 0,
@@ -65,6 +71,14 @@ export default function AdminDashboard({
       desc: "Gestiona slides, titulares y botones de bienvenida.",
       total: heroSlides.length,
       previewPath: "/",
+    },
+    {
+      key: "actividades",
+      icon: FaHiking,
+      title: "Actividades",
+      desc: "Administra actividades turísticas con isla y coordenadas.",
+      total: actividades.length,
+      previewPath: "/informacion",
     },
     {
       key: "eventos",
@@ -115,12 +129,36 @@ export default function AdminDashboard({
       previewPath: "/informacion#flora-fauna",
     },
     {
+      key: "transporte",
+      icon: FaBus,
+      title: "Transporte",
+      desc: "Cooperativas, rutas y frecuencias de movilización.",
+      total: cooperativas.length,
+      previewPath: "/informacion#transporte",
+    },
+    {
       key: "galeria",
       icon: FaCamera,
       title: "Galería",
       desc: "Actualiza el material visual del sitio principal.",
       total: galeria.length,
       previewPath: "/galeria",
+    },
+    {
+      key: "mensajes",
+      icon: FaEnvelope,
+      title: "Mensajes",
+      desc: "Consulta mensajes enviados por visitantes.",
+      total: null,
+      previewPath: "/admin",
+    },
+    {
+      key: "encuestas",
+      icon: FaChartPie,
+      title: "Encuestas",
+      desc: "Puntuaciones y comentarios de satisfacción.",
+      total: null,
+      previewPath: "/admin",
     },
     {
       key: "usuarios",
@@ -148,6 +186,12 @@ export default function AdminDashboard({
       value: heroSlides.length,
       icon: FaImage,
       color: "var(--ocean)",
+    },
+    {
+      label: "Actividades",
+      value: actividades.length,
+      icon: FaHiking,
+      color: "#f97316",
     },
     {
       label: "Artículos",
@@ -184,6 +228,12 @@ export default function AdminDashboard({
       value: floraFauna.length,
       icon: FaLeaf,
       color: "#65a30d",
+    },
+    {
+      label: "Transporte",
+      value: cooperativas.length,
+      icon: FaBus,
+      color: "#7c3aed",
     },
     { label: "Fotos", value: galeria.length, icon: FaCamera, color: "#2563eb" },
     {
@@ -226,7 +276,9 @@ export default function AdminDashboard({
                   <h3>{section.title}</h3>
                 </div>
                 <p>{section.desc}</p>
-                <div className="admin-module-total">{section.total} items</div>
+                {section.total !== null && (
+                  <div className="admin-module-total">{section.total} items</div>
+                )}
                 <div className="admin-module-actions">
                   <button
                     type="button"

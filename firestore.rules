@@ -81,7 +81,106 @@ service cloud.firestore {
         );
     }
 
-    // CMS principal: público en lectura, edición solo editor/admin.
+    // =========================================================================
+    // 1. COLECCIONES PRINCIPALES (Núcleo turístico)
+    //    Lectura pública, escritura solo editor/admin.
+    // =========================================================================
+
+    // Actividades turísticas (RF01, RF13)
+    match /actividades/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // Gastronomía local (RF02, RF13)
+    match /gastronomia/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // Hospedajes disponibles (RF03, RF13)
+    match /hospedajes/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // Eventos del cantón (RF04, RF13)
+    match /eventos/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // Flora y fauna (RF05, RF13)
+    match /flora_fauna/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // =========================================================================
+    // 2. COLECCIONES DE SOPORTE E INTERACCIÓN
+    // =========================================================================
+
+    // Transporte / cooperativas (RF07)
+    match /transporte/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // Galería multimedia (RF09, RF13) – URLs de Storage
+    match /galeria/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // Mensajes de contacto (RF11) – Cualquier visitante puede enviar
+    match /mensajes_contacto/{docId} {
+      allow read: if isSignedIn();
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // Encuestas de satisfacción (RF15) – Cualquier visitante puede responder
+    match /encuestas_satisfaccion/{docId} {
+      allow read: if isSignedIn();
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 3. COLECCIONES ADMINISTRATIVAS
+    // =========================================================================
+
+    // Métricas del sitio (RF09) – Lectura autenticada, escritura solo backend
+    match /metricas_sitio/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Destinos turísticos (colección existente del CMS)
+    match /destinos/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // Blog / noticias
+    match /blog/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // Hero slides de portada
+    match /heroSlides/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // Cooperativas de transporte (colección legacy / CMS)
+    match /cooperativas/{docId} {
+      allow read: if true;
+      allow create, update, delete: if canEditContent();
+    }
+
+    // CMS principal: documento legacy – mantener acceso para migración.
     match /siteContent/{docId} {
       allow read: if docId == "main";
       allow write: if docId == "main" && canEditContent();
