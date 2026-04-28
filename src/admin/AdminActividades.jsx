@@ -281,7 +281,7 @@ export default function AdminActividades({
   );
 
   return (
-    <div>
+    <div className="admin-activities-stack">
       <div className="admin-table-card">
         <div className="admin-table-header">
           <h2>Portada editorial de Actividades</h2>

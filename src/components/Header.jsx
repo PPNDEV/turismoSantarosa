@@ -13,12 +13,13 @@ import { useLanguage } from "../context/useLanguage";
 
 const navLinks = [
   { key: "home", to: "/" },
-  { key: "destinations", to: "/destinos" },
-  { key: "touristInfo", to: "/informacion" },
-  { key: "activities", to: "/actividades" },
+  { key: "gastronomy", to: "/gastronomia" },
+  { key: "lodging", to: "/hospedaje" },
+  { key: "transport", to: "/transporte" },
   { key: "events", to: "/eventos" },
+  { key: "floraFauna", to: "/flora-fauna" },
+  { key: "activities", to: "/actividades" },
   { key: "gallery", to: "/galeria" },
-  { key: "blog", to: "/blog" },
 ];
 
 const crestSrc = `${import.meta.env.BASE_URL}escudo-vector-02-247x300.png`;
@@ -60,6 +61,7 @@ export default function Header() {
   const location = useLocation();
   const languageMenuRef = useRef(null);
   const isHome = location.pathname === "/";
+  const currentLocation = `${location.pathname}${location.hash}`;
 
   const activeLanguage = useMemo(
     () =>
@@ -138,7 +140,15 @@ export default function Header() {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`nav-link ${link.to !== "/" && location.pathname === link.to ? "active" : ""}`}
+                className={`nav-link ${
+                  link.to === "/"
+                    ? location.pathname === "/" && !location.hash
+                      ? "active"
+                      : ""
+                    : currentLocation === link.to
+                      ? "active"
+                      : ""
+                }`}
                 onClick={() => setMenuOpen(false)}
               >
                 {t(`header.nav.${link.key}`)}

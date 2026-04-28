@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import {
   FaBed,
   FaBus,
@@ -52,6 +53,17 @@ function splitServices(services) {
 export default function InformacionTuristica() {
   const { destinos, gastronomia, hospedajes, floraFauna, cooperativas } =
     useContent();
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (!hash) return;
+
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(hash.slice(1))
+        ?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }, [hash]);
 
   const mapPoints = useMemo(() => {
     const points = [

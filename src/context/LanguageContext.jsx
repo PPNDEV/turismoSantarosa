@@ -34,6 +34,10 @@ const translations = {
       nav: {
         home: "Inicio",
         destinations: "Destinos",
+        gastronomy: "Gastronom\u00eda",
+        lodging: "Hospedaje",
+        transport: "Transporte",
+        floraFauna: "Flora y Fauna",
         touristInfo: "Info Turística",
         activities: "Actividades",
         events: "Eventos",
@@ -265,6 +269,10 @@ const translations = {
       nav: {
         home: "Home",
         destinations: "Destinations",
+        gastronomy: "Gastronomy",
+        lodging: "Lodging",
+        transport: "Transport",
+        floraFauna: "Flora & Fauna",
         touristInfo: "Tourist Info",
         activities: "Activities",
         events: "Events",
@@ -614,6 +622,10 @@ const translations = {
       nav: {
         home: "Início",
         destinations: "Destinos",
+        gastronomy: "Gastronomia",
+        lodging: "Hospedagem",
+        transport: "Transporte",
+        floraFauna: "Flora e Fauna",
         touristInfo: "Info Turística",
         activities: "Atividades",
         events: "Eventos",
