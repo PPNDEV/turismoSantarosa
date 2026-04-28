@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 // Realtime Database – lectura pública (0 lecturas Firestore)
-import {
-  ref,
-  onValue,
-} from "firebase/database";
+import { ref, onValue } from "firebase/database";
 import { httpsCallable } from "firebase/functions";
 // Firestore – solo para colecciones administrativas
 import {
@@ -22,6 +19,7 @@ import { db, rtdb, functions } from "../services/firebase";
 // ---------------------------------------------------------------------------
 const RTDB_NODES = [
   "actividades",
+  "actividadesEditorial",
   "gastronomia",
   "hospedajes",
   "eventos",
@@ -36,7 +34,16 @@ const RTDB_NODES = [
 const RTDB_NODE_SET = new Set(RTDB_NODES);
 
 const ROUTE_NODES = {
-  "/": ["heroSlides", "destinos", "eventos", "galeria", "blog"],
+  "/": [
+    "heroSlides",
+    "actividades",
+    "actividadesEditorial",
+    "destinos",
+    "eventos",
+    "galeria",
+    "blog",
+  ],
+  "/actividades": ["actividades", "actividadesEditorial"],
   "/destinos": ["destinos"],
   "/eventos": ["eventos"],
   "/informacion": [
@@ -86,6 +93,7 @@ function getRequiredNodes(pathname) {
 export function ContentProvider({ children }) {
   const location = useLocation();
   const [actividades, setActividades] = useState([]);
+  const [actividadesEditorial, setActividadesEditorial] = useState([]);
   const [gastronomia, setGastronomia] = useState([]);
   const [hospedajes, setHospedajes] = useState([]);
   const [eventos, setEventos] = useState([]);
@@ -109,6 +117,7 @@ export function ContentProvider({ children }) {
   const setters = useMemo(
     () => ({
       actividades: setActividades,
+      actividadesEditorial: setActividadesEditorial,
       gastronomia: setGastronomia,
       hospedajes: setHospedajes,
       eventos: setEventos,
@@ -214,6 +223,10 @@ export function ContentProvider({ children }) {
   const deleteActividad = useCallback(
     (id) => deleteFromRTDB("actividades", id),
     [deleteFromRTDB],
+  );
+  const upsertActividadesEditorial = useCallback(
+    (item) => upsertToRTDB("actividadesEditorial", item),
+    [upsertToRTDB],
   );
 
   // Gastronomía
@@ -366,6 +379,7 @@ export function ContentProvider({ children }) {
   const value = useMemo(
     () => ({
       actividades,
+      actividadesEditorial,
       gastronomia,
       hospedajes,
       eventos,
@@ -379,6 +393,7 @@ export function ContentProvider({ children }) {
 
       upsertActividad,
       deleteActividad,
+      upsertActividadesEditorial,
       upsertGastronomia,
       deleteGastronomia,
       upsertHospedaje,
@@ -404,6 +419,7 @@ export function ContentProvider({ children }) {
     }),
     [
       actividades,
+      actividadesEditorial,
       gastronomia,
       hospedajes,
       eventos,
@@ -416,6 +432,7 @@ export function ContentProvider({ children }) {
       loading,
       upsertActividad,
       deleteActividad,
+      upsertActividadesEditorial,
       upsertGastronomia,
       deleteGastronomia,
       upsertHospedaje,

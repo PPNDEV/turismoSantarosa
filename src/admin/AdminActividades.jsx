@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FaEdit,
   FaHiking,
   FaMapMarkerAlt,
+  FaQuoteLeft,
   FaSave,
   FaTrash,
 } from "react-icons/fa";
@@ -20,8 +21,27 @@ const emptyActividad = {
   imagen: "",
 };
 
+const emptyEditorial = {
+  id: "main",
+  eyebrow: "Editorial turístico",
+  title: "Actividades que se viven, se cuentan y se recuerdan",
+  subtitle:
+    "Una lectura más pausada del territorio, con experiencias que puedes editar y publicar desde el panel.",
+  intro:
+    "Desde la costa hasta el humedal, Santa Rosa se recorre con calma. Esta página reúne experiencias turísticas para descubrir, promover y actualizar sin tocar el código.",
+  quote: "Cada actividad suma una historia distinta al viaje.",
+  quoteAuthor: "Dirección de Turismo",
+  heroImage: "",
+  ctaLabel: "Explorar destinos",
+  ctaTo: "/destinos",
+};
+
 function hasDraftChanges(a, b) {
   return JSON.stringify(a) !== JSON.stringify(b);
+}
+
+function normalizeEditorial(item) {
+  return { ...emptyEditorial, ...(item || {}), id: "main" };
 }
 
 export default function AdminActividades({
@@ -29,7 +49,20 @@ export default function AdminActividades({
   onLivePreviewChange = () => {},
   onDirtyChange = () => {},
 }) {
-  const { actividades, upsertActividad, deleteActividad } = useContent();
+  const {
+    actividades,
+    actividadesEditorial,
+    upsertActividad,
+    deleteActividad,
+    upsertActividadesEditorial,
+  } = useContent();
+  const [editorialForm, setEditorialForm] = useState(emptyEditorial);
+  const [editorialInitialForm, setEditorialInitialForm] =
+    useState(emptyEditorial);
+  const [editorialImageFile, setEditorialImageFile] = useState(null);
+  const [editorialImagePreviewUrl, setEditorialImagePreviewUrl] = useState("");
+  const [editorialSaving, setEditorialSaving] = useState(false);
+  const [editorialError, setEditorialError] = useState("");
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyActividad);
@@ -38,6 +71,29 @@ export default function AdminActividades({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const nextEditorial = normalizeEditorial(actividadesEditorial[0]);
+    setEditorialForm(nextEditorial);
+    setEditorialInitialForm(nextEditorial);
+    setEditorialImageFile(null);
+    setEditorialImagePreviewUrl("");
+  }, [actividadesEditorial]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const editorialPreview = useMemo(
+    () => ({
+      ...normalizeEditorial(editorialForm),
+      heroImage:
+        editorialImagePreviewUrl || editorialForm.heroImage || FALLBACK_IMAGE,
+    }),
+    [editorialForm, editorialImagePreviewUrl],
+  );
+
+  const editorialDirty =
+    hasDraftChanges(editorialForm, editorialInitialForm) ||
+    Boolean(editorialImageFile);
 
   const openNew = () => {
     if (!canEdit) return;
@@ -78,6 +134,53 @@ export default function AdminActividades({
     setImagePreviewUrl(file ? URL.createObjectURL(file) : "");
   };
 
+  const handleEditorialImageFileChange = (file) => {
+    if (editorialImagePreviewUrl) {
+      URL.revokeObjectURL(editorialImagePreviewUrl);
+    }
+    setEditorialImageFile(file);
+    setEditorialImagePreviewUrl(file ? URL.createObjectURL(file) : "");
+  };
+
+  const saveEditorial = async () => {
+    if (!canEdit || editorialSaving) return;
+
+    const title = String(editorialForm.title || "").trim();
+    const intro = String(editorialForm.intro || "").trim();
+    if (!title || !intro) {
+      setEditorialError("Título e introducción son obligatorios.");
+      return;
+    }
+
+    setEditorialSaving(true);
+    try {
+      const imageUrl = editorialImageFile
+        ? await uploadContentImage(
+            editorialImageFile,
+            "actividadesEditorial",
+            editorialForm.id || "main",
+          )
+        : editorialForm.heroImage;
+
+      const nextEditorial = {
+        ...editorialForm,
+        id: editorialForm.id || "main",
+        title,
+        intro,
+        heroImage: imageUrl,
+      };
+
+      await upsertActividadesEditorial(nextEditorial);
+      setEditorialForm(nextEditorial);
+      setEditorialInitialForm(nextEditorial);
+      setEditorialImageFile(null);
+      setEditorialImagePreviewUrl("");
+      setEditorialError("");
+    } finally {
+      setEditorialSaving(false);
+    }
+  };
+
   const save = async () => {
     if (!canEdit || saving) return;
     const nombre = String(form.nombre || "").trim();
@@ -114,56 +217,233 @@ export default function AdminActividades({
     if (confirm("¿Eliminar actividad?")) deleteActividad(id);
   };
 
-  const preview = {
-    nombre: form.nombre || "Nombre de la actividad",
-    descripcion: form.descripcion || "Descripción de la actividad turística.",
-    isla: form.isla || "Jambelí",
-    imagen: imagePreviewUrl || form.imagen || FALLBACK_IMAGE,
-  };
+  const preview = useMemo(
+    () => ({
+      nombre: form.nombre || "Nombre de la actividad",
+      descripcion: form.descripcion || "Descripción de la actividad turística.",
+      isla: form.isla || "Jambelí",
+      imagen: imagePreviewUrl || form.imagen || FALLBACK_IMAGE,
+    }),
+    [form.nombre, form.descripcion, form.isla, form.imagen, imagePreviewUrl],
+  );
+
+  const previewPayload = useMemo(
+    () =>
+      modal
+        ? {
+            section: "actividades",
+            path: "/actividades",
+            image: preview.imagen,
+            badge: `${preview.isla} · Actividad`,
+            title: preview.nombre,
+            subtitle: "Actividad turística",
+            body: preview.descripcion,
+            status: "Listo para publicar",
+          }
+        : {
+            section: "actividades",
+            path: "/actividades",
+            image: editorialPreview.heroImage,
+            badge: editorialPreview.eyebrow,
+            title: editorialPreview.title,
+            subtitle: editorialPreview.subtitle,
+            body: editorialPreview.intro,
+            status: editorialPreview.ctaLabel,
+          },
+    [modal, preview, editorialPreview],
+  );
 
   useEffect(() => {
-    if (!modal) {
-      onLivePreviewChange(null);
-      return;
-    }
-    onLivePreviewChange({
-      section: "actividades",
-      path: "/informacion",
-      image: preview.imagen,
-      badge: `${preview.isla} · Actividad`,
-      title: preview.nombre,
-      subtitle: "Actividad turística",
-      body: preview.descripcion,
-      status: "Listo para publicar",
-    });
-  }, [
-    modal,
-    preview.imagen,
-    preview.isla,
-    preview.nombre,
-    preview.descripcion,
-    onLivePreviewChange,
-  ]);
+    onLivePreviewChange(previewPayload);
+  }, [onLivePreviewChange, previewPayload]);
 
   useEffect(() => {
-    if (!modal) {
-      onDirtyChange(false);
-      return;
-    }
-    onDirtyChange(hasDraftChanges(form, initialForm) || Boolean(imageFile));
-  }, [modal, form, initialForm, imageFile, onDirtyChange]);
+    onDirtyChange(
+      editorialDirty ||
+        (modal && (hasDraftChanges(form, initialForm) || Boolean(imageFile))),
+    );
+  }, [editorialDirty, modal, form, initialForm, imageFile, onDirtyChange]);
 
   useEffect(
     () => () => {
+      if (editorialImagePreviewUrl)
+        URL.revokeObjectURL(editorialImagePreviewUrl);
       if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
       onDirtyChange(false);
       onLivePreviewChange(null);
     },
-    [imagePreviewUrl, onDirtyChange, onLivePreviewChange],
+    [
+      editorialImagePreviewUrl,
+      imagePreviewUrl,
+      onDirtyChange,
+      onLivePreviewChange,
+    ],
   );
 
   return (
     <div>
+      <div className="admin-table-card">
+        <div className="admin-table-header">
+          <h2>Portada editorial de Actividades</h2>
+          <button
+            className="btn btn-primary"
+            onClick={saveEditorial}
+            disabled={!canEdit || editorialSaving}
+          >
+            <FaSave className="inline-icon" aria-hidden="true" />
+            {editorialSaving ? "Guardando..." : "Guardar portada"}
+          </button>
+        </div>
+
+        {!canEdit && (
+          <div className="admin-readonly-note">
+            Modo visualizador: la portada editorial y las actividades son solo
+            de consulta.
+          </div>
+        )}
+
+        {editorialError && <div className="login-error">{editorialError}</div>}
+
+        <div className="admin-form-preview-grid">
+          <div className="admin-form-column">
+            <div className="modal-field">
+              <label>Entradilla</label>
+              <input
+                type="text"
+                value={editorialForm.eyebrow}
+                onChange={(e) =>
+                  setEditorialForm({
+                    ...editorialForm,
+                    eyebrow: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="modal-field">
+              <label>Título</label>
+              <input
+                type="text"
+                value={editorialForm.title}
+                onChange={(e) =>
+                  setEditorialForm({ ...editorialForm, title: e.target.value })
+                }
+              />
+            </div>
+            <div className="modal-field">
+              <label>Subtítulo</label>
+              <textarea
+                value={editorialForm.subtitle}
+                onChange={(e) =>
+                  setEditorialForm({
+                    ...editorialForm,
+                    subtitle: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="modal-field">
+              <label>Introducción</label>
+              <textarea
+                value={editorialForm.intro}
+                onChange={(e) =>
+                  setEditorialForm({ ...editorialForm, intro: e.target.value })
+                }
+              />
+            </div>
+            <div className="modal-field">
+              <label>Cita editorial</label>
+              <textarea
+                value={editorialForm.quote}
+                onChange={(e) =>
+                  setEditorialForm({ ...editorialForm, quote: e.target.value })
+                }
+              />
+            </div>
+            <div className="modal-field">
+              <label>Autor de la cita</label>
+              <input
+                type="text"
+                value={editorialForm.quoteAuthor}
+                onChange={(e) =>
+                  setEditorialForm({
+                    ...editorialForm,
+                    quoteAuthor: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <AdminImageField
+              label="Imagen de portada"
+              value={editorialForm.heroImage}
+              selectedFile={editorialImageFile}
+              onFileChange={handleEditorialImageFileChange}
+              onUrlChange={(nextUrl) =>
+                setEditorialForm({ ...editorialForm, heroImage: nextUrl })
+              }
+            />
+            <div className="modal-field">
+              <label>Texto del botón</label>
+              <input
+                type="text"
+                value={editorialForm.ctaLabel}
+                onChange={(e) =>
+                  setEditorialForm({
+                    ...editorialForm,
+                    ctaLabel: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="modal-field">
+              <label>Enlace del botón</label>
+              <input
+                type="text"
+                value={editorialForm.ctaTo}
+                onChange={(e) =>
+                  setEditorialForm({ ...editorialForm, ctaTo: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="admin-preview-column">
+            <h3 className="admin-preview-title">Vista previa editorial</h3>
+            <div className="admin-preview-card-frame">
+              <div className="activities-hero activities-admin-preview">
+                <div className="activities-hero-copy">
+                  <span className="badge badge-gold">
+                    {editorialPreview.eyebrow}
+                  </span>
+                  <h3 className="activities-hero-title">
+                    {editorialPreview.title}
+                  </h3>
+                  <p className="activities-hero-subtitle">
+                    {editorialPreview.subtitle}
+                  </p>
+                  <p className="activities-hero-intro">
+                    {editorialPreview.intro}
+                  </p>
+                </div>
+                <div className="activities-hero-media">
+                  <img
+                    src={editorialPreview.heroImage}
+                    alt={editorialPreview.title}
+                  />
+                  <div className="activities-quote-card">
+                    <FaQuoteLeft
+                      className="activities-quote-icon"
+                      aria-hidden="true"
+                    />
+                    <p>{editorialPreview.quote}</p>
+                    <strong>{editorialPreview.quoteAuthor}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="admin-table-card">
         <div className="admin-table-header">
           <h2>Actividades ({actividades.length})</h2>

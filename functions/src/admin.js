@@ -9,6 +9,7 @@ const ROLE_EDITOR = "editor";
 const ROLE_VIEWER = "visualizador";
 const CONTENT_NODES = new Set([
   "actividades",
+  "actividadesEditorial",
   "gastronomia",
   "hospedajes",
   "eventos",
@@ -36,7 +37,7 @@ async function verifyRole(uid, allowedRoles) {
   if (!uid) {
     throw new HttpsError(
       "unauthenticated",
-      "El usuario debe estar autenticado."
+      "El usuario debe estar autenticado.",
     );
   }
   const userDoc = await db.collection("usersPublic").doc(uid).get();
@@ -53,61 +54,75 @@ async function verifyRole(uid, allowedRoles) {
   if (!allowedRoles.includes(role)) {
     throw new HttpsError(
       "permission-denied",
-      "No tienes los permisos necesarios."
+      "No tienes los permisos necesarios.",
     );
   }
   return role;
 }
 
-exports.adminUpsertContent = onCall({ region: "us-central1" }, async (request) => {
-  await verifyRole(request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
-  const { nodeKey, itemData, id } = request.data;
-  if (!nodeKey || !itemData) {
-    throw new HttpsError("invalid-argument", "Faltan parámetros requeridos.");
-  }
+exports.adminUpsertContent = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
+    const { nodeKey, itemData, id } = request.data;
+    if (!nodeKey || !itemData) {
+      throw new HttpsError("invalid-argument", "Faltan parámetros requeridos.");
+    }
 
-  if (!CONTENT_NODES.has(nodeKey)) {
-    throw new HttpsError("invalid-argument", "Nodo de contenido no permitido.");
-  }
+    if (!CONTENT_NODES.has(nodeKey)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Nodo de contenido no permitido.",
+      );
+    }
 
-  const payload = { ...itemData };
-  // Usar timestamp del servidor de RTDB
-  payload.updatedAt = admin.database.ServerValue.TIMESTAMP;
+    const payload = { ...itemData };
+    // Usar timestamp del servidor de RTDB
+    payload.updatedAt = admin.database.ServerValue.TIMESTAMP;
 
-  const nodeRef = getRtdb().ref(`content/${nodeKey}`);
-  let targetRef;
-  let targetId = id;
+    const nodeRef = getRtdb().ref(`content/${nodeKey}`);
+    let targetRef;
+    let targetId = id;
 
-  if (targetId) {
-    targetRef = nodeRef.child(targetId);
-  } else {
-    targetRef = nodeRef.push();
-    targetId = targetRef.key;
-  }
+    if (targetId) {
+      targetRef = nodeRef.child(targetId);
+    } else {
+      targetRef = nodeRef.push();
+      targetId = targetRef.key;
+    }
 
-  await targetRef.set(payload);
-  return { success: true, id: targetId };
-});
+    await targetRef.set(payload);
+    return { success: true, id: targetId };
+  },
+);
 
-exports.adminDeleteContent = onCall({ region: "us-central1" }, async (request) => {
-  await verifyRole(request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
-  const { nodeKey, id } = request.data;
-  if (!nodeKey || !id) {
-    throw new HttpsError("invalid-argument", "Faltan parámetros requeridos.");
-  }
+exports.adminDeleteContent = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
+    const { nodeKey, id } = request.data;
+    if (!nodeKey || !id) {
+      throw new HttpsError("invalid-argument", "Faltan parámetros requeridos.");
+    }
 
-  if (!CONTENT_NODES.has(nodeKey)) {
-    throw new HttpsError("invalid-argument", "Nodo de contenido no permitido.");
-  }
+    if (!CONTENT_NODES.has(nodeKey)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Nodo de contenido no permitido.",
+      );
+    }
 
-  await getRtdb().ref(`content/${nodeKey}/${id}`).remove();
-  return { success: true };
-});
+    await getRtdb().ref(`content/${nodeKey}/${id}`).remove();
+    return { success: true };
+  },
+);
 
 exports.adminCreateUser = onCall({ region: "us-central1" }, async (request) => {
   await verifyRole(request.auth?.uid, [ROLE_ADMIN]);
   const { email, password, displayName, role } = request.data;
-  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedEmail = String(email || "")
+    .trim()
+    .toLowerCase();
   const normalizedDisplayName = String(displayName || "").trim();
   const normalizedRole = normalizeRole(role);
 
@@ -153,9 +168,12 @@ exports.adminCreateUser = onCall({ region: "us-central1" }, async (request) => {
     await batch.commit();
   } catch (e) {
     logger.error("Error creating Firestore user profile", e);
-    await admin.auth().deleteUser(uid).catch((deleteError) => {
-      logger.warn(`Could not roll back auth user ${uid}`, deleteError);
-    });
+    await admin
+      .auth()
+      .deleteUser(uid)
+      .catch((deleteError) => {
+        logger.warn(`Could not roll back auth user ${uid}`, deleteError);
+      });
     throw new HttpsError("internal", e.message);
   }
 
@@ -171,22 +189,25 @@ exports.adminCreateUser = onCall({ region: "us-central1" }, async (request) => {
   };
 });
 
-exports.adminUpdateUserRole = onCall({ region: "us-central1" }, async (request) => {
-  await verifyRole(request.auth?.uid, [ROLE_ADMIN]);
-  const { uid, role } = request.data;
+exports.adminUpdateUserRole = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(request.auth?.uid, [ROLE_ADMIN]);
+    const { uid, role } = request.data;
 
-  if (!uid || !role) {
-    throw new HttpsError("invalid-argument", "Faltan datos.");
-  }
+    if (!uid || !role) {
+      throw new HttpsError("invalid-argument", "Faltan datos.");
+    }
 
-  await db.collection("usersPublic").doc(uid).update({
-    role,
-    active: true,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+    await db.collection("usersPublic").doc(uid).update({
+      role,
+      active: true,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
-  return { success: true };
-});
+    return { success: true };
+  },
+);
 
 exports.adminDeleteUser = onCall({ region: "us-central1" }, async (request) => {
   await verifyRole(request.auth?.uid, [ROLE_ADMIN]);
@@ -199,7 +220,7 @@ exports.adminDeleteUser = onCall({ region: "us-central1" }, async (request) => {
   if (uid === request.auth.uid) {
     throw new HttpsError(
       "invalid-argument",
-      "No puedes eliminar tu propio usuario."
+      "No puedes eliminar tu propio usuario.",
     );
   }
 

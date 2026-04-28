@@ -57,8 +57,9 @@ const menuItems = [
     icon: FaHiking,
     label: "Actividades",
     title: "Actividades Turísticas",
-    previewPath: "/informacion",
-    description: "Gestiona actividades turísticas con isla y coordenadas.",
+    previewPath: "/actividades",
+    description:
+      "Edita la portada editorial y el listado de actividades turísticas.",
   },
   {
     key: "eventos",

@@ -15,6 +15,7 @@ const navLinks = [
   { key: "home", to: "/" },
   { key: "destinations", to: "/destinos" },
   { key: "touristInfo", to: "/informacion" },
+  { key: "activities", to: "/actividades" },
   { key: "events", to: "/eventos" },
   { key: "gallery", to: "/galeria" },
   { key: "blog", to: "/blog" },

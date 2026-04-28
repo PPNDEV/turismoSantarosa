@@ -121,7 +121,7 @@ export default function Footer() {
                 <Link to="/#como-llegar">{t("footer.links.howToGet")}</Link>
               </li>
               <li>
-                <Link to="/#que-hacer">{t("footer.links.whatToDo")}</Link>
+                <Link to="/actividades">{t("footer.links.activities")}</Link>
               </li>
             </ul>
           </div>

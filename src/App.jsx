@@ -29,6 +29,7 @@ import {
 import { getDestinoIconComponent } from "./utils/destinoIcons";
 
 const InformacionTuristica = lazy(() => import("./pages/InformacionTuristica"));
+const ActividadesPage = lazy(() => import("./pages/Actividades"));
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 
 const FALLBACK_EVENT_IMAGE =
@@ -452,6 +453,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/destinos" element={<DestinosPage />} />
+        <Route path="/actividades" element={<ActividadesPage />} />
         <Route path="/eventos" element={<EventosPage />} />
         <Route path="/informacion" element={<InformacionTuristica />} />
         <Route path="/galeria" element={<GaleriaPage />} />
