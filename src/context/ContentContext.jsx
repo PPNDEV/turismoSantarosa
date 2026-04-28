@@ -1,33 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 // Realtime Database – lectura pública (0 lecturas Firestore)
 import {
   ref,
   onValue,
-  set,
-  push,
-  remove,
-  serverTimestamp as rtdbTimestamp,
 } from "firebase/database";
+import { httpsCallable } from "firebase/functions";
 // Firestore – solo para colecciones administrativas
 import {
   collection as fsCollection,
   addDoc,
   serverTimestamp as fsTimestamp,
 } from "firebase/firestore";
-import {
-  demoBlog,
-  demoCooperativas,
-  demoDestinos,
-  demoEventos,
-  demoFloraFauna,
-  demoGastronomia,
-  demoGaleria,
-  demoHospedajes,
-  demoActividades,
-} from "../data/demoData";
 import { ContentContext } from "./content-context";
 import { normalizeDestinoIcon } from "../utils/destinoIcons";
-import { db, rtdb } from "../services/firebase";
+import { db, rtdb, functions } from "../services/firebase";
 
 // ---------------------------------------------------------------------------
 // Nodos en Realtime Database (contenido público)
@@ -46,51 +33,21 @@ const RTDB_NODES = [
   "cooperativas",
 ];
 
-// ---------------------------------------------------------------------------
-// Demo / seed data por nodo
-// ---------------------------------------------------------------------------
-const SEED_DATA = {
-  actividades: demoActividades,
-  gastronomia: demoGastronomia,
-  hospedajes: demoHospedajes,
-  eventos: demoEventos,
-  floraFauna: demoFloraFauna,
-  galeria: demoGaleria,
-  destinos: demoDestinos,
-  blog: demoBlog,
-  heroSlides: [
-    {
-      id: "hero-1",
-      bg: "/hero1.png",
-      tag: "Archipiélago de Jambelí",
-      title: "Paraíso Natural del Pacífico",
-      sub: "Playas vírgenes, manglares y fauna única te esperan en el sur de Ecuador.",
-      cta: "Explorar Destinos",
-      ctaTo: "/destinos",
-      order: 0,
-    },
-    {
-      id: "hero-2",
-      bg: "/hero2.png",
-      tag: "Gastronomía del Mar",
-      title: "Sabores que no Olvidarás",
-      sub: "Puerto Jelí y sus mariscos frescos, cebiches y la auténtica parihuela orense.",
-      cta: "Ver Blog",
-      ctaTo: "/blog",
-      order: 1,
-    },
-    {
-      id: "hero-3",
-      bg: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1600",
-      tag: "Agosto – Octubre",
-      title: "Avistamiento de Ballenas",
-      sub: "Isla Santa Clara: el santuario marino donde la naturaleza deslumbra cada año.",
-      cta: "Ver Eventos",
-      ctaTo: "/eventos",
-      order: 2,
-    },
+const RTDB_NODE_SET = new Set(RTDB_NODES);
+
+const ROUTE_NODES = {
+  "/": ["heroSlides", "destinos", "eventos", "galeria", "blog"],
+  "/destinos": ["destinos"],
+  "/eventos": ["eventos"],
+  "/informacion": [
+    "destinos",
+    "gastronomia",
+    "hospedajes",
+    "floraFauna",
+    "cooperativas",
   ],
-  cooperativas: demoCooperativas,
+  "/galeria": ["galeria"],
+  "/blog": ["blog"],
 };
 
 // ---------------------------------------------------------------------------
@@ -114,11 +71,20 @@ function rtdbSnapshotToArray(snapshot) {
   }));
 }
 
+function getRequiredNodes(pathname) {
+  if (String(pathname || "").startsWith("/admin")) {
+    return RTDB_NODES;
+  }
+
+  return ROUTE_NODES[pathname] || ROUTE_NODES["/"];
+}
+
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
 
 export function ContentProvider({ children }) {
+  const location = useLocation();
   const [actividades, setActividades] = useState([]);
   const [gastronomia, setGastronomia] = useState([]);
   const [hospedajes, setHospedajes] = useState([]);
@@ -129,7 +95,16 @@ export function ContentProvider({ children }) {
   const [blog, setBlog] = useState([]);
   const [heroSlides, setHeroSlidesState] = useState([]);
   const [cooperativas, setCooperativas] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedNodes, setLoadedNodes] = useState(() => new Set());
+  const requiredNodes = useMemo(
+    () => getRequiredNodes(location.pathname),
+    [location.pathname],
+  );
+  const requiredNodesKey = requiredNodes.join("|");
+  const loading = useMemo(
+    () => requiredNodes.some((nodeKey) => !loadedNodes.has(nodeKey)),
+    [loadedNodes, requiredNodes],
+  );
 
   const setters = useMemo(
     () => ({
@@ -148,14 +123,12 @@ export function ContentProvider({ children }) {
   );
 
   // -----------------------------------------------------------------------
-  // Real-time listeners desde RTDB (NO consume lecturas de Firestore)
+  // Real-time listeners desde RTDB por ruta (NO consume lecturas de Firestore)
   // -----------------------------------------------------------------------
   useEffect(() => {
     const unsubscribes = [];
-    let loadedCount = 0;
-    const totalNodes = RTDB_NODES.length;
 
-    for (const nodeKey of RTDB_NODES) {
+    for (const nodeKey of requiredNodes) {
       const setter = setters[nodeKey];
       if (!setter) continue;
 
@@ -164,15 +137,7 @@ export function ContentProvider({ children }) {
       const unsub = onValue(
         nodeRef,
         (snapshot) => {
-          let items = rtdbSnapshotToArray(snapshot);
-
-          // Si no hay datos en RTDB, usar seed data
-          if (items.length === 0) {
-            const seed = SEED_DATA[nodeKey];
-            if (seed) {
-              items = seed;
-            }
-          }
+          const items = rtdbSnapshotToArray(snapshot);
 
           // Normalizar destinos
           if (nodeKey === "destinos") {
@@ -190,18 +155,12 @@ export function ContentProvider({ children }) {
           }
 
           setter(items);
-          loadedCount++;
-
-          if (loadedCount >= totalNodes) {
-            setLoading(false);
-          }
+          setLoadedNodes((previous) => new Set(previous).add(nodeKey));
         },
         (error) => {
           console.warn(`RTDB listener error for content/${nodeKey}:`, error);
-          const seed = SEED_DATA[nodeKey];
-          if (seed) setter(seed);
-          loadedCount++;
-          if (loadedCount >= totalNodes) setLoading(false);
+          setter([]);
+          setLoadedNodes((previous) => new Set(previous).add(nodeKey));
         },
       );
 
@@ -212,26 +171,35 @@ export function ContentProvider({ children }) {
     return () => {
       for (const unsub of unsubscribes) unsub();
     };
-  }, [setters]);
+  }, [requiredNodes, requiredNodesKey, setters]);
 
   // -----------------------------------------------------------------------
-  // CRUD helpers – escriben a Realtime Database
+  // CRUD helpers – usando Cloud Functions seguras
   // -----------------------------------------------------------------------
 
-  /** Upsert: crea o actualiza en RTDB → /content/{nodeKey}/{id} */
+  /** Upsert: crea o actualiza en RTDB vía Cloud Function */
   const upsertToRTDB = useCallback(async (nodeKey, item) => {
-    const itemData = { ...item };
-    const id = itemData.id || push(ref(rtdb, `content/${nodeKey}`)).key;
-    delete itemData.id;
-    itemData.updatedAt = rtdbTimestamp();
+    if (!RTDB_NODE_SET.has(nodeKey)) {
+      throw new Error("Nodo de contenido no permitido.");
+    }
 
-    await set(ref(rtdb, `content/${nodeKey}/${id}`), itemData);
+    const itemData = { ...item };
+    const id = itemData.id;
+    delete itemData.id;
+
+    const adminUpsertContent = httpsCallable(functions, "adminUpsertContent");
+    await adminUpsertContent({ nodeKey, itemData, id });
   }, []);
 
-  /** Delete: elimina de RTDB → /content/{nodeKey}/{id} */
+  /** Delete: elimina de RTDB vía Cloud Function */
   const deleteFromRTDB = useCallback(async (nodeKey, id) => {
     if (!id) return;
-    await remove(ref(rtdb, `content/${nodeKey}/${id}`));
+    if (!RTDB_NODE_SET.has(nodeKey)) {
+      throw new Error("Nodo de contenido no permitido.");
+    }
+
+    const adminDeleteContent = httpsCallable(functions, "adminDeleteContent");
+    await adminDeleteContent({ nodeKey, id });
   }, []);
 
   // -----------------------------------------------------------------------
@@ -393,28 +361,6 @@ export function ContentProvider({ children }) {
   }, []);
 
   // -----------------------------------------------------------------------
-  // Reset content – seed RTDB con datos demo
-  // -----------------------------------------------------------------------
-  const resetContent = useCallback(async () => {
-    for (const [nodeKey, seedItems] of Object.entries(SEED_DATA)) {
-      if (!seedItems) continue;
-
-      // Limpiar nodo completo y reescribir
-      const nodeData = {};
-      for (const item of seedItems) {
-        const id = item.id || push(ref(rtdb, `content/${nodeKey}`)).key;
-        const data = { ...item };
-        delete data.id;
-        data.updatedAt = Date.now();
-        data.createdAt = Date.now();
-        nodeData[id] = data;
-      }
-
-      await set(ref(rtdb, `content/${nodeKey}`), nodeData);
-    }
-  }, []);
-
-  // -----------------------------------------------------------------------
   // Context value
   // -----------------------------------------------------------------------
   const value = useMemo(
@@ -455,7 +401,6 @@ export function ContentProvider({ children }) {
       deleteCooperativa,
       enviarMensajeContacto,
       enviarEncuesta,
-      resetContent,
     }),
     [
       actividades,
@@ -493,7 +438,6 @@ export function ContentProvider({ children }) {
       deleteCooperativa,
       enviarMensajeContacto,
       enviarEncuesta,
-      resetContent,
     ],
   );
 

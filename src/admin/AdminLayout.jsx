@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaArrowLeft,
@@ -9,21 +9,17 @@ import {
   FaChartBar,
   FaChartPie,
   FaEnvelope,
-  FaExternalLinkAlt,
   FaFileAlt,
   FaGlobe,
   FaHiking,
   FaImage,
   FaLeaf,
   FaMapMarkerAlt,
-  FaRecycle,
-  FaSyncAlt,
   FaUser,
   FaUserShield,
   FaUtensils,
 } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
-import { useContent } from "../context/useContent";
 import AdminPortada from "../admin/AdminPortada";
 import AdminDashboard from "../admin/AdminDashboard";
 import AdminEventos from "../admin/AdminEventos";
@@ -159,46 +155,11 @@ const menuItems = [
   },
 ];
 
-const publicPages = [
-  { label: "Inicio", path: "/" },
-  { label: "Información", path: "/informacion" },
-  { label: "Eventos", path: "/eventos" },
-  { label: "Blog", path: "/blog" },
-  { label: "Destinos", path: "/destinos" },
-  { label: "Galería", path: "/galeria" },
-];
-
 function openSite(path) {
   if (typeof window === "undefined") {
     return;
   }
   window.open(path, "_blank", "noopener,noreferrer");
-}
-
-const INSPECTOR_FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=900";
-const AUTO_PREVIEW_DEBOUNCE_MS = 700;
-const AUTO_PREVIEW_STORAGE_KEY = "admin.autoPreviewEnabled";
-
-function readAutoPreviewPreference() {
-  if (typeof window === "undefined") {
-    return true;
-  }
-
-  const storedValue = window.localStorage.getItem(AUTO_PREVIEW_STORAGE_KEY);
-  if (storedValue === null) {
-    return true;
-  }
-
-  return storedValue === "1" || storedValue === "true";
-}
-
-function writeAutoPreviewPreference(nextValue) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(AUTO_PREVIEW_STORAGE_KEY, nextValue ? "1" : "0");
 }
 
 function getRoleLabel(role) {
@@ -216,59 +177,14 @@ function getRoleLabel(role) {
 
 export default function AdminLayout() {
   const [active, setActive] = useState("dashboard");
-  const [previewPath, setPreviewPath] = useState("/");
-  const [previewKey, setPreviewKey] = useState(0);
-  const [autoPreviewEnabled, setAutoPreviewEnabled] = useState(
-    readAutoPreviewPreference,
-  );
-  const [livePreview, setLivePreview] = useState(null);
+  const [, setLivePreview] = useState(null);
   const [dirtySections, setDirtySections] = useState({});
   const { user, logout, canEditContent, canManageUsers } = useAuth();
-  const {
-    heroSlides,
-    blog,
-    eventos,
-    destinos,
-    galeria,
-    gastronomia,
-    hospedajes,
-    floraFauna,
-    actividades,
-    cooperativas,
-    resetContent,
-  } = useContent();
   const navigate = useNavigate();
 
   const activeItem = useMemo(
     () => menuItems.find((item) => item.key === active) || menuItems[0],
     [active],
-  );
-
-  const contentStats = useMemo(
-    () => [
-      { label: "Slides", value: heroSlides.length },
-      { label: "Actividades", value: actividades.length },
-      { label: "Eventos", value: eventos.length },
-      { label: "Artículos", value: blog.length },
-      { label: "Destinos", value: destinos.length },
-      { label: "Gastronomía", value: gastronomia.length },
-      { label: "Hospedajes", value: hospedajes.length },
-      { label: "Flora/Fauna", value: floraFauna.length },
-      { label: "Transporte", value: cooperativas.length },
-      { label: "Galería", value: galeria.length },
-    ],
-    [
-      heroSlides.length,
-      actividades.length,
-      eventos.length,
-      blog.length,
-      destinos.length,
-      gastronomia.length,
-      hospedajes.length,
-      floraFauna.length,
-      cooperativas.length,
-      galeria.length,
-    ],
   );
 
   const handleSelectSection = (nextSection) => {
@@ -295,17 +211,10 @@ export default function AdminLayout() {
 
     setActive(nextSection);
     setLivePreview(null);
-    const selectedItem = menuItems.find((item) => item.key === nextSection);
-    if (selectedItem?.previewPath) {
-      setPreviewPath(selectedItem.previewPath);
-    }
   };
 
   const handleLivePreviewChange = useCallback((nextPreview) => {
     setLivePreview(nextPreview);
-    if (nextPreview?.path) {
-      setPreviewPath(nextPreview.path);
-    }
   }, []);
 
   const handleDirtySectionChange = useCallback((sectionKey, isDirty) => {
@@ -317,57 +226,36 @@ export default function AdminLayout() {
     });
   }, []);
 
+  const dirtyChangeHandlers = useMemo(
+    () => ({
+      portada: (isDirty) => handleDirtySectionChange("portada", isDirty),
+      actividades: (isDirty) =>
+        handleDirtySectionChange("actividades", isDirty),
+      eventos: (isDirty) => handleDirtySectionChange("eventos", isDirty),
+      blog: (isDirty) => handleDirtySectionChange("blog", isDirty),
+      destinos: (isDirty) => handleDirtySectionChange("destinos", isDirty),
+      gastronomia: (isDirty) =>
+        handleDirtySectionChange("gastronomia", isDirty),
+      hospedajes: (isDirty) => handleDirtySectionChange("hospedajes", isDirty),
+      floraFauna: (isDirty) => handleDirtySectionChange("floraFauna", isDirty),
+      transporte: (isDirty) => handleDirtySectionChange("transporte", isDirty),
+      galeria: (isDirty) => handleDirtySectionChange("galeria", isDirty),
+      mensajes: (isDirty) => handleDirtySectionChange("mensajes", isDirty),
+      encuestas: (isDirty) => handleDirtySectionChange("encuestas", isDirty),
+      usuarios: (isDirty) => handleDirtySectionChange("usuarios", isDirty),
+    }),
+    [handleDirtySectionChange],
+  );
+
   const dirtyModules = menuItems.filter((item) =>
     Boolean(dirtySections[item.key]),
   );
 
   const hasDirtyChanges = dirtyModules.length > 0;
 
-  useEffect(() => {
-    if (!autoPreviewEnabled || !livePreview?.path) {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      setPreviewKey((currentKey) => currentKey + 1);
-    }, AUTO_PREVIEW_DEBOUNCE_MS);
-
-    return () => clearTimeout(timeoutId);
-  }, [autoPreviewEnabled, livePreview]);
-
-  useEffect(() => {
-    writeAutoPreviewPreference(autoPreviewEnabled);
-  }, [autoPreviewEnabled]);
-
   const handleLogout = () => {
     logout();
     navigate("/");
-  };
-
-  const handleResetContent = () => {
-    if (!canManageUsers) {
-      return;
-    }
-
-    if (
-      confirm(
-        "¿Deseas restablecer todo el contenido al demo inicial? Esta acción no se puede deshacer.",
-      )
-    ) {
-      resetContent();
-      setPreviewKey((currentKey) => currentKey + 1);
-    }
-  };
-
-  const refreshPreview = () => {
-    setPreviewKey((currentKey) => currentKey + 1);
-  };
-
-  const handleAutoPreviewToggle = (nextValue) => {
-    setAutoPreviewEnabled(nextValue);
-    if (nextValue) {
-      refreshPreview();
-    }
   };
 
   const renderContent = () => {
@@ -376,7 +264,6 @@ export default function AdminLayout() {
         return (
           <AdminDashboard
             onNavigateSection={handleSelectSection}
-            onPreviewPathChange={setPreviewPath}
             canEditContent={canEditContent}
             canManageUsers={canManageUsers}
           />
@@ -386,9 +273,7 @@ export default function AdminLayout() {
           <AdminPortada
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("portada", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.portada}
           />
         );
       case "actividades":
@@ -396,9 +281,7 @@ export default function AdminLayout() {
           <AdminActividades
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("actividades", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.actividades}
           />
         );
       case "eventos":
@@ -406,9 +289,7 @@ export default function AdminLayout() {
           <AdminEventos
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("eventos", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.eventos}
           />
         );
       case "blog":
@@ -416,9 +297,7 @@ export default function AdminLayout() {
           <AdminBlog
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("blog", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.blog}
           />
         );
       case "destinos":
@@ -426,9 +305,7 @@ export default function AdminLayout() {
           <AdminDestinos
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("destinos", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.destinos}
           />
         );
       case "gastronomia":
@@ -436,9 +313,7 @@ export default function AdminLayout() {
           <AdminGastronomia
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("gastronomia", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.gastronomia}
           />
         );
       case "hospedajes":
@@ -446,9 +321,7 @@ export default function AdminLayout() {
           <AdminHospedajes
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("hospedajes", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.hospedajes}
           />
         );
       case "floraFauna":
@@ -456,9 +329,7 @@ export default function AdminLayout() {
           <AdminFloraFauna
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("floraFauna", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.floraFauna}
           />
         );
       case "transporte":
@@ -466,9 +337,7 @@ export default function AdminLayout() {
           <AdminTransporte
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("transporte", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.transporte}
           />
         );
       case "galeria":
@@ -476,43 +345,34 @@ export default function AdminLayout() {
           <AdminGaleria
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("galeria", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.galeria}
           />
         );
       case "mensajes":
         return (
           <AdminMensajes
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("mensajes", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.mensajes}
           />
         );
       case "encuestas":
         return (
           <AdminEncuestas
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("encuestas", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.encuestas}
           />
         );
       case "usuarios":
         return (
           <AdminUsuarios
             onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={(isDirty) =>
-              handleDirtySectionChange("usuarios", isDirty)
-            }
+            onDirtyChange={dirtyChangeHandlers.usuarios}
           />
         );
       default:
         return (
           <AdminDashboard
             onNavigateSection={handleSelectSection}
-            onPreviewPathChange={setPreviewPath}
             canEditContent={canEditContent}
             canManageUsers={canManageUsers}
           />
@@ -607,8 +467,8 @@ export default function AdminLayout() {
             <h1>{activeItem.title}</h1>
             <p className="admin-topbar-subtext">
               {canEditContent
-                ? "Editor CMS con guardado automático y vista previa del sitio en tiempo real."
-                : "Modo visualizador: puedes navegar y previsualizar, sin permisos de edición."}
+                ? "Editor CMS con guardado automático para el contenido del sitio."
+                : "Modo visualizador: puedes navegar el panel sin permisos de edición."}
             </p>
             <p className="admin-role-pill">
               Rol activo: {getRoleLabel(user?.role)}
@@ -624,20 +484,6 @@ export default function AdminLayout() {
 
           <div className="admin-topbar-actions">
             <button
-              className="btn btn-outline admin-topbar-btn"
-              onClick={refreshPreview}
-            >
-              <FaSyncAlt className="inline-icon" aria-hidden="true" />
-              Actualizar Preview
-            </button>
-            <button
-              className="btn admin-topbar-btn admin-topbar-soft"
-              onClick={() => openSite(previewPath)}
-            >
-              <FaExternalLinkAlt className="inline-icon" aria-hidden="true" />
-              Abrir Vista Actual
-            </button>
-            <button
               className="btn btn-primary admin-topbar-btn"
               onClick={() => openSite("/")}
             >
@@ -649,179 +495,6 @@ export default function AdminLayout() {
 
         <div className="admin-workspace">
           <div className="admin-content">{renderContent()}</div>
-
-          <aside className="admin-inspector">
-            <div className="admin-inspector-card">
-              <h3>Sección Actual</h3>
-              <p>{activeItem.description}</p>
-              <div className="admin-context-path">
-                Vista pública: <strong>{previewPath}</strong>
-              </div>
-            </div>
-
-            <div className="admin-inspector-card">
-              <h3>Acciones Rápidas</h3>
-              <div className="admin-quick-links">
-                {menuItems
-                  .filter((item) => item.key !== "dashboard")
-                  .map((item) => {
-                    const isLocked = item.requiresAdmin && !canManageUsers;
-
-                    return (
-                      <button
-                        key={item.key}
-                        type="button"
-                        className={`sidebar-nav-item ${isLocked ? "is-disabled" : ""}`}
-                        onClick={() => handleSelectSection(item.key)}
-                        disabled={isLocked}
-                      >
-                        <span>
-                          <item.icon aria-hidden="true" />
-                        </span>
-                        <span>{item.label}</span>
-                        {isLocked && (
-                          <span className="admin-lock-label">Admin</span>
-                        )}
-                      </button>
-                    );
-                  })}
-              </div>
-
-              <div className="admin-mini-stats">
-                {contentStats.map((stat) => (
-                  <div key={stat.label} className="admin-mini-stat">
-                    <strong>{stat.value}</strong>
-                    <span>{stat.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                className="btn admin-destructive-btn"
-                onClick={handleResetContent}
-                disabled={!canManageUsers}
-              >
-                <FaRecycle className="inline-icon" aria-hidden="true" />
-                Restablecer Contenido Demo
-              </button>
-            </div>
-
-            <div className="admin-inspector-card">
-              <h3>Cambios Sin Guardar</h3>
-              {hasDirtyChanges ? (
-                <div className="admin-dirty-list">
-                  {dirtyModules.map((item) => (
-                    <span
-                      key={item.key}
-                      className="badge badge-gold admin-dirty-chip"
-                    >
-                      {item.label}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="admin-inspector-muted">
-                  Todo guardado en el editor.
-                </p>
-              )}
-            </div>
-
-            <div className="admin-inspector-card">
-              <h3>Vista en Vivo del Editor</h3>
-              {livePreview ? (
-                <article className="admin-inspector-live-card">
-                  <img
-                    src={livePreview.image || INSPECTOR_FALLBACK_IMAGE}
-                    alt={livePreview.title || "Preview en vivo"}
-                    onError={(e) => {
-                      if (e.currentTarget.src !== INSPECTOR_FALLBACK_IMAGE) {
-                        e.currentTarget.src = INSPECTOR_FALLBACK_IMAGE;
-                      }
-                    }}
-                  />
-                  <div className="admin-inspector-live-body">
-                    {livePreview.badge && (
-                      <span className="badge badge-ocean">
-                        {livePreview.badge}
-                      </span>
-                    )}
-                    <h4>{livePreview.title || "Sin título"}</h4>
-                    {livePreview.subtitle && (
-                      <p className="admin-inspector-live-subtitle">
-                        {livePreview.subtitle}
-                      </p>
-                    )}
-                    {livePreview.body && (
-                      <p className="admin-inspector-live-text">
-                        {livePreview.body}
-                      </p>
-                    )}
-                    {livePreview.status && (
-                      <p className="admin-inspector-live-status">
-                        Estado: {livePreview.status}
-                      </p>
-                    )}
-                    {livePreview.path && (
-                      <p className="admin-inspector-live-path">
-                        Ruta pública: <strong>{livePreview.path}</strong>
-                      </p>
-                    )}
-                  </div>
-                </article>
-              ) : (
-                <p className="admin-inspector-muted">
-                  Abre un editor y modifica campos para ver aquí la
-                  previsualización instantánea.
-                </p>
-              )}
-            </div>
-
-            <div className="admin-inspector-card">
-              <h3>Vista Previa del Sitio</h3>
-              <label className="admin-preview-toggle">
-                <input
-                  type="checkbox"
-                  checked={autoPreviewEnabled}
-                  onChange={(e) => handleAutoPreviewToggle(e.target.checked)}
-                />
-                <span>Auto-actualizar iframe</span>
-              </label>
-              <p className="admin-preview-auto-note">
-                {autoPreviewEnabled
-                  ? `Auto-actualización activa cada ${AUTO_PREVIEW_DEBOUNCE_MS} ms mientras editas.`
-                  : "Auto-actualización desactivada. Usa Actualizar para refrescar manualmente."}
-              </p>
-              <div className="admin-preview-controls">
-                <select
-                  value={previewPath}
-                  onChange={(e) => setPreviewPath(e.target.value)}
-                >
-                  {publicPages.map((page) => (
-                    <option key={page.path} value={page.path}>
-                      {page.label} ({page.path})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={refreshPreview}
-                >
-                  Actualizar
-                </button>
-              </div>
-
-              <div className="admin-preview-frame-wrap">
-                <iframe
-                  key={`${previewPath}-${previewKey}`}
-                  src={previewPath}
-                  title="Vista previa de la página pública"
-                  className="admin-preview-frame"
-                />
-              </div>
-            </div>
-          </aside>
         </div>
       </div>
     </div>

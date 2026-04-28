@@ -15,7 +15,6 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showDemo, setShowDemo] = useState(false);
   const { login } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -32,26 +31,6 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const demoUsers = [
-    {
-      email: "admin@santarosa.ec",
-      password: "admin123",
-      role: "Administrador",
-    },
-    { email: "editor@santarosa.ec", password: "editor123", role: "Editor" },
-    {
-      email: "visualizador@santarosa.ec",
-      password: "viewer123",
-      role: "Visualizador",
-    },
-  ];
-
-  const fillDemoCredentials = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError("");
   };
 
   return (
@@ -125,50 +104,9 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="login-divider">
-            <span>{t("login.or")}</span>
-          </div>
-
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => setShowDemo(!showDemo)}
-            disabled={loading}
-          >
-            {showDemo ? "Ocultar" : "Ver"} credenciales de demo
-          </button>
-
-          {showDemo && (
-            <div className="demo-credentials">
-              <p className="demo-title">Usuarios de prueba disponibles:</p>
-              {demoUsers.map((user, idx) => (
-                <div key={idx} className="demo-user">
-                  <div className="demo-info">
-                    <p>
-                      <strong>{user.role}</strong>
-                    </p>
-                    <p className="demo-email">{user.email}</p>
-                    <p className="demo-pass">Pass: {user.password}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-small"
-                    onClick={() =>
-                      fillDemoCredentials(user.email, user.password)
-                    }
-                    disabled={loading}
-                  >
-                    <FaCheckCircle /> Usar
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
           <p className="login-info">
-            💡 <strong>Nota:</strong> El login está configurado para funcionar
-            con Firebase Auth. Si Firebase está en modo anónimo, se usarán
-            credenciales locales.
+            💡 <strong>Nota:</strong> El acceso del panel funciona únicamente
+            con Firebase Auth y usuarios registrados en tu proyecto Firebase.
           </p>
         </div>
 

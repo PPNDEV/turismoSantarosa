@@ -1,7 +1,17 @@
-import { useEffect, useState } from "react";
-import { FaEnvelope, FaTrash } from "react-icons/fa";
-import { collection, onSnapshot, deleteDoc, doc, query, orderBy } from "firebase/firestore";
+import { useCallback, useEffect, useState } from "react";
+import { FaEnvelope, FaSyncAlt, FaTrash } from "react-icons/fa";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+} from "firebase/firestore";
 import { db } from "../services/firebase";
+
+const PAGE_LIMIT = 50;
 
 export default function AdminMensajes({
   onLivePreviewChange = () => {},
@@ -11,35 +21,69 @@ export default function AdminMensajes({
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
-  useEffect(() => {
-    const q = query(collection(db, "mensajes_contacto"), orderBy("fecha", "desc"));
-    const unsub = onSnapshot(
-      q,
-      (snapshot) => {
-        setMensajes(
-          snapshot.docs.map((d) => {
-            const data = d.data();
-            return {
-              id: d.id,
-              remitente: data.remitente || "Anónimo",
-              correo: data.correo || "-",
-              consulta_sugerencia: data.consulta_sugerencia || "",
-              fecha: data.fecha?.toDate?.() || null,
-            };
-          }),
-        );
-        setLoading(false);
-      },
-      () => setLoading(false),
+  const fetchMensajes = useCallback(async () => {
+    const q = query(
+      collection(db, "mensajes_contacto"),
+      orderBy("fecha", "desc"),
+      limit(PAGE_LIMIT),
     );
-    return () => unsub();
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        remitente: data.remitente || "Anonimo",
+        correo: data.correo || "-",
+        consulta_sugerencia: data.consulta_sugerencia || "",
+        fecha: data.fecha?.toDate?.() || null,
+      };
+    });
   }, []);
 
-  useEffect(() => () => { onDirtyChange(false); onLivePreviewChange(null); }, [onDirtyChange, onLivePreviewChange]);
+  useEffect(() => {
+    let isMounted = true;
+
+    void fetchMensajes()
+      .then((nextMensajes) => {
+        if (isMounted) {
+          setMensajes(nextMensajes);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchMensajes]);
+
+  const loadMensajes = useCallback(async () => {
+    setLoading(true);
+    try {
+      setMensajes(await fetchMensajes());
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchMensajes]);
+
+  useEffect(
+    () => () => {
+      onDirtyChange(false);
+      onLivePreviewChange(null);
+    },
+    [onDirtyChange, onLivePreviewChange],
+  );
 
   const del = async (id) => {
-    if (confirm("¿Eliminar este mensaje?")) {
+    if (confirm("Eliminar este mensaje?")) {
       await deleteDoc(doc(db, "mensajes_contacto", id));
+      setMensajes((current) => current.filter((mensaje) => mensaje.id !== id));
+      if (selected === id) {
+        setSelected(null);
+      }
     }
   };
 
@@ -62,14 +106,42 @@ export default function AdminMensajes({
             <FaEnvelope className="inline-icon" aria-hidden="true" />
             Mensajes de Contacto ({mensajes.length})
           </h2>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={loadMensajes}
+            disabled={loading}
+          >
+            <FaSyncAlt className="inline-icon" aria-hidden="true" />
+            Actualizar
+          </button>
         </div>
 
+        {!loading && mensajes.length >= PAGE_LIMIT && (
+          <p className="admin-inspector-muted" style={{ padding: "0 1.5rem" }}>
+            Mostrando los {PAGE_LIMIT} mensajes mas recientes para reducir
+            lecturas.
+          </p>
+        )}
+
         {loading ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--gray-500)" }}>
+          <div
+            style={{
+              padding: "2rem",
+              textAlign: "center",
+              color: "var(--gray-500)",
+            }}
+          >
             Cargando mensajes...
           </div>
         ) : mensajes.length === 0 ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--gray-500)" }}>
+          <div
+            style={{
+              padding: "2rem",
+              textAlign: "center",
+              color: "var(--gray-500)",
+            }}
+          >
             No hay mensajes de contacto recibidos.
           </div>
         ) : (
@@ -90,14 +162,29 @@ export default function AdminMensajes({
                   onClick={() => setSelected(selected === m.id ? null : m.id)}
                   style={{ cursor: "pointer" }}
                 >
-                  <td><strong>{m.remitente}</strong></td>
+                  <td>
+                    <strong>{m.remitente}</strong>
+                  </td>
                   <td>{m.correo}</td>
                   <td>{formatDate(m.fecha)}</td>
-                  <td style={{ maxWidth: "350px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: selected === m.id ? "normal" : "nowrap" }}>
+                  <td
+                    style={{
+                      maxWidth: "350px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: selected === m.id ? "normal" : "nowrap",
+                    }}
+                  >
                     {m.consulta_sugerencia}
                   </td>
                   <td>
-                    <button className="action-btn del-btn" onClick={(e) => { e.stopPropagation(); del(m.id); }}>
+                    <button
+                      className="action-btn del-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        del(m.id);
+                      }}
+                    >
                       <FaTrash className="inline-icon" aria-hidden="true" />
                     </button>
                   </td>

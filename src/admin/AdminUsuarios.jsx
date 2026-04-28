@@ -44,7 +44,7 @@ export default function AdminUsuarios({
     [users],
   );
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -55,7 +55,7 @@ export default function AdminUsuarios({
     }
 
     try {
-      createUser(form);
+      await createUser(form);
       setSuccess("Usuario creado correctamente.");
       setForm(initialForm);
     } catch (creationError) {
@@ -63,19 +63,19 @@ export default function AdminUsuarios({
     }
   };
 
-  const handleRoleChange = (uid, role) => {
+  const handleRoleChange = async (uid, role) => {
     setError("");
     setSuccess("");
 
     try {
-      updateUserRole(uid, role);
+      await updateUserRole(uid, role);
       setSuccess("Rol actualizado correctamente.");
     } catch (updateError) {
       setError(updateError.message || "No se pudo actualizar el rol.");
     }
   };
 
-  const handleDelete = (uid) => {
+  const handleDelete = async (uid) => {
     setError("");
     setSuccess("");
 
@@ -84,7 +84,7 @@ export default function AdminUsuarios({
     }
 
     try {
-      deleteUser(uid);
+      await deleteUser(uid);
       setSuccess("Usuario eliminado correctamente.");
     } catch (deleteError) {
       setError(deleteError.message || "No se pudo eliminar el usuario.");

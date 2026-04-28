@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaLeaf, FaPaw, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminImageField from "./AdminImageField";
+import { createContentId, uploadContentImage } from "./adminImageUpload";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=900";
@@ -40,6 +42,9 @@ export default function AdminFloraFauna({
   const [form, setForm] = useState(emptyRegistro);
   const [initialForm, setInitialForm] = useState(emptyRegistro);
   const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const openNew = () => {
     if (!canEdit) {
@@ -50,6 +55,8 @@ export default function AdminFloraFauna({
     const nextForm = { ...emptyRegistro };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(null);
     setModal(true);
   };
@@ -67,14 +74,29 @@ export default function AdminFloraFauna({
     };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(registro.id);
     setModal(true);
   };
 
-  const closeModal = () => setModal(false);
+  const closeModal = () => {
+    if (saving) return;
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
+  };
 
-  const save = () => {
-    if (!canEdit) {
+  const handleImageFileChange = (file) => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImageFile(file);
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : "");
+  };
+
+  const save = async () => {
+    if (!canEdit || saving) {
       return;
     }
 
@@ -99,19 +121,32 @@ export default function AdminFloraFauna({
       return;
     }
 
-    upsertFloraFauna({
-      ...form,
-      nombre,
-      tipo,
-      zona,
-      estado,
-      descripcion,
-      id: editing || Date.now().toString(),
-      lat: normalizeCoord(form.lat),
-      lng: normalizeCoord(form.lng),
-    });
+    const itemId = editing || createContentId("flora-fauna", nombre);
+    setSaving(true);
+    try {
+      const imageUrl = imageFile
+        ? await uploadContentImage(imageFile, "floraFauna", itemId)
+        : form.imagen;
+
+      await upsertFloraFauna({
+        ...form,
+        imagen: imageUrl,
+        nombre,
+        tipo,
+        zona,
+        estado,
+        descripcion,
+        id: itemId,
+        lat: normalizeCoord(form.lat),
+        lng: normalizeCoord(form.lng),
+      });
+    } finally {
+      setSaving(false);
+    }
     setError("");
-    closeModal();
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
   };
 
   const del = (id) => {
@@ -132,7 +167,7 @@ export default function AdminFloraFauna({
     descripcion:
       form.descripcion ||
       "Descripción de la especie y recomendaciones para el visitante.",
-    imagen: form.imagen || FALLBACK_IMAGE,
+    imagen: imagePreviewUrl || form.imagen || FALLBACK_IMAGE,
   };
 
   useEffect(() => {
@@ -168,15 +203,18 @@ export default function AdminFloraFauna({
       return;
     }
 
-    onDirtyChange(hasDraftChanges(form, initialForm));
-  }, [modal, form, initialForm, onDirtyChange]);
+    onDirtyChange(hasDraftChanges(form, initialForm) || Boolean(imageFile));
+  }, [modal, form, initialForm, imageFile, onDirtyChange]);
 
   useEffect(
     () => () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
       onDirtyChange(false);
       onLivePreviewChange(null);
     },
-    [onDirtyChange, onLivePreviewChange],
+    [imagePreviewUrl, onDirtyChange, onLivePreviewChange],
   );
 
   return (
@@ -255,7 +293,6 @@ export default function AdminFloraFauna({
                   ["nombre", "Nombre"],
                   ["zona", "Zona turística"],
                   ["estado", "Estado"],
-                  ["imagen", "URL de Imagen"],
                   ["lat", "Latitud"],
                   ["lng", "Longitud"],
                 ].map(([field, label]) => (
@@ -270,6 +307,16 @@ export default function AdminFloraFauna({
                     />
                   </div>
                 ))}
+
+                <AdminImageField
+                  label="Imagen de flora/fauna"
+                  value={form.imagen}
+                  selectedFile={imageFile}
+                  onFileChange={handleImageFileChange}
+                  onUrlChange={(nextUrl) =>
+                    setForm({ ...form, imagen: nextUrl })
+                  }
+                />
 
                 <div className="modal-field">
                   <label>Tipo</label>
@@ -293,12 +340,20 @@ export default function AdminFloraFauna({
                 </div>
 
                 <div className="modal-actions">
-                  <button className="btn btn-outline" onClick={closeModal}>
+                  <button
+                    className="btn btn-outline"
+                    onClick={closeModal}
+                    disabled={saving}
+                  >
                     Cancelar
                   </button>
-                  <button className="btn btn-primary" onClick={save}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={save}
+                    disabled={saving}
+                  >
                     <FaSave className="inline-icon" aria-hidden="true" />
-                    Guardar
+                    {saving ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>

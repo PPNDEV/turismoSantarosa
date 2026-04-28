@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { FaCamera, FaEdit, FaSave, FaTimes, FaVideo } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminImageField from "./AdminImageField";
+import { createContentId, uploadContentImage } from "./adminImageUpload";
 
 const FALLBACK_GALLERY_IMAGE =
   "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=900";
@@ -23,6 +25,9 @@ export default function AdminGaleria({
   });
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const openNew = () => {
     if (!canEdit) {
@@ -33,6 +38,8 @@ export default function AdminGaleria({
     setForm(nextForm);
     setInitialForm(nextForm);
     setEditing(null);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setShowForm(true);
   };
 
@@ -45,24 +52,49 @@ export default function AdminGaleria({
     setForm(nextForm);
     setInitialForm(nextForm);
     setEditing(item.id);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setShowForm(true);
   };
 
   const closeForm = () => {
+    if (saving) return;
     setShowForm(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
   };
 
-  const save = () => {
-    if (!canEdit) {
+  const handleImageFileChange = (file) => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImageFile(file);
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : "");
+  };
+
+  const save = async () => {
+    if (!canEdit || saving) {
       return;
     }
 
-    if (!form.url) return;
-    upsertGaleria({ ...form, id: editing || Date.now().toString() });
+    if (!form.url && !imageFile) return;
+    const itemId = editing || createContentId("galeria", form.titulo);
+    setSaving(true);
+    try {
+      const imageUrl = imageFile
+        ? await uploadContentImage(imageFile, "galeria", itemId)
+        : form.url;
+
+      await upsertGaleria({ ...form, url: imageUrl, id: itemId });
+    } finally {
+      setSaving(false);
+    }
     const resetForm = { url: "", titulo: "", tipo: "foto" };
     setForm(resetForm);
     setInitialForm(resetForm);
     setEditing(null);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setShowForm(false);
   };
 
@@ -75,7 +107,7 @@ export default function AdminGaleria({
   };
 
   const previewItem = {
-    url: form.url || FALLBACK_GALLERY_IMAGE,
+    url: imagePreviewUrl || form.url || FALLBACK_GALLERY_IMAGE,
     titulo: form.titulo || "Título de la imagen",
     tipo: form.tipo || "foto",
   };
@@ -110,15 +142,18 @@ export default function AdminGaleria({
       return;
     }
 
-    onDirtyChange(hasDraftChanges(form, initialForm));
-  }, [showForm, form, initialForm, onDirtyChange]);
+    onDirtyChange(hasDraftChanges(form, initialForm) || Boolean(imageFile));
+  }, [showForm, form, initialForm, imageFile, onDirtyChange]);
 
   useEffect(
     () => () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
       onDirtyChange(false);
       onLivePreviewChange(null);
     },
-    [onDirtyChange, onLivePreviewChange],
+    [imagePreviewUrl, onDirtyChange, onLivePreviewChange],
   );
 
   return (
@@ -144,14 +179,13 @@ export default function AdminGaleria({
         {showForm && (
           <div className="admin-inline-editor">
             <div className="admin-inline-editor-fields">
-              <div className="admin-inline-field">
-                <label>URL de imagen</label>
-                <input
-                  value={form.url}
-                  onChange={(e) => setForm({ ...form, url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
+              <AdminImageField
+                label="Imagen de galeria"
+                value={form.url}
+                selectedFile={imageFile}
+                onFileChange={handleImageFileChange}
+                onUrlChange={(nextUrl) => setForm({ ...form, url: nextUrl })}
+              />
 
               <div className="admin-inline-field">
                 <label>Título</label>
@@ -174,11 +208,19 @@ export default function AdminGaleria({
               </div>
 
               <div className="admin-inline-actions">
-                <button className="btn btn-primary" onClick={save}>
+                <button
+                  className="btn btn-primary"
+                  onClick={save}
+                  disabled={saving}
+                >
                   <FaSave className="inline-icon" aria-hidden="true" />
-                  Guardar
+                  {saving ? "Guardando..." : "Guardar"}
                 </button>
-                <button className="btn btn-outline" onClick={closeForm}>
+                <button
+                  className="btn btn-outline"
+                  onClick={closeForm}
+                  disabled={saving}
+                >
                   Cancelar
                 </button>
               </div>

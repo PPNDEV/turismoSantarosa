@@ -26,7 +26,6 @@ function getEventTimestamp(fecha) {
 
 export default function AdminDashboard({
   onNavigateSection = () => {},
-  onPreviewPathChange = () => {},
   canEditContent = true,
   canManageUsers = false,
 }) {
@@ -70,7 +69,6 @@ export default function AdminDashboard({
       title: "Portada",
       desc: "Gestiona slides, titulares y botones de bienvenida.",
       total: heroSlides.length,
-      previewPath: "/",
     },
     {
       key: "actividades",
@@ -78,7 +76,6 @@ export default function AdminDashboard({
       title: "Actividades",
       desc: "Administra actividades turísticas con isla y coordenadas.",
       total: actividades.length,
-      previewPath: "/informacion",
     },
     {
       key: "eventos",
@@ -86,7 +83,6 @@ export default function AdminDashboard({
       title: "Eventos",
       desc: "Controla publicaciones y agenda turística actualizada.",
       total: eventos.length,
-      previewPath: "/eventos",
     },
     {
       key: "blog",
@@ -94,7 +90,6 @@ export default function AdminDashboard({
       title: "Blog",
       desc: "Edita noticias, artículos y contenido de promoción.",
       total: blog.length,
-      previewPath: "/blog",
     },
     {
       key: "destinos",
@@ -102,7 +97,6 @@ export default function AdminDashboard({
       title: "Destinos",
       desc: "Administra fichas turísticas y categorías principales.",
       total: destinos.length,
-      previewPath: "/destinos",
     },
     {
       key: "gastronomia",
@@ -110,7 +104,6 @@ export default function AdminDashboard({
       title: "Gastronomía",
       desc: "Gestiona restaurantes, platos típicos y contacto.",
       total: gastronomia.length,
-      previewPath: "/informacion#gastronomia",
     },
     {
       key: "hospedajes",
@@ -118,7 +111,6 @@ export default function AdminDashboard({
       title: "Hospedajes",
       desc: "Actualiza alojamientos con servicios y ubicación.",
       total: hospedajes.length,
-      previewPath: "/informacion#hospedajes",
     },
     {
       key: "floraFauna",
@@ -126,7 +118,6 @@ export default function AdminDashboard({
       title: "Flora y Fauna",
       desc: "Publica especies y zonas de biodiversidad.",
       total: floraFauna.length,
-      previewPath: "/informacion#flora-fauna",
     },
     {
       key: "transporte",
@@ -134,7 +125,6 @@ export default function AdminDashboard({
       title: "Transporte",
       desc: "Cooperativas, rutas y frecuencias de movilización.",
       total: cooperativas.length,
-      previewPath: "/informacion#transporte",
     },
     {
       key: "galeria",
@@ -142,7 +132,6 @@ export default function AdminDashboard({
       title: "Galería",
       desc: "Actualiza el material visual del sitio principal.",
       total: galeria.length,
-      previewPath: "/galeria",
     },
     {
       key: "mensajes",
@@ -150,7 +139,6 @@ export default function AdminDashboard({
       title: "Mensajes",
       desc: "Consulta mensajes enviados por visitantes.",
       total: null,
-      previewPath: "/admin",
     },
     {
       key: "encuestas",
@@ -158,7 +146,6 @@ export default function AdminDashboard({
       title: "Encuestas",
       desc: "Puntuaciones y comentarios de satisfacción.",
       total: null,
-      previewPath: "/admin",
     },
     {
       key: "usuarios",
@@ -166,7 +153,6 @@ export default function AdminDashboard({
       title: "Usuarios",
       desc: "Crea usuarios y asigna roles de permisos.",
       total: canManageUsers ? 1 : 0,
-      previewPath: "/admin",
       adminOnly: true,
     },
   ];
@@ -267,38 +253,37 @@ export default function AdminDashboard({
         <div className="admin-module-grid">
           {sectionCards
             .filter((section) => !section.adminOnly || canManageUsers)
-            .map((section) => (
-              <article key={section.key} className="admin-module-card">
-                <div className="admin-module-title">
-                  <span>
-                    <section.icon aria-hidden="true" />
-                  </span>
-                  <h3>{section.title}</h3>
-                </div>
-                <p>{section.desc}</p>
-                {section.total !== null && (
-                  <div className="admin-module-total">{section.total} items</div>
-                )}
-                <div className="admin-module-actions">
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => onNavigateSection(section.key)}
-                  >
-                    {canEditContent || section.key === "usuarios"
-                      ? "Gestionar"
-                      : "Ver"}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-outline"
-                    onClick={() => onPreviewPathChange(section.previewPath)}
-                  >
-                    Previsualizar
-                  </button>
-                </div>
-              </article>
-            ))}
+            .map((section) => {
+              return (
+                <article
+                  key={section.key}
+                  className="admin-module-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onNavigateSection(section.key)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onNavigateSection(section.key);
+                    }
+                  }}
+                  aria-label={`Abrir ${section.title}`}
+                >
+                  <div className="admin-module-title">
+                    <span>
+                      <section.icon aria-hidden="true" />
+                    </span>
+                    <h3>{section.title}</h3>
+                  </div>
+                  <p>{section.desc}</p>
+                  {section.total !== null && (
+                    <div className="admin-module-total">
+                      {section.total} items
+                    </div>
+                  )}
+                </article>
+              );
+            })}
         </div>
       </div>
 
@@ -316,38 +301,6 @@ export default function AdminDashboard({
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="admin-table-card">
-        <div className="admin-table-header">
-          <h2>
-            <FaFileAlt className="inline-icon" aria-hidden="true" />
-            Visitas del Sitio
-          </h2>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Ruta</th>
-              <th>Vistas</th>
-              <th>Sesiones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visitMetrics.routes.length === 0 && (
-              <tr>
-                <td colSpan={3}>Aun no hay visitas registradas.</td>
-              </tr>
-            )}
-            {visitMetrics.routes.slice(0, 8).map((route) => (
-              <tr key={route.key}>
-                <td>{route.path}</td>
-                <td>{route.views}</td>
-                <td>{route.sessions}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       <div className="admin-table-card">

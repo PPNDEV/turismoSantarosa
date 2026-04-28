@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { FaBed, FaEdit, FaMapMarkerAlt, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminImageField from "./AdminImageField";
+import { createContentId, uploadContentImage } from "./adminImageUpload";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900";
@@ -47,6 +49,9 @@ export default function AdminHospedajes({
   const [form, setForm] = useState(emptyHospedaje);
   const [initialForm, setInitialForm] = useState(emptyHospedaje);
   const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const openNew = () => {
     if (!canEdit) {
@@ -57,6 +62,8 @@ export default function AdminHospedajes({
     const nextForm = { ...emptyHospedaje };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(null);
     setModal(true);
   };
@@ -74,14 +81,29 @@ export default function AdminHospedajes({
     };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(hospedaje.id);
     setModal(true);
   };
 
-  const closeModal = () => setModal(false);
+  const closeModal = () => {
+    if (saving) return;
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
+  };
 
-  const save = () => {
-    if (!canEdit) {
+  const handleImageFileChange = (file) => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImageFile(file);
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : "");
+  };
+
+  const save = async () => {
+    if (!canEdit || saving) {
       return;
     }
 
@@ -106,19 +128,32 @@ export default function AdminHospedajes({
       return;
     }
 
-    upsertHospedaje({
-      ...form,
-      nombre,
-      isla,
-      ubicacion,
-      servicios,
-      contacto,
-      id: editing || Date.now().toString(),
-      lat: normalizeCoord(form.lat),
-      lng: normalizeCoord(form.lng),
-    });
+    const itemId = editing || createContentId("hospedaje", nombre);
+    setSaving(true);
+    try {
+      const imageUrl = imageFile
+        ? await uploadContentImage(imageFile, "hospedajes", itemId)
+        : form.imagen;
+
+      await upsertHospedaje({
+        ...form,
+        imagen: imageUrl,
+        nombre,
+        isla,
+        ubicacion,
+        servicios,
+        contacto,
+        id: itemId,
+        lat: normalizeCoord(form.lat),
+        lng: normalizeCoord(form.lng),
+      });
+    } finally {
+      setSaving(false);
+    }
     setError("");
-    closeModal();
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
   };
 
   const del = (id) => {
@@ -138,7 +173,7 @@ export default function AdminHospedajes({
     servicios:
       form.servicios || "Wifi, aire acondicionado, desayunos y recepción",
     contacto: form.contacto || "Contacto por confirmar",
-    imagen: form.imagen || FALLBACK_IMAGE,
+    imagen: imagePreviewUrl || form.imagen || FALLBACK_IMAGE,
   };
 
   useEffect(() => {
@@ -174,15 +209,18 @@ export default function AdminHospedajes({
       return;
     }
 
-    onDirtyChange(hasDraftChanges(form, initialForm));
-  }, [modal, form, initialForm, onDirtyChange]);
+    onDirtyChange(hasDraftChanges(form, initialForm) || Boolean(imageFile));
+  }, [modal, form, initialForm, imageFile, onDirtyChange]);
 
   useEffect(
     () => () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
       onDirtyChange(false);
       onLivePreviewChange(null);
     },
-    [onDirtyChange, onLivePreviewChange],
+    [imagePreviewUrl, onDirtyChange, onLivePreviewChange],
   );
 
   return (
@@ -262,7 +300,6 @@ export default function AdminHospedajes({
                   ["ubicacion", "Ubicación"],
                   ["servicios", "Servicios (separados por coma)"],
                   ["contacto", "Contacto"],
-                  ["imagen", "URL de Imagen"],
                   ["lat", "Latitud"],
                   ["lng", "Longitud"],
                 ].map(([field, label]) => (
@@ -278,6 +315,16 @@ export default function AdminHospedajes({
                   </div>
                 ))}
 
+                <AdminImageField
+                  label="Imagen del hospedaje"
+                  value={form.imagen}
+                  selectedFile={imageFile}
+                  onFileChange={handleImageFileChange}
+                  onUrlChange={(nextUrl) =>
+                    setForm({ ...form, imagen: nextUrl })
+                  }
+                />
+
                 <div className="modal-field">
                   <label>Isla</label>
                   <select
@@ -291,12 +338,20 @@ export default function AdminHospedajes({
                 </div>
 
                 <div className="modal-actions">
-                  <button className="btn btn-outline" onClick={closeModal}>
+                  <button
+                    className="btn btn-outline"
+                    onClick={closeModal}
+                    disabled={saving}
+                  >
                     Cancelar
                   </button>
-                  <button className="btn btn-primary" onClick={save}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={save}
+                    disabled={saving}
+                  >
                     <FaSave className="inline-icon" aria-hidden="true" />
-                    Guardar
+                    {saving ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>

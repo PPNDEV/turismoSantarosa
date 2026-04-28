@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaPenNib, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminImageField from "./AdminImageField";
+import { createContentId, uploadContentImage } from "./adminImageUpload";
 
 const FALLBACK_BLOG_IMAGE =
   "https://images.unsplash.com/photo-1456324504439-367cee3b3c32?w=900";
@@ -42,6 +44,9 @@ export default function AdminBlog({
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty);
   const [initialForm, setInitialForm] = useState(empty);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const openNew = () => {
     if (!canEdit) {
@@ -51,6 +56,8 @@ export default function AdminBlog({
     const nextForm = { ...empty };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(null);
     setModal(true);
   };
@@ -62,17 +69,46 @@ export default function AdminBlog({
     const nextForm = { ...art };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(art.id);
     setModal(true);
   };
 
-  const save = () => {
-    if (!canEdit) {
+  const closeModal = () => {
+    if (saving) return;
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
+  };
+
+  const handleImageFileChange = (file) => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImageFile(file);
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : "");
+  };
+
+  const save = async () => {
+    if (!canEdit || saving) {
       return;
     }
 
-    upsertBlog({ ...form, id: editing || Date.now().toString() });
-    setModal(false);
+    const itemId = editing || createContentId("blog", form.titulo);
+    setSaving(true);
+    try {
+      const imageUrl = imageFile
+        ? await uploadContentImage(imageFile, "blog", itemId)
+        : form.imagen;
+
+      await upsertBlog({ ...form, imagen: imageUrl, id: itemId });
+      setModal(false);
+      setImageFile(null);
+      setImagePreviewUrl("");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const del = (id) => {
@@ -88,7 +124,7 @@ export default function AdminBlog({
     resumen:
       form.resumen ||
       "Aquí verás cómo se mostrará el resumen del artículo en la página pública.",
-    imagen: form.imagen || FALLBACK_BLOG_IMAGE,
+    imagen: imagePreviewUrl || form.imagen || FALLBACK_BLOG_IMAGE,
     fecha: form.fecha,
     autor: form.autor || "Autor",
     categoria: form.categoria || "General",
@@ -129,15 +165,18 @@ export default function AdminBlog({
       return;
     }
 
-    onDirtyChange(hasDraftChanges(form, initialForm));
-  }, [modal, form, initialForm, onDirtyChange]);
+    onDirtyChange(hasDraftChanges(form, initialForm) || Boolean(imageFile));
+  }, [modal, form, initialForm, imageFile, onDirtyChange]);
 
   useEffect(
     () => () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
       onDirtyChange(false);
       onLivePreviewChange(null);
     },
-    [onDirtyChange, onLivePreviewChange],
+    [imagePreviewUrl, onDirtyChange, onLivePreviewChange],
   );
 
   return (
@@ -208,7 +247,7 @@ export default function AdminBlog({
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={() => setModal(false)}>
+        <div className="modal-overlay" onClick={closeModal}>
           <div
             className="modal-box modal-box-preview"
             onClick={(e) => e.stopPropagation()}
@@ -221,7 +260,6 @@ export default function AdminBlog({
                   ["autor", "Autor"],
                   ["categoria", "Categoría"],
                   ["fecha", "Fecha"],
-                  ["imagen", "URL de Imagen"],
                 ].map(([field, lbl]) => (
                   <div key={field} className="modal-field">
                     <label>{lbl}</label>
@@ -234,6 +272,16 @@ export default function AdminBlog({
                     />
                   </div>
                 ))}
+
+                <AdminImageField
+                  label="Imagen del articulo"
+                  value={form.imagen}
+                  selectedFile={imageFile}
+                  onFileChange={handleImageFileChange}
+                  onUrlChange={(nextUrl) =>
+                    setForm({ ...form, imagen: nextUrl })
+                  }
+                />
 
                 <div className="modal-field">
                   <label>Resumen</label>
@@ -259,13 +307,18 @@ export default function AdminBlog({
                 <div className="modal-actions">
                   <button
                     className="btn btn-outline"
-                    onClick={() => setModal(false)}
+                    onClick={closeModal}
+                    disabled={saving}
                   >
                     Cancelar
                   </button>
-                  <button className="btn btn-primary" onClick={save}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={save}
+                    disabled={saving}
+                  >
                     <FaSave className="inline-icon" aria-hidden="true" />
-                    Guardar
+                    {saving ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>

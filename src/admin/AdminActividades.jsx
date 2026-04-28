@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
-import { FaEdit, FaHiking, FaMapMarkerAlt, FaSave, FaTrash } from "react-icons/fa";
+import {
+  FaEdit,
+  FaHiking,
+  FaMapMarkerAlt,
+  FaSave,
+  FaTrash,
+} from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminImageField from "./AdminImageField";
+import { createContentId, uploadContentImage } from "./adminImageUpload";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=900";
@@ -10,15 +18,7 @@ const emptyActividad = {
   descripcion: "",
   isla: "Jambelí",
   imagen: "",
-  lat: "",
-  lng: "",
 };
-
-function normalizeCoord(value) {
-  if (value === "" || value === null || value === undefined) return "";
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : "";
-}
 
 function hasDraftChanges(a, b) {
   return JSON.stringify(a) !== JSON.stringify(b);
@@ -35,6 +35,9 @@ export default function AdminActividades({
   const [form, setForm] = useState(emptyActividad);
   const [initialForm, setInitialForm] = useState(emptyActividad);
   const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const openNew = () => {
     if (!canEdit) return;
@@ -42,6 +45,8 @@ export default function AdminActividades({
     const f = { ...emptyActividad };
     setForm(f);
     setInitialForm(f);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(null);
     setModal(true);
   };
@@ -49,33 +54,59 @@ export default function AdminActividades({
   const openEdit = (item) => {
     if (!canEdit) return;
     setError("");
-    const f = { ...item, lat: item.lat ?? "", lng: item.lng ?? "" };
+    const f = { ...item };
     setForm(f);
     setInitialForm(f);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(item.id);
     setModal(true);
   };
 
-  const closeModal = () => setModal(false);
+  const closeModal = () => {
+    if (saving) return;
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
+  };
 
-  const save = () => {
-    if (!canEdit) return;
+  const handleImageFileChange = (file) => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImageFile(file);
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : "");
+  };
+
+  const save = async () => {
+    if (!canEdit || saving) return;
     const nombre = String(form.nombre || "").trim();
     const descripcion = String(form.descripcion || "").trim();
     if (!nombre || !descripcion) {
       setError("Nombre y descripción son obligatorios.");
       return;
     }
-    upsertActividad({
-      ...form,
-      nombre,
-      descripcion,
-      id: editing || Date.now().toString(),
-      lat: normalizeCoord(form.lat),
-      lng: normalizeCoord(form.lng),
-    });
+    const itemId = editing || createContentId("actividad", nombre);
+    setSaving(true);
+    try {
+      const imageUrl = imageFile
+        ? await uploadContentImage(imageFile, "actividades", itemId)
+        : form.imagen;
+
+      await upsertActividad({
+        ...form,
+        imagen: imageUrl,
+        nombre,
+        descripcion,
+        id: itemId,
+      });
+    } finally {
+      setSaving(false);
+    }
     setError("");
-    closeModal();
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
   };
 
   const del = (id) => {
@@ -87,11 +118,14 @@ export default function AdminActividades({
     nombre: form.nombre || "Nombre de la actividad",
     descripcion: form.descripcion || "Descripción de la actividad turística.",
     isla: form.isla || "Jambelí",
-    imagen: form.imagen || FALLBACK_IMAGE,
+    imagen: imagePreviewUrl || form.imagen || FALLBACK_IMAGE,
   };
 
   useEffect(() => {
-    if (!modal) { onLivePreviewChange(null); return; }
+    if (!modal) {
+      onLivePreviewChange(null);
+      return;
+    }
     onLivePreviewChange({
       section: "actividades",
       path: "/informacion",
@@ -102,21 +136,42 @@ export default function AdminActividades({
       body: preview.descripcion,
       status: "Listo para publicar",
     });
-  }, [modal, preview.imagen, preview.isla, preview.nombre, preview.descripcion, onLivePreviewChange]);
+  }, [
+    modal,
+    preview.imagen,
+    preview.isla,
+    preview.nombre,
+    preview.descripcion,
+    onLivePreviewChange,
+  ]);
 
   useEffect(() => {
-    if (!modal) { onDirtyChange(false); return; }
-    onDirtyChange(hasDraftChanges(form, initialForm));
-  }, [modal, form, initialForm, onDirtyChange]);
+    if (!modal) {
+      onDirtyChange(false);
+      return;
+    }
+    onDirtyChange(hasDraftChanges(form, initialForm) || Boolean(imageFile));
+  }, [modal, form, initialForm, imageFile, onDirtyChange]);
 
-  useEffect(() => () => { onDirtyChange(false); onLivePreviewChange(null); }, [onDirtyChange, onLivePreviewChange]);
+  useEffect(
+    () => () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+      onDirtyChange(false);
+      onLivePreviewChange(null);
+    },
+    [imagePreviewUrl, onDirtyChange, onLivePreviewChange],
+  );
 
   return (
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
           <h2>Actividades ({actividades.length})</h2>
-          <button className="btn btn-primary" onClick={openNew} disabled={!canEdit}>
+          <button
+            className="btn btn-primary"
+            onClick={openNew}
+            disabled={!canEdit}
+          >
             + Nueva Actividad
           </button>
         </div>
@@ -139,16 +194,36 @@ export default function AdminActividades({
           <tbody>
             {actividades.map((a) => (
               <tr key={a.id}>
-                <td><strong><FaHiking className="inline-icon" aria-hidden="true" /> {a.nombre}</strong></td>
+                <td>
+                  <strong>
+                    <FaHiking className="inline-icon" aria-hidden="true" />{" "}
+                    {a.nombre}
+                  </strong>
+                </td>
                 <td>{a.isla || "-"}</td>
-                <td style={{ maxWidth: "300px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <td
+                  style={{
+                    maxWidth: "300px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {a.descripcion}
                 </td>
                 <td>
-                  <button className="action-btn edit-btn" onClick={() => openEdit(a)} disabled={!canEdit}>
+                  <button
+                    className="action-btn edit-btn"
+                    onClick={() => openEdit(a)}
+                    disabled={!canEdit}
+                  >
                     <FaEdit className="inline-icon" aria-hidden="true" /> Editar
                   </button>
-                  <button className="action-btn del-btn" onClick={() => del(a.id)} disabled={!canEdit}>
+                  <button
+                    className="action-btn del-btn"
+                    onClick={() => del(a.id)}
+                    disabled={!canEdit}
+                  >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>
                 </td>
@@ -160,26 +235,43 @@ export default function AdminActividades({
 
       {modal && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-box modal-box-preview" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-box modal-box-preview"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2>{editing ? "Editar Actividad" : "Nueva Actividad"}</h2>
             {error && <div className="login-error">{error}</div>}
             <div className="admin-form-preview-grid">
               <div className="admin-form-column">
-                {[
-                  ["nombre", "Nombre"],
-                  ["imagen", "URL de Imagen"],
-                  ["lat", "Latitud"],
-                  ["lng", "Longitud"],
-                ].map(([f, lbl]) => (
+                {["nombre"].map((f) => (
                   <div key={f} className="modal-field">
-                    <label>{lbl}</label>
-                    <input type="text" value={form[f] || ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} />
+                    <label>Nombre</label>
+                    <input
+                      type="text"
+                      value={form[f] || ""}
+                      onChange={(e) =>
+                        setForm({ ...form, [f]: e.target.value })
+                      }
+                    />
                   </div>
                 ))}
 
+                <AdminImageField
+                  label="Imagen de la actividad"
+                  value={form.imagen}
+                  selectedFile={imageFile}
+                  onFileChange={handleImageFileChange}
+                  onUrlChange={(nextUrl) =>
+                    setForm({ ...form, imagen: nextUrl })
+                  }
+                />
+
                 <div className="modal-field">
                   <label>Isla</label>
-                  <select value={form.isla} onChange={(e) => setForm({ ...form, isla: e.target.value })}>
+                  <select
+                    value={form.isla}
+                    onChange={(e) => setForm({ ...form, isla: e.target.value })}
+                  >
                     <option value="Jambelí">Jambelí</option>
                     <option value="Costa Rica">Costa Rica</option>
                     <option value="San Gregorio">San Gregorio</option>
@@ -188,13 +280,29 @@ export default function AdminActividades({
 
                 <div className="modal-field">
                   <label>Descripción</label>
-                  <textarea value={form.descripcion || ""} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
+                  <textarea
+                    value={form.descripcion || ""}
+                    onChange={(e) =>
+                      setForm({ ...form, descripcion: e.target.value })
+                    }
+                  />
                 </div>
 
                 <div className="modal-actions">
-                  <button className="btn btn-outline" onClick={closeModal}>Cancelar</button>
-                  <button className="btn btn-primary" onClick={save}>
-                    <FaSave className="inline-icon" aria-hidden="true" /> Guardar
+                  <button
+                    className="btn btn-outline"
+                    onClick={closeModal}
+                    disabled={saving}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={save}
+                    disabled={saving}
+                  >
+                    <FaSave className="inline-icon" aria-hidden="true" />{" "}
+                    {saving ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>
@@ -203,7 +311,14 @@ export default function AdminActividades({
                 <h3 className="admin-preview-title">Vista previa</h3>
                 <div className="admin-preview-card-frame">
                   <article className="info-card admin-preview-info-card">
-                    <img src={preview.imagen} alt={preview.nombre} onError={(e) => { if (e.currentTarget.src !== FALLBACK_IMAGE) e.currentTarget.src = FALLBACK_IMAGE; }} />
+                    <img
+                      src={preview.imagen}
+                      alt={preview.nombre}
+                      onError={(e) => {
+                        if (e.currentTarget.src !== FALLBACK_IMAGE)
+                          e.currentTarget.src = FALLBACK_IMAGE;
+                      }}
+                    />
                     <div className="info-card-body">
                       <span className="badge badge-ocean">{preview.isla}</span>
                       <h3>{preview.nombre}</h3>

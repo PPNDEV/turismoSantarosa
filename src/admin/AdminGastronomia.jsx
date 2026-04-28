@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaSave, FaTrash, FaUtensils } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminImageField from "./AdminImageField";
+import { createContentId, uploadContentImage } from "./adminImageUpload";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900";
@@ -42,6 +44,9 @@ export default function AdminGastronomia({
   const [form, setForm] = useState(emptyRestaurante);
   const [initialForm, setInitialForm] = useState(emptyRestaurante);
   const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const openNew = () => {
     if (!canEdit) {
@@ -52,6 +57,8 @@ export default function AdminGastronomia({
     const nextForm = { ...emptyRestaurante };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(null);
     setModal(true);
   };
@@ -69,14 +76,29 @@ export default function AdminGastronomia({
     };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(restaurante.id);
     setModal(true);
   };
 
-  const closeModal = () => setModal(false);
+  const closeModal = () => {
+    if (saving) return;
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
+  };
 
-  const save = () => {
-    if (!canEdit) {
+  const handleImageFileChange = (file) => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImageFile(file);
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : "");
+  };
+
+  const save = async () => {
+    if (!canEdit || saving) {
       return;
     }
 
@@ -101,19 +123,32 @@ export default function AdminGastronomia({
       return;
     }
 
-    upsertGastronomia({
-      ...form,
-      nombre,
-      isla,
-      platoTipico,
-      ubicacion,
-      contacto,
-      id: editing || Date.now().toString(),
-      lat: normalizeCoord(form.lat),
-      lng: normalizeCoord(form.lng),
-    });
+    const itemId = editing || createContentId("gastronomia", nombre);
+    setSaving(true);
+    try {
+      const imageUrl = imageFile
+        ? await uploadContentImage(imageFile, "gastronomia", itemId)
+        : form.imagen;
+
+      await upsertGastronomia({
+        ...form,
+        imagen: imageUrl,
+        nombre,
+        isla,
+        platoTipico,
+        ubicacion,
+        contacto,
+        id: itemId,
+        lat: normalizeCoord(form.lat),
+        lng: normalizeCoord(form.lng),
+      });
+    } finally {
+      setSaving(false);
+    }
     setError("");
-    closeModal();
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
   };
 
   const del = (id) => {
@@ -136,7 +171,7 @@ export default function AdminGastronomia({
     ubicacion: form.ubicacion || "Ubicación por confirmar",
     horario: form.horario || "Horario por confirmar",
     contacto: form.contacto || "Contacto por confirmar",
-    imagen: form.imagen || FALLBACK_IMAGE,
+    imagen: imagePreviewUrl || form.imagen || FALLBACK_IMAGE,
   };
 
   useEffect(() => {
@@ -172,15 +207,18 @@ export default function AdminGastronomia({
       return;
     }
 
-    onDirtyChange(hasDraftChanges(form, initialForm));
-  }, [modal, form, initialForm, onDirtyChange]);
+    onDirtyChange(hasDraftChanges(form, initialForm) || Boolean(imageFile));
+  }, [modal, form, initialForm, imageFile, onDirtyChange]);
 
   useEffect(
     () => () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
       onDirtyChange(false);
       onLivePreviewChange(null);
     },
-    [onDirtyChange, onLivePreviewChange],
+    [imagePreviewUrl, onDirtyChange, onLivePreviewChange],
   );
 
   return (
@@ -261,7 +299,6 @@ export default function AdminGastronomia({
                   ["ubicacion", "Ubicación"],
                   ["horario", "Horario"],
                   ["contacto", "Contacto"],
-                  ["imagen", "URL de Imagen"],
                   ["lat", "Latitud"],
                   ["lng", "Longitud"],
                 ].map(([field, label]) => (
@@ -276,6 +313,16 @@ export default function AdminGastronomia({
                     />
                   </div>
                 ))}
+
+                <AdminImageField
+                  label="Imagen del restaurante"
+                  value={form.imagen}
+                  selectedFile={imageFile}
+                  onFileChange={handleImageFileChange}
+                  onUrlChange={(nextUrl) =>
+                    setForm({ ...form, imagen: nextUrl })
+                  }
+                />
 
                 <div className="modal-field">
                   <label>Isla</label>
@@ -300,12 +347,20 @@ export default function AdminGastronomia({
                 </div>
 
                 <div className="modal-actions">
-                  <button className="btn btn-outline" onClick={closeModal}>
+                  <button
+                    className="btn btn-outline"
+                    onClick={closeModal}
+                    disabled={saving}
+                  >
                     Cancelar
                   </button>
-                  <button className="btn btn-primary" onClick={save}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={save}
+                    disabled={saving}
+                  >
                     <FaSave className="inline-icon" aria-hidden="true" />
-                    Guardar
+                    {saving ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>

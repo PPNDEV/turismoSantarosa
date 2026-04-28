@@ -1,7 +1,7 @@
 import {
   doc,
+  getDoc,
   increment,
-  onSnapshot,
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
@@ -19,7 +19,7 @@ const MIN_SECONDS_BETWEEN_ROUTE_COUNTS = 4;
 
 const VISITS_API_URL = import.meta.env.VITE_VISITS_API_URL || "/api/visits";
 const VISITS_BACKEND_MODE =
-  import.meta.env.VITE_VISITS_BACKEND_MODE || "firestore-direct";
+  import.meta.env.VITE_VISITS_BACKEND_MODE || "function";
 const VISITS_ALLOW_DIRECT_FALLBACK =
   import.meta.env.VITE_VISITS_ALLOW_DIRECT_FALLBACK !== "false";
 
@@ -230,6 +230,10 @@ async function writeVisitToFirestore(pathname, routeKey) {
 }
 
 async function sendVisitToBackend(pathname, routeKey) {
+  const seenRoutes = readSeenRoutes();
+  const isFirstRouteInSession = !seenRoutes[routeKey];
+  const isFirstSessionVisit = !hasCountedSession();
+
   const response = await fetch(VISITS_API_URL, {
     method: "POST",
     headers: {
@@ -239,12 +243,23 @@ async function sendVisitToBackend(pathname, routeKey) {
       path: pathname,
       routeKey,
       sessionId: getSessionId(),
+      isFirstSessionVisit,
+      isFirstRouteInSession,
       referrer: typeof document !== "undefined" ? document.referrer || "" : "",
     }),
   });
 
   if (!response.ok) {
     throw new Error(`Visit endpoint failed: ${response.status}`);
+  }
+
+  if (isFirstSessionVisit) {
+    markSessionCounted();
+  }
+
+  if (isFirstRouteInSession) {
+    seenRoutes[routeKey] = true;
+    writeSeenRoutes(seenRoutes);
   }
 }
 
@@ -297,19 +312,31 @@ function normalizeMetrics(rawData) {
 }
 
 export function subscribeVisitMetrics(onChange, onError) {
-  return onSnapshot(
-    analyticsRef,
-    (snapshot) => {
+  let active = true;
+
+  void getDoc(analyticsRef)
+    .then((snapshot) => {
+      if (!active) {
+        return;
+      }
+
       const normalized = snapshot.exists()
         ? normalizeMetrics(snapshot.data())
         : normalizeMetrics({});
 
       onChange(normalized);
-    },
-    (error) => {
+    })
+    .catch((error) => {
+      if (!active) {
+        return;
+      }
+
       if (typeof onError === "function") {
         onError(error);
       }
-    },
-  );
+    });
+
+  return () => {
+    active = false;
+  };
 }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaMapMarkerAlt, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminImageField from "./AdminImageField";
+import { createContentId, uploadContentImage } from "./adminImageUpload";
 import {
   destinoIconOptions,
   getDestinoIconComponent,
@@ -44,6 +46,9 @@ export default function AdminDestinos({
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyDestino);
   const [initialForm, setInitialForm] = useState(emptyDestino);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const openNew = () => {
     if (!canEdit) {
@@ -53,6 +58,8 @@ export default function AdminDestinos({
     const nextForm = { ...emptyDestino };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(null);
     setModal(true);
   };
@@ -64,23 +71,53 @@ export default function AdminDestinos({
     const nextForm = { ...d, icono: normalizeDestinoIcon(d.icono) };
     setForm(nextForm);
     setInitialForm(nextForm);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setEditing(d.id);
     setModal(true);
   };
 
-  const save = () => {
-    if (!canEdit) {
+  const closeModal = () => {
+    if (saving) return;
+    setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
+  };
+
+  const handleImageFileChange = (file) => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImageFile(file);
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : "");
+  };
+
+  const save = async () => {
+    if (!canEdit || saving) {
       return;
     }
 
-    upsertDestino({
-      ...form,
-      icono: normalizeDestinoIcon(form.icono),
-      id: editing || Date.now().toString(),
-      lat: normalizeCoord(form.lat),
-      lng: normalizeCoord(form.lng),
-    });
-    setModal(false);
+    const itemId = editing || createContentId("destino", form.nombre);
+    setSaving(true);
+    try {
+      const imageUrl = imageFile
+        ? await uploadContentImage(imageFile, "destinos", itemId)
+        : form.imagen;
+
+      await upsertDestino({
+        ...form,
+        imagen: imageUrl,
+        icono: normalizeDestinoIcon(form.icono),
+        id: itemId,
+        lat: normalizeCoord(form.lat),
+        lng: normalizeCoord(form.lng),
+      });
+      setModal(false);
+      setImageFile(null);
+      setImagePreviewUrl("");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const del = (id) => {
@@ -96,7 +133,7 @@ export default function AdminDestinos({
     descripcion:
       form.descripcion ||
       "Descripción breve para promocionar el destino en la página principal.",
-    imagen: form.imagen || FALLBACK_DESTINO_IMAGE,
+    imagen: imagePreviewUrl || form.imagen || FALLBACK_DESTINO_IMAGE,
     isla: form.isla || "Jambelí",
     categoria: form.categoria || "Categoría",
     icono: normalizeDestinoIcon(form.icono),
@@ -140,15 +177,18 @@ export default function AdminDestinos({
       return;
     }
 
-    onDirtyChange(hasDraftChanges(form, initialForm));
-  }, [modal, form, initialForm, onDirtyChange]);
+    onDirtyChange(hasDraftChanges(form, initialForm) || Boolean(imageFile));
+  }, [modal, form, initialForm, imageFile, onDirtyChange]);
 
   useEffect(
     () => () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
       onDirtyChange(false);
       onLivePreviewChange(null);
     },
-    [onDirtyChange, onLivePreviewChange],
+    [imagePreviewUrl, onDirtyChange, onLivePreviewChange],
   );
 
   return (
@@ -230,7 +270,7 @@ export default function AdminDestinos({
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={() => setModal(false)}>
+        <div className="modal-overlay" onClick={closeModal}>
           <div
             className="modal-box modal-box-preview"
             onClick={(e) => e.stopPropagation()}
@@ -242,7 +282,6 @@ export default function AdminDestinos({
                   ["nombre", "Nombre"],
                   ["isla", "Isla"],
                   ["categoria", "Categoría"],
-                  ["imagen", "URL de Imagen"],
                   ["lat", "Latitud"],
                   ["lng", "Longitud"],
                 ].map(([f, lbl]) => (
@@ -257,6 +296,16 @@ export default function AdminDestinos({
                     />
                   </div>
                 ))}
+
+                <AdminImageField
+                  label="Imagen del destino"
+                  value={form.imagen}
+                  selectedFile={imageFile}
+                  onFileChange={handleImageFileChange}
+                  onUrlChange={(nextUrl) =>
+                    setForm({ ...form, imagen: nextUrl })
+                  }
+                />
 
                 <div className="modal-field">
                   <label>Tipo de ícono</label>
@@ -290,13 +339,18 @@ export default function AdminDestinos({
                 <div className="modal-actions">
                   <button
                     className="btn btn-outline"
-                    onClick={() => setModal(false)}
+                    onClick={closeModal}
+                    disabled={saving}
                   >
                     Cancelar
                   </button>
-                  <button className="btn btn-primary" onClick={save}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={save}
+                    disabled={saving}
+                  >
                     <FaSave className="inline-icon" aria-hidden="true" />
-                    Guardar
+                    {saving ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>

@@ -109,6 +109,8 @@ exports.countVisit = onRequest(
 
     const routeKey = normalizeRouteKey(path);
     const sessionId = sanitizeSessionId(request.body?.sessionId);
+    const isFirstSessionVisit = request.body?.isFirstSessionVisit === true;
+    const isFirstRouteInSession = request.body?.isFirstRouteInSession === true;
 
     if (!sessionId) {
       response.status(400).json({ ok: false, error: "invalid-session" });
@@ -116,61 +118,27 @@ exports.countVisit = onRequest(
     }
 
     const trafficRef = db.collection("analytics").doc("traffic");
-    const sessionRef = db.collection("analyticsSessions").doc(sessionId);
-    const routeSessionRef = db
-      .collection("analyticsRouteSessions")
-      .doc(`${sessionId}_${routeKey}`);
 
     try {
-      await db.runTransaction(async (tx) => {
-        const [sessionSnapshot, routeSessionSnapshot] = await Promise.all([
-          tx.get(sessionRef),
-          tx.get(routeSessionRef),
-        ]);
+      const updates = {
+        totalPageViews: FieldValue.increment(1),
+        lastVisitAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        [`routes.${routeKey}.path`]: path,
+        [`routes.${routeKey}.views`]: FieldValue.increment(1),
+        [`routes.${routeKey}.updatedAt`]: FieldValue.serverTimestamp(),
+      };
 
-        const updates = {
-          totalPageViews: FieldValue.increment(1),
-          lastVisitAt: FieldValue.serverTimestamp(),
-          updatedAt: FieldValue.serverTimestamp(),
-          [`routes.${routeKey}.path`]: path,
-          [`routes.${routeKey}.views`]: FieldValue.increment(1),
-          [`routes.${routeKey}.updatedAt`]: FieldValue.serverTimestamp(),
-        };
+      if (isFirstSessionVisit) {
+        updates.totalSessions = FieldValue.increment(1);
+        updates.lastSessionId = sessionId;
+      }
 
-        if (!sessionSnapshot.exists) {
-          updates.totalSessions = FieldValue.increment(1);
-          updates.lastSessionId = sessionId;
+      if (isFirstRouteInSession) {
+        updates[`routes.${routeKey}.sessions`] = FieldValue.increment(1);
+      }
 
-          tx.set(sessionRef, {
-            sessionId,
-            firstPath: path,
-            userAgent: String(userAgent).slice(0, 200),
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-          });
-        } else {
-          tx.set(
-            sessionRef,
-            {
-              updatedAt: FieldValue.serverTimestamp(),
-            },
-            { merge: true },
-          );
-        }
-
-        if (!routeSessionSnapshot.exists) {
-          updates[`routes.${routeKey}.sessions`] = FieldValue.increment(1);
-
-          tx.set(routeSessionRef, {
-            sessionId,
-            routeKey,
-            path,
-            createdAt: FieldValue.serverTimestamp(),
-          });
-        }
-
-        tx.set(trafficRef, updates, { merge: true });
-      });
+      await trafficRef.set(updates, { merge: true });
 
       response.status(200).json({ ok: true });
     } catch (error) {
@@ -179,3 +147,10 @@ exports.countVisit = onRequest(
     }
   },
 );
+
+const adminFunctions = require("./admin");
+exports.adminUpsertContent = adminFunctions.adminUpsertContent;
+exports.adminDeleteContent = adminFunctions.adminDeleteContent;
+exports.adminCreateUser = adminFunctions.adminCreateUser;
+exports.adminUpdateUserRole = adminFunctions.adminUpdateUserRole;
+exports.adminDeleteUser = adminFunctions.adminDeleteUser;

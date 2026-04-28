@@ -1,0 +1,34 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function currentUserPublicDoc() {
+      return firestore.get(
+        /databases/(default)/documents/usersPublic/$(request.auth.uid)
+      );
+    }
+
+    function canEditContent() {
+      return isSignedIn()
+        && currentUserPublicDoc().data.active == true
+        && (
+          currentUserPublicDoc().data.role == "administrador"
+          || currentUserPublicDoc().data.role == "editor"
+        );
+    }
+
+    match /cms/{allPaths=**} {
+      allow read: if true;
+      allow write: if canEditContent()
+        && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -8,6 +8,8 @@ import {
   FaTrash,
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminImageField from "./AdminImageField";
+import { createContentId, uploadContentImage } from "./adminImageUpload";
 
 const FALLBACK_EVENT_IMAGE =
   "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900";
@@ -65,6 +67,9 @@ export default function AdminEventos({
   const [form, setForm] = useState(emptyEvento);
   const [initialForm, setInitialForm] = useState(emptyEvento);
   const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const orderedEventos = useMemo(
     () =>
@@ -83,6 +88,8 @@ export default function AdminEventos({
     setForm(nextForm);
     setInitialForm(nextForm);
     setEditing(null);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setError("");
     setModal(true);
   };
@@ -96,17 +103,30 @@ export default function AdminEventos({
     setForm(nextForm);
     setInitialForm(nextForm);
     setEditing(ev.id);
+    setImageFile(null);
+    setImagePreviewUrl("");
     setError("");
     setModal(true);
   };
 
   const closeModal = () => {
+    if (saving) return;
     setError("");
     setModal(false);
+    setImageFile(null);
+    setImagePreviewUrl("");
   };
 
-  const save = () => {
-    if (!canEdit) {
+  const handleImageFileChange = (file) => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImageFile(file);
+    setImagePreviewUrl(file ? URL.createObjectURL(file) : "");
+  };
+
+  const save = async () => {
+    if (!canEdit || saving) {
       return;
     }
 
@@ -137,8 +157,21 @@ export default function AdminEventos({
       return;
     }
 
-    upsertEvento({ ...cleaned, id: editing || Date.now().toString() });
-    closeModal();
+    const itemId = editing || createContentId("evento", cleaned.nombre);
+    setSaving(true);
+    try {
+      const imageUrl = imageFile
+        ? await uploadContentImage(imageFile, "eventos", itemId)
+        : cleaned.imagen;
+
+      await upsertEvento({ ...cleaned, imagen: imageUrl, id: itemId });
+      setError("");
+      setModal(false);
+      setImageFile(null);
+      setImagePreviewUrl("");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const del = (id) => {
@@ -160,7 +193,7 @@ export default function AdminEventos({
     tipo: form.tipo || "Evento",
     organizador: form.organizador,
     contacto: form.contacto,
-    imagen: form.imagen || FALLBACK_EVENT_IMAGE,
+    imagen: imagePreviewUrl || form.imagen || FALLBACK_EVENT_IMAGE,
     activo: Boolean(form.activo),
   };
 
@@ -198,15 +231,18 @@ export default function AdminEventos({
       return;
     }
 
-    onDirtyChange(hasDraftChanges(form, initialForm));
-  }, [modal, form, initialForm, onDirtyChange]);
+    onDirtyChange(hasDraftChanges(form, initialForm) || Boolean(imageFile));
+  }, [modal, form, initialForm, imageFile, onDirtyChange]);
 
   useEffect(
     () => () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
       onDirtyChange(false);
       onLivePreviewChange(null);
     },
-    [onDirtyChange, onLivePreviewChange],
+    [imagePreviewUrl, onDirtyChange, onLivePreviewChange],
   );
 
   return (
@@ -299,7 +335,6 @@ export default function AdminEventos({
                   ["fecha", "Fecha", "date", ""],
                   ["hora", "Hora", "time", ""],
                   ["lugar", "Lugar", "text", "Ej: Parque Central"],
-                  ["imagen", "Imagen (URL)", "text", "https://..."],
                   [
                     "organizador",
                     "Organizador",
@@ -325,6 +360,16 @@ export default function AdminEventos({
                     />
                   </div>
                 ))}
+
+                <AdminImageField
+                  label="Imagen del evento"
+                  value={form.imagen}
+                  selectedFile={imageFile}
+                  onFileChange={handleImageFileChange}
+                  onUrlChange={(nextUrl) =>
+                    setForm({ ...form, imagen: nextUrl })
+                  }
+                />
 
                 <div className="modal-field">
                   <label>Tipo de evento</label>
@@ -363,12 +408,20 @@ export default function AdminEventos({
                 </label>
 
                 <div className="modal-actions">
-                  <button className="btn btn-outline" onClick={closeModal}>
+                  <button
+                    className="btn btn-outline"
+                    onClick={closeModal}
+                    disabled={saving}
+                  >
                     Cancelar
                   </button>
-                  <button className="btn btn-primary" onClick={save}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={save}
+                    disabled={saving}
+                  >
                     <FaSave className="inline-icon" aria-hidden="true" />
-                    Guardar
+                    {saving ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
               </div>

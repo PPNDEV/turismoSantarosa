@@ -4,6 +4,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getDatabase } from "firebase/database";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 // Las credenciales se leen de variables de entorno (.env)
 const firebaseConfig = {
@@ -35,6 +36,19 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);       // Admin: usuarios, mensajes, encuestas, analytics
 export const rtdb = getDatabase(app);      // Público: contenido CMS (0 lecturas Firestore)
 export const storage = getStorage(app);
+export const functions = getFunctions(app, "us-central1");
+
+if (
+  import.meta.env.DEV &&
+  import.meta.env.VITE_USE_FUNCTIONS_EMULATOR === "true"
+) {
+  try {
+    connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+  } catch {
+    // ignorar si ya se conectó
+  }
+}
+
 export { analytics, firebaseConfig };
 
 export default app;
