@@ -9,7 +9,7 @@ export default function FloraFaunaPage() {
   return (
     <>
       <Header />
-      <div style={{ paddingTop: "clamp(68px, 7vw, 80px)" }}>
+      <div className="page-shell">
         <div className="page-banner">
           <h1 className="page-banner-title">
             <FaLeaf className="inline-icon" aria-hidden="true" />
@@ -30,7 +30,12 @@ export default function FloraFaunaPage() {
             <div className="info-grid">
               {floraFauna.map((registro) => (
                 <article key={registro.id} className="info-card">
-                  <img src={registro.imagen} alt={registro.nombre} />
+                  <img
+                    src={registro.imagen}
+                    alt={registro.nombre}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="info-card-body">
                     <span className="badge badge-ocean">{registro.tipo}</span>
                     <h3>{registro.nombre}</h3>

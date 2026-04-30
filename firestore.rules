@@ -135,14 +135,14 @@ service cloud.firestore {
     // Mensajes de contacto (RF11) – Cualquier visitante puede enviar
     match /mensajes_contacto/{docId} {
       allow read: if isSignedIn();
-      allow create: if true;
+      allow create: if false;
       allow update, delete: if isAdmin();
     }
 
     // Encuestas de satisfacción (RF15) – Cualquier visitante puede responder
     match /encuestas_satisfaccion/{docId} {
       allow read: if isSignedIn();
-      allow create: if true;
+      allow create: if false;
       allow update, delete: if isAdmin();
     }
 

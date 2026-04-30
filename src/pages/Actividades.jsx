@@ -6,7 +6,7 @@ export default function ActividadesPage() {
   return (
     <>
       <Header />
-      <main style={{ paddingTop: "clamp(68px, 7vw, 80px)" }}>
+      <main className="page-shell">
         <QueHacer mode="page" />
       </main>
       <Footer />

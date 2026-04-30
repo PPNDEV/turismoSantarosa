@@ -1,151 +1,103 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const httpUtils = require("./lib/httpUtils");
+const { createRateLimiter } = require("./lib/rateLimiter");
+const { createVisitsHandler } = require("./handlers/visits");
+const { createContactHandler } = require("./handlers/contact");
+const { createSurveyHandler } = require("./handlers/survey");
 
 admin.initializeApp();
 
 const db = admin.firestore();
-const { FieldValue } = admin.firestore;
+const { FieldValue, Timestamp } = admin.firestore;
 
-const BOT_UA_PATTERN =
-  /bot|crawler|spider|headless|preview|lighthouse|google-structured-data-testing-tool|bingpreview|facebookexternalhit|slurp|duckduckbot|yandex|baiduspider/i;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_CONTACT = 5;
+const RATE_LIMIT_SURVEY = 10;
+const RATE_LIMIT_VISITS = 120;
 
-function ensureLeadingSlash(pathname) {
-  if (!pathname || pathname === "/") {
-    return "/";
-  }
+const allowedOrigins = httpUtils.parseAllowedOrigins(
+  process.env.ALLOWED_ORIGINS,
+);
+const corsOption = allowedOrigins.length > 0 ? allowedOrigins : true;
+const captchaProvider = process.env.CAPTCHA_PROVIDER || "turnstile";
+const captchaSecret = process.env.CAPTCHA_SECRET || "";
+const ipHashSecret = process.env.IP_HASH_SECRET || "";
 
-  return pathname.startsWith("/") ? pathname : `/${pathname}`;
-}
+const { enforceRateLimit } = createRateLimiter({ db, FieldValue, Timestamp });
 
-function normalizeRouteKey(pathname) {
-  const normalizedPath =
-    ensureLeadingSlash(pathname).toLowerCase().replace(/\/$/, "") || "/";
+const visitsHandler = createVisitsHandler({
+  db,
+  FieldValue,
+  logger,
+  enforceRateLimit,
+  rateWindowMs: RATE_WINDOW_MS,
+  rateLimit: RATE_LIMIT_VISITS,
+  httpUtils,
+  allowedOrigins,
+});
 
-  if (normalizedPath === "/") {
-    return "home";
-  }
+const contactHandler = createContactHandler({
+  db,
+  FieldValue,
+  logger,
+  enforceRateLimit,
+  rateWindowMs: RATE_WINDOW_MS,
+  rateLimit: RATE_LIMIT_CONTACT,
+  httpUtils,
+  allowedOrigins,
+  captcha: {
+    secret: captchaSecret,
+    provider: captchaProvider,
+  },
+  ipHashSecret,
+});
 
-  return (
-    normalizedPath
-      .slice(1)
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "") || "home"
-  );
-}
-
-function sanitizePath(pathname) {
-  const normalized = ensureLeadingSlash(String(pathname || "").trim())
-    .replace(/[\r\n\t]/g, "")
-    .slice(0, 180);
-
-  return normalized.replace(/\/$/, "") || "/";
-}
-
-function isLikelyBot(request, userAgent = "") {
-  const ua = String(userAgent || "").toLowerCase();
-
-  if (BOT_UA_PATTERN.test(ua)) {
-    return true;
-  }
-
-  if (String(request.get("x-bot") || "").toLowerCase() === "1") {
-    return true;
-  }
-
-  const secPurpose = String(request.get("sec-purpose") || "").toLowerCase();
-  if (secPurpose.includes("prefetch") || secPurpose.includes("preview")) {
-    return true;
-  }
-
-  return false;
-}
-
-function sanitizeSessionId(rawSessionId = "") {
-  const candidate = String(rawSessionId).trim().slice(0, 80);
-
-  if (!candidate) {
-    return null;
-  }
-
-  return /^[a-zA-Z0-9_-]+$/.test(candidate) ? candidate : null;
-}
+const surveyHandler = createSurveyHandler({
+  db,
+  FieldValue,
+  logger,
+  enforceRateLimit,
+  rateWindowMs: RATE_WINDOW_MS,
+  rateLimit: RATE_LIMIT_SURVEY,
+  httpUtils,
+  allowedOrigins,
+  captcha: {
+    secret: captchaSecret,
+    provider: captchaProvider,
+  },
+  ipHashSecret,
+});
 
 exports.countVisit = onRequest(
   {
     region: "us-central1",
-    cors: true,
+    cors: corsOption,
     invoker: "public",
     maxInstances: 10,
   },
-  async (request, response) => {
-    if (request.method === "OPTIONS") {
-      response.status(204).send("");
-      return;
-    }
+  visitsHandler,
+);
 
-    if (request.method !== "POST") {
-      response.status(405).json({ ok: false, error: "method-not-allowed" });
-      return;
-    }
-
-    const userAgent = request.get("user-agent") || "";
-    if (isLikelyBot(request, userAgent)) {
-      response.status(202).json({ ok: true, ignored: "bot" });
-      return;
-    }
-
-    const rawPath = request.body?.path;
-    if (typeof rawPath !== "string") {
-      response.status(400).json({ ok: false, error: "invalid-path" });
-      return;
-    }
-
-    const path = sanitizePath(rawPath);
-    if (!path.startsWith("/")) {
-      response.status(400).json({ ok: false, error: "invalid-path-format" });
-      return;
-    }
-
-    const routeKey = normalizeRouteKey(path);
-    const sessionId = sanitizeSessionId(request.body?.sessionId);
-    const isFirstSessionVisit = request.body?.isFirstSessionVisit === true;
-    const isFirstRouteInSession = request.body?.isFirstRouteInSession === true;
-
-    if (!sessionId) {
-      response.status(400).json({ ok: false, error: "invalid-session" });
-      return;
-    }
-
-    const trafficRef = db.collection("analytics").doc("traffic");
-
-    try {
-      const updates = {
-        totalPageViews: FieldValue.increment(1),
-        lastVisitAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-        [`routes.${routeKey}.path`]: path,
-        [`routes.${routeKey}.views`]: FieldValue.increment(1),
-        [`routes.${routeKey}.updatedAt`]: FieldValue.serverTimestamp(),
-      };
-
-      if (isFirstSessionVisit) {
-        updates.totalSessions = FieldValue.increment(1);
-        updates.lastSessionId = sessionId;
-      }
-
-      if (isFirstRouteInSession) {
-        updates[`routes.${routeKey}.sessions`] = FieldValue.increment(1);
-      }
-
-      await trafficRef.set(updates, { merge: true });
-
-      response.status(200).json({ ok: true });
-    } catch (error) {
-      logger.error("countVisit error", error);
-      response.status(500).json({ ok: false, error: "internal" });
-    }
+exports.submitContactMessage = onRequest(
+  {
+    region: "us-central1",
+    cors: corsOption,
+    invoker: "public",
+    maxInstances: 10,
   },
+  contactHandler,
+);
+
+exports.submitSurvey = onRequest(
+  {
+    region: "us-central1",
+    cors: corsOption,
+    invoker: "public",
+    maxInstances: 10,
+  },
+  surveyHandler,
 );
 
 const adminFunctions = require("./admin");

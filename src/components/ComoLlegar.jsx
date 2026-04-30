@@ -28,7 +28,7 @@ export default function ComoLlegar() {
   ];
 
   return (
-    <section id="como-llegar" style={{ background: "var(--white)" }}>
+    <section id="como-llegar" className="section-white">
       <div className="container">
         <div className="section-header reveal">
           <h2 className="section-title">

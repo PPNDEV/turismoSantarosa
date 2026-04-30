@@ -537,6 +537,7 @@ section:nth-child(even) {
   transition: opacity 1s ease;
   background-size: cover;
   background-position: center;
+  overflow: hidden;
 }
 .hero-slide.active {
   opacity: 1;
@@ -640,6 +641,442 @@ section:nth-child(even) {
 }
 .hero-next {
   right: 5rem;
+}
+
+.hero-slide-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.page-shell {
+  padding-top: clamp(68px, 7vw, 80px);
+}
+
+.page-container {
+  padding: 3rem 1.5rem;
+}
+
+.page-container-lg {
+  padding: 4rem 1.5rem;
+}
+
+.media-crop {
+  overflow: hidden;
+}
+
+.meta-xs {
+  font-size: 0.78rem;
+  color: var(--gray-400);
+}
+
+.meta-sm {
+  font-size: 0.82rem;
+  color: var(--gray-400);
+}
+
+.cta-center {
+  text-align: center;
+  margin-top: 2.5rem;
+}
+
+.section-gray {
+  background: var(--gray-50);
+}
+
+.section-white {
+  background: var(--white);
+}
+
+.section-title-light {
+  color: white;
+}
+
+.section-subtitle-muted {
+  opacity: 0.75;
+}
+
+.galeria-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  color: var(--gray-400);
+}
+
+.galeria-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.social-facebook {
+  background: #1877f2;
+}
+
+.social-youtube {
+  background: #ff0000;
+}
+
+.social-x {
+  background: #111827;
+}
+
+.social-instagram {
+  background: linear-gradient(
+    135deg,
+    #f58529 0%,
+    #dd2a7b 42%,
+    #8134af 72%,
+    #515bd4 100%
+  );
+}
+
+.footer-logo {
+  margin-bottom: 1rem;
+}
+
+.footer-success {
+  background: rgba(10, 126, 164, 0.2);
+  border: 1px solid var(--ocean);
+  border-radius: 8px;
+  padding: 1rem;
+  color: white;
+  font-size: 0.88rem;
+}
+
+.form-error {
+  margin-bottom: 0.75rem;
+}
+
+.btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-outline-light {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.4);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+}
+
+.nav-link-muted {
+  opacity: 0.7;
+  font-size: 0.82rem;
+}
+
+.map-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.map-legend-destino {
+  background: #0a7ea4;
+}
+
+.map-legend-gastronomia {
+  background: #e8a733;
+}
+
+.map-legend-hospedaje {
+  background: #16a34a;
+}
+
+.map-legend-cooperativa {
+  background: #6d28d9;
+}
+
+.admin-inspector-pad {
+  padding: 0 1.5rem;
+}
+
+.admin-loading-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--gray-500);
+}
+
+.admin-row-clickable {
+  cursor: pointer;
+}
+
+.admin-msg-cell {
+  max-width: 350px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-msg-cell.is-expanded {
+  white-space: normal;
+}
+
+.star-rating {
+  color: #e8a733;
+  font-size: 1rem;
+  letter-spacing: 2px;
+}
+
+.star-rating-icon {
+  opacity: 0.2;
+}
+
+.star-rating-icon.is-active {
+  opacity: 1;
+}
+
+.admin-survey-summary {
+  padding: 1.5rem;
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.admin-survey-metric {
+  text-align: center;
+}
+
+.admin-survey-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.admin-survey-value-ocean {
+  color: var(--ocean);
+}
+
+.admin-survey-value-gold {
+  color: var(--gold-dark);
+}
+
+.admin-survey-label {
+  font-size: 0.82rem;
+  color: var(--gray-500);
+}
+
+.admin-survey-distribution {
+  flex: 1;
+  min-width: 200px;
+}
+
+.admin-survey-dist-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.admin-survey-dist-star {
+  width: 20px;
+  text-align: right;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.admin-survey-progress {
+  flex: 1;
+  height: 8px;
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  appearance: none;
+  background: var(--gray-200);
+}
+
+.admin-survey-progress::-webkit-progress-bar {
+  background: var(--gray-200);
+  border-radius: 4px;
+}
+
+.admin-survey-progress::-webkit-progress-value {
+  background: var(--ocean);
+  border-radius: 4px;
+}
+
+.admin-survey-progress::-moz-progress-bar {
+  background: var(--ocean);
+  border-radius: 4px;
+}
+
+.admin-survey-dist-count {
+  width: 30px;
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  text-align: right;
+}
+
+.admin-comment-cell {
+  max-width: 400px;
+}
+
+.admin-comment-empty {
+  color: var(--gray-400);
+}
+
+.admin-cell-ellipsis {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-slide-tag-muted {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  margin-top: 0.2rem;
+}
+
+.icon-btn-spaced {
+  margin-right: 0.35rem;
+}
+
+.admin-slide-preview {
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-slide-preview-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-user-meta {
+  font-size: 0.78rem;
+  opacity: 0.6;
+  margin-bottom: 0.75rem;
+}
+
+.admin-sidebar-btn {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
+  width: 100%;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.admin-sidebar-secondary {
+  margin-top: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.admin-loading {
+  padding: 2rem;
+  text-align: center;
+  color: var(--gray-500);
+}
+
+.admin-table-card-spaced {
+  margin-bottom: 1rem;
+}
+
+.cooperativa-card-admin {
+  padding: 1.5rem;
+}
+
+.admin-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.admin-gallery-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--gray-100);
+}
+
+.admin-gallery-image {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-gallery-title {
+  padding: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--gray-800);
+}
+
+.admin-gallery-actions {
+  padding: 0 0.5rem 0.5rem;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.admin-gallery-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(185, 28, 28, 0.85);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tone-ocean {
+  color: var(--ocean);
+}
+
+.tone-orange {
+  color: #f97316;
+}
+
+.tone-gold {
+  color: var(--gold-dark);
+}
+
+.tone-emerald {
+  color: #10b981;
+}
+
+.tone-violet {
+  color: #8b5cf6;
+}
+
+.tone-orange-dark {
+  color: #ea580c;
+}
+
+.tone-green {
+  color: #059669;
+}
+
+.tone-lime {
+  color: #65a30d;
+}
+
+.tone-purple {
+  color: #7c3aed;
+}
+
+.tone-blue {
+  color: #2563eb;
+}
+
+.tone-teal {
+  color: #0f766e;
+}
+
+.tone-amber {
+  color: #b45309;
 }
 
 /* ===== QUICK STATS ===== */

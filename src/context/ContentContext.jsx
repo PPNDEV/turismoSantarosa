@@ -4,14 +4,37 @@ import { useLocation } from "react-router-dom";
 import { ref, onValue } from "firebase/database";
 import { httpsCallable } from "firebase/functions";
 // Firestore – solo para colecciones administrativas
-import {
-  collection as fsCollection,
-  addDoc,
-  serverTimestamp as fsTimestamp,
-} from "firebase/firestore";
 import { ContentContext } from "./content-context";
 import { normalizeDestinoIcon } from "../utils/destinoIcons";
-import { db, rtdb, functions } from "../services/firebase";
+import { rtdb, functions } from "../services/firebase";
+
+const CONTACT_API_URL =
+  import.meta.env.VITE_CONTACT_API_URL || "/api/contact";
+const SURVEY_API_URL =
+  import.meta.env.VITE_SURVEY_API_URL || "/api/survey";
+
+async function postJson(url, payload) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    let errorMessage = "request-failed";
+    try {
+      const data = await response.json();
+      if (data?.error) {
+        errorMessage = data.error;
+      }
+    } catch {
+      // Ignore parse errors and keep default message.
+    }
+    throw new Error(errorMessage);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Nodos en Realtime Database (contenido público)
@@ -353,23 +376,20 @@ export function ContentProvider({ children }) {
   );
 
   // -----------------------------------------------------------------------
-  // Mensajes de contacto y Encuestas → siguen en Firestore
-  // (necesitan reglas de seguridad + serverTimestamp de Firestore)
+  // Mensajes de contacto y Encuestas → validacion server-side via Functions
   // -----------------------------------------------------------------------
   const enviarMensajeContacto = useCallback(async (mensaje) => {
-    await addDoc(fsCollection(db, "mensajes_contacto"), {
-      remitente: mensaje.remitente || "",
+    await postJson(CONTACT_API_URL, {
+      nombre: mensaje.remitente || "",
       correo: mensaje.correo || "",
-      consulta_sugerencia: mensaje.consulta_sugerencia || "",
-      fecha: fsTimestamp(),
+      mensaje: mensaje.consulta_sugerencia || "",
     });
   }, []);
 
   const enviarEncuesta = useCallback(async (encuesta) => {
-    await addDoc(fsCollection(db, "encuestas_satisfaccion"), {
+    await postJson(SURVEY_API_URL, {
       puntuacion: Number(encuesta.puntuacion) || 0,
       comentarios: encuesta.comentarios || "",
-      fecha: fsTimestamp(),
     });
   }, []);
 

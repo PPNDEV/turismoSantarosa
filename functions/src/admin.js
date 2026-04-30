@@ -1,69 +1,24 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const { getRtdb } = require("./lib/rtdb");
+const { logAdminAction } = require("./lib/audit");
+const { sanitizeItemData, NODE_FIELDS } = require("./lib/adminSchema");
+const {
+  ROLE_ADMIN,
+  ROLE_EDITOR,
+  ROLE_VIEWER,
+  normalizeRole,
+  verifyRole,
+} = require("./lib/adminAuth");
 
 const db = admin.firestore();
-
-const ROLE_ADMIN = "administrador";
-const ROLE_EDITOR = "editor";
-const ROLE_VIEWER = "visualizador";
-const CONTENT_NODES = new Set([
-  "actividades",
-  "actividadesEditorial",
-  "gastronomia",
-  "hospedajes",
-  "eventos",
-  "floraFauna",
-  "galeria",
-  "destinos",
-  "blog",
-  "heroSlides",
-  "cooperativas",
-]);
-
-function getRtdb() {
-  return admin.database();
-}
-
-function normalizeRole(role) {
-  if (role === ROLE_ADMIN || role === ROLE_EDITOR || role === ROLE_VIEWER) {
-    return role;
-  }
-
-  return ROLE_VIEWER;
-}
-
-async function verifyRole(uid, allowedRoles) {
-  if (!uid) {
-    throw new HttpsError(
-      "unauthenticated",
-      "El usuario debe estar autenticado.",
-    );
-  }
-  const userDoc = await db.collection("usersPublic").doc(uid).get();
-  if (!userDoc.exists) {
-    throw new HttpsError("permission-denied", "Usuario no encontrado.");
-  }
-  const role = userDoc.data().role;
-  const active = userDoc.data().active;
-
-  if (active === false) {
-    throw new HttpsError("permission-denied", "Usuario inactivo.");
-  }
-
-  if (!allowedRoles.includes(role)) {
-    throw new HttpsError(
-      "permission-denied",
-      "No tienes los permisos necesarios.",
-    );
-  }
-  return role;
-}
+const CONTENT_NODES = new Set(Object.keys(NODE_FIELDS));
 
 exports.adminUpsertContent = onCall(
   { region: "us-central1" },
   async (request) => {
-    await verifyRole(request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
     const { nodeKey, itemData, id } = request.data;
     if (!nodeKey || !itemData) {
       throw new HttpsError("invalid-argument", "Faltan parámetros requeridos.");
@@ -76,11 +31,11 @@ exports.adminUpsertContent = onCall(
       );
     }
 
-    const payload = { ...itemData };
+    const payload = sanitizeItemData(nodeKey, itemData);
     // Usar timestamp del servidor de RTDB
     payload.updatedAt = admin.database.ServerValue.TIMESTAMP;
 
-    const nodeRef = getRtdb().ref(`content/${nodeKey}`);
+    const nodeRef = getRtdb(admin).ref(`content/${nodeKey}`);
     let targetRef;
     let targetId = id;
 
@@ -92,6 +47,15 @@ exports.adminUpsertContent = onCall(
     }
 
     await targetRef.set(payload);
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth?.uid,
+      "content.upsert",
+      {
+        nodeKey,
+        id: targetId,
+      },
+    );
     return { success: true, id: targetId };
   },
 );
@@ -99,7 +63,7 @@ exports.adminUpsertContent = onCall(
 exports.adminDeleteContent = onCall(
   { region: "us-central1" },
   async (request) => {
-    await verifyRole(request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
     const { nodeKey, id } = request.data;
     if (!nodeKey || !id) {
       throw new HttpsError("invalid-argument", "Faltan parámetros requeridos.");
@@ -112,13 +76,22 @@ exports.adminDeleteContent = onCall(
       );
     }
 
-    await getRtdb().ref(`content/${nodeKey}/${id}`).remove();
+    await getRtdb(admin).ref(`content/${nodeKey}/${id}`).remove();
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth?.uid,
+      "content.delete",
+      {
+        nodeKey,
+        id,
+      },
+    );
     return { success: true };
   },
 );
 
 exports.adminCreateUser = onCall({ region: "us-central1" }, async (request) => {
-  await verifyRole(request.auth?.uid, [ROLE_ADMIN]);
+  await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
   const { email, password, displayName, role } = request.data;
   const normalizedEmail = String(email || "")
     .trim()
@@ -166,6 +139,15 @@ exports.adminCreateUser = onCall({ region: "us-central1" }, async (request) => {
 
   try {
     await batch.commit();
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth?.uid,
+      "user.create",
+      {
+        uid,
+        role: normalizedRole,
+      },
+    );
   } catch (e) {
     logger.error("Error creating Firestore user profile", e);
     await admin
@@ -192,7 +174,7 @@ exports.adminCreateUser = onCall({ region: "us-central1" }, async (request) => {
 exports.adminUpdateUserRole = onCall(
   { region: "us-central1" },
   async (request) => {
-    await verifyRole(request.auth?.uid, [ROLE_ADMIN]);
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
     const { uid, role } = request.data;
 
     if (!uid || !role) {
@@ -205,12 +187,19 @@ exports.adminUpdateUserRole = onCall(
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth?.uid,
+      "user.role.update",
+      { uid, role },
+    );
+
     return { success: true };
   },
 );
 
 exports.adminDeleteUser = onCall({ region: "us-central1" }, async (request) => {
-  await verifyRole(request.auth?.uid, [ROLE_ADMIN]);
+  await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
   const { uid } = request.data;
 
   if (!uid) {
@@ -244,5 +233,11 @@ exports.adminDeleteUser = onCall({ region: "us-central1" }, async (request) => {
   }
 
   await batch.commit();
+  await logAdminAction(
+    { db, FieldValue: admin.firestore.FieldValue, logger },
+    request.auth?.uid,
+    "user.delete",
+    { uid },
+  );
   return { success: true };
 });

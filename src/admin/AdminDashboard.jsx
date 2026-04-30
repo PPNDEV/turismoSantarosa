@@ -171,68 +171,73 @@ export default function AdminDashboard({
       label: "Slides",
       value: heroSlides.length,
       icon: FaImage,
-      color: "var(--ocean)",
+      tone: "tone-ocean",
     },
     {
       label: "Actividades",
       value: actividades.length,
       icon: FaHiking,
-      color: "#f97316",
+      tone: "tone-orange",
     },
     {
       label: "Artículos",
       value: blog.length,
       icon: FaFileAlt,
-      color: "var(--gold-dark)",
+      tone: "tone-gold",
     },
     {
       label: "Eventos",
       value: eventos.length,
       icon: FaCalendarAlt,
-      color: "#10b981",
+      tone: "tone-emerald",
     },
     {
       label: "Destinos",
       value: destinos.length,
       icon: FaMapMarkerAlt,
-      color: "#8b5cf6",
+      tone: "tone-violet",
     },
     {
       label: "Gastronomía",
       value: gastronomia.length,
       icon: FaUtensils,
-      color: "#ea580c",
+      tone: "tone-orange-dark",
     },
     {
       label: "Hospedajes",
       value: hospedajes.length,
       icon: FaBed,
-      color: "#059669",
+      tone: "tone-green",
     },
     {
       label: "Flora/Fauna",
       value: floraFauna.length,
       icon: FaLeaf,
-      color: "#65a30d",
+      tone: "tone-lime",
     },
     {
       label: "Transporte",
       value: cooperativas.length,
       icon: FaBus,
-      color: "#7c3aed",
+      tone: "tone-purple",
     },
-    { label: "Fotos", value: galeria.length, icon: FaCamera, color: "#2563eb" },
+    {
+      label: "Fotos",
+      value: galeria.length,
+      icon: FaCamera,
+      tone: "tone-blue",
+    },
     {
       label: "Sesiones",
       value: visitMetrics.totalSessions,
       icon: FaUserShield,
-      color: "#0f766e",
+      tone: "tone-teal",
     },
     {
       label: "Vistas",
       value: visitMetrics.totalPageViews,
       icon: FaFileAlt,
-      color: "#b45309",
+      tone: "tone-amber",
     },
   ];
 
@@ -292,7 +297,7 @@ export default function AdminDashboard({
           <div key={i} className="admin-stat-card">
             <div>
               <h3>{s.label}</h3>
-              <div className="big" style={{ color: s.color }}>
+              <div className={`big ${s.tone}`}>
                 {s.value}
               </div>
             </div>

@@ -9,7 +9,7 @@ export default function TransportePage() {
   return (
     <>
       <Header />
-      <div style={{ paddingTop: "clamp(68px, 7vw, 80px)" }}>
+      <div className="page-shell">
         <div className="page-banner">
           <h1 className="page-banner-title">
             <FaBus className="inline-icon" aria-hidden="true" />

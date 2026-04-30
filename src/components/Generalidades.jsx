@@ -40,13 +40,13 @@ export default function Generalidades() {
     <div className="generalidades-banner">
       <div className="container">
         <div className="section-header reveal">
-          <h2 className="section-title" style={{ color: "white" }}>
+          <h2 className="section-title section-title-light">
             {t("generalidades.titleStart")}{" "}
             <span className="accent-gold">
               {t("generalidades.titleAccent")}
             </span>
           </h2>
-          <p className="section-subtitle" style={{ opacity: 0.75 }}>
+          <p className="section-subtitle section-subtitle-muted">
             {t("generalidades.subtitle")}
           </p>
         </div>

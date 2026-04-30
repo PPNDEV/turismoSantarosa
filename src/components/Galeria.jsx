@@ -44,15 +44,8 @@ export default function Galeria() {
         </div>
         <div className="galeria-grid">
           {filtered.length === 0 && tab === "video" ? (
-            <div
-              style={{
-                gridColumn: "1/-1",
-                textAlign: "center",
-                padding: "3rem",
-                color: "var(--gray-400)",
-              }}
-            >
-              <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
+            <div className="galeria-empty">
+              <div className="galeria-empty-icon">
                 <FaFilm aria-hidden="true" />
               </div>
               <p>{t("galeriaSection.emptyVideos")}</p>
@@ -67,7 +60,12 @@ export default function Galeria() {
 
                 return (
                   <div key={g.id} className="galeria-item reveal">
-                    <img src={g.url} alt={translatedTitle} loading="lazy" />
+                    <img
+                      src={g.url}
+                      alt={translatedTitle}
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <div className="galeria-overlay">
                       <span>{translatedTitle}</span>
                     </div>

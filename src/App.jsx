@@ -13,8 +13,8 @@ import { useContent } from "./context/useContent";
 import { LanguageProvider } from "./context/LanguageContext";
 import { useLanguage } from "./context/useLanguage";
 import { recordVisit } from "./services/visitCounter";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
+const Home = lazy(() => import("./pages/Home"));
+const Login = lazy(() => import("./pages/Login"));
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import {
@@ -58,11 +58,11 @@ function PageWrapper({ title, children }) {
   return (
     <>
       <Header />
-      <div style={{ paddingTop: "clamp(68px, 7vw, 80px)" }}>
+      <div className="page-shell">
         <div className="page-banner">
           <h1 className="page-banner-title">{title}</h1>
         </div>
-        <div className="container" style={{ padding: "3rem 1.5rem" }}>
+        <div className="container page-container">
           {children}
         </div>
       </div>
@@ -111,8 +111,13 @@ function DestinosPage() {
 
           return (
             <div key={d.id} className="destino-card">
-              <div style={{ overflow: "hidden" }}>
-                <img src={d.imagen} alt={translatedName} />
+              <div className="media-crop">
+                <img
+                  src={d.imagen}
+                  alt={translatedName}
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
               <div className="destino-info">
                 <div className="destino-cat">
@@ -171,15 +176,18 @@ function BlogPage() {
 
             return (
               <div key={art.id} className="blog-card">
-                <img src={art.imagen} alt={translatedTitle} />
+                <img
+                  src={art.imagen}
+                  alt={translatedTitle}
+                  loading="lazy"
+                  decoding="async"
+                />
                 <div className="blog-body">
                   <div className="blog-meta">
                     <span className="badge badge-ocean">
                       {translatedCategory}
                     </span>
-                    <span
-                      style={{ fontSize: "0.78rem", color: "var(--gray-400)" }}
-                    >
+                    <span className="meta-xs">
                       {formatBlogDate(art.fecha, locale)}
                     </span>
                   </div>
@@ -187,9 +195,7 @@ function BlogPage() {
                   <p>{translatedSummary}</p>
                 </div>
                 <div className="blog-footer">
-                  <span
-                    style={{ fontSize: "0.82rem", color: "var(--gray-400)" }}
-                  >
+                  <span className="meta-sm">
                     <FaPenNib className="inline-icon" aria-hidden="true" />
                     {translatedAuthor}
                   </span>
@@ -209,7 +215,7 @@ function PrivateRoute({ children }) {
 
   if (!authReady) {
     return (
-      <div className="container" style={{ padding: "4rem 1.5rem" }}>
+      <div className="container page-container-lg">
         Verificando acceso...
       </div>
     );
@@ -238,7 +244,7 @@ function AppRoutes() {
   return (
     <Suspense
       fallback={
-        <div className="container" style={{ padding: "4rem 1.5rem" }}>
+        <div className="container page-container-lg">
           Cargando contenido...
         </div>
       }

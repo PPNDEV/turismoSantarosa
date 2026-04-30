@@ -121,7 +121,7 @@ export default function AdminUsuarios({
 
   return (
     <div>
-      <div className="admin-table-card" style={{ marginBottom: "1rem" }}>
+      <div className="admin-table-card admin-table-card-spaced">
         <div className="admin-table-header">
           <h2>
             <FaUserShield className="inline-icon" aria-hidden="true" />

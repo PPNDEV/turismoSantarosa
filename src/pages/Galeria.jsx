@@ -16,7 +16,7 @@ export default function GaleriaPage() {
   return (
     <>
       <Header />
-      <div style={{ paddingTop: "clamp(68px, 7vw, 80px)" }}>
+      <div className="page-shell">
         <div className="page-banner">
           <h1 className="page-banner-title">
             <FaCamera className="inline-icon" aria-hidden="true" />
@@ -24,7 +24,7 @@ export default function GaleriaPage() {
           </h1>
         </div>
 
-        <main className="container" style={{ padding: "3rem 1.5rem" }}>
+        <main className="container page-container">
           <div className="galeria-grid">
             {galeria.map((g) => {
               const translatedTitle = getLocalizedValue(
@@ -35,7 +35,12 @@ export default function GaleriaPage() {
 
               return (
                 <div key={g.id} className="galeria-item">
-                  <img src={g.url} alt={translatedTitle} loading="lazy" />
+                  <img
+                    src={g.url}
+                    alt={translatedTitle}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="galeria-overlay">
                     <span>{translatedTitle}</span>
                   </div>

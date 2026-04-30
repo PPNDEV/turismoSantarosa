@@ -29,26 +29,25 @@ const socialLinks = [
     label: "Facebook",
     href: "https://www.facebook.com/municipiosr/",
     icon: FaFacebookF,
-    background: "#1877F2",
+    className: "social-facebook",
   },
   {
     label: "YouTube",
     href: "https://www.youtube.com/channel/UCgaGV99aMfrmnThzoO1dqJg",
     icon: FaYoutube,
-    background: "#FF0000",
+    className: "social-youtube",
   },
   {
     label: "X",
     href: "https://twitter.com/municipiosr",
     icon: FaXTwitter,
-    background: "#111827",
+    className: "social-x",
   },
   {
     label: "Instagram",
     href: "https://www.instagram.com/gad_santarosa_ec/",
     icon: FaInstagram,
-    background:
-      "linear-gradient(135deg, #f58529 0%, #dd2a7b 42%, #8134af 72%, #515bd4 100%)",
+    className: "social-instagram",
   },
 ];
 
@@ -99,16 +98,15 @@ export default function Header() {
     <>
       {/* Barra redes sociales flotante */}
       <div className="floating-social" aria-label={t("header.socialLabel")}>
-        {socialLinks.map(({ label, href, icon, background }) => (
+        {socialLinks.map(({ label, href, icon, className }) => (
           <a
             key={label}
-            className="float-social-btn"
+            className={`float-social-btn ${className}`}
             href={href}
             target="_blank"
             rel="noreferrer"
             title={label}
             aria-label={label}
-            style={{ background }}
           >
             {createElement(icon)}
           </a>
@@ -218,24 +216,14 @@ export default function Header() {
                   <FaCog className="inline-icon" aria-hidden="true" />
                   {t("header.admin")}
                 </Link>
-                <button
-                  onClick={logout}
-                  className="btn btn-outline"
-                  style={{
-                    color: "white",
-                    borderColor: "rgba(255,255,255,0.4)",
-                    padding: "0.35rem 0.85rem",
-                    fontSize: "0.8rem",
-                  }}
-                >
+                <button onClick={logout} className="btn btn-outline btn-outline-light">
                   {t("header.logout")}
                 </button>
               </>
             ) : (
               <Link
                 to="/login"
-                className="nav-link"
-                style={{ opacity: 0.7, fontSize: "0.82rem" }}
+                className="nav-link nav-link-muted"
               >
                 <FaLock className="inline-icon" aria-hidden="true" />
                 {t("header.admin")}

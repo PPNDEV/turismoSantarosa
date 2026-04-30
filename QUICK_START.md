@@ -198,6 +198,18 @@ Asegúrate de estar loggeado como admin@santarosa.ec
 1. Asegúrate de que el contenido esté en estado "activo"
 2. Abre la página pública en otra pestaña (F5 para actualizar)
 3. Verifica que no haya errores en Console (F12)
+
+---
+
+## 🔐 Endpoints publicos (produccion)
+
+Para endurecer el backend:
+
+- Configura un captcha (Turnstile o hCaptcha) y envia `captchaToken` en `/api/contact` y `/api/survey`.
+- Define `ALLOWED_ORIGINS` para limitar origenes permitidos.
+- Define `IP_HASH_SECRET` para anonimizar IPs.
+
+Detalles en **FIREBASE_CONFIG.md** y **SECURITY_HARDENING.md**.
 ```
 
 ---

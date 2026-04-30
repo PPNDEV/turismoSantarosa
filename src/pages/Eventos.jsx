@@ -52,7 +52,7 @@ export default function EventosPage() {
   return (
     <>
       <Header />
-      <div style={{ paddingTop: "clamp(68px, 7vw, 80px)" }}>
+      <div className="page-shell">
         <div className="page-banner">
           <h1 className="page-banner-title">
             <FaCalendarAlt className="inline-icon" aria-hidden="true" />
@@ -60,7 +60,7 @@ export default function EventosPage() {
           </h1>
         </div>
 
-        <main className="container" style={{ padding: "3rem 1.5rem" }}>
+        <main className="container page-container">
           <div className="eventos-info-intro">
             <h2>{t("eventsPage.planningTitle")}</h2>
             <p>{t("eventsPage.planningDescription")}</p>
@@ -118,6 +118,8 @@ export default function EventosPage() {
                     <img
                       src={getEventImage(ev.imagen)}
                       alt={translatedName}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_EVENT_IMAGE) {
                           e.currentTarget.src = FALLBACK_EVENT_IMAGE;

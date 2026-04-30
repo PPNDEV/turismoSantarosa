@@ -16,9 +16,11 @@ Tu proyecto utiliza **Firebase** como backend con dos bases de datos diferentes:
 Firestore almacena:
 
 - ✅ **Usuarios y Roles** (`usersPublic`, `usersPrivate`)
-- ✅ **Mensajes de contacto** (`messages`)
-- ✅ **Encuestas** (`surveys`)
+- ✅ **Mensajes de contacto** (`mensajes_contacto`)
+- ✅ **Encuestas** (`encuestas_satisfaccion`)
 - ✅ **Analytics/Visitantes** (`analytics/traffic`)
+- ✅ **Auditoria administrativa** (`adminAudit`)
+- ✅ **Rate limiting** (`rateLimits`)
 
 **Por qué Firestore:**
 
@@ -37,13 +39,19 @@ usersPublic/{uid} = { displayName, role, active, createdAt, updatedAt }
 usersPrivate/{uid} = { email, deletedAt, updatedAt }
 
 // Analytics - registra visitantes
-analytics/traffic/{ruta} = { views, sessions, lastUpdated }
+analytics/traffic = { totalPageViews, totalSessions, routes, lastVisitAt }
 
 // Mensajes de contacto
-messages/{id} = { name, email, message, timestamp }
+mensajes_contacto/{id} = { remitente, correo, consulta_sugerencia, fecha }
 
 // Encuestas
-surveys/{id} = { question, responses, timestamp }
+encuestas_satisfaccion/{id} = { puntuacion, comentarios, fecha }
+
+// Auditoria admin
+adminAudit/{id} = { uid, action, details, createdAt }
+
+// Rate limiting
+rateLimits/{hash} = { count, resetAt, expiresAt, updatedAt }
 ```
 
 ### 2. **Realtime Database (rtdb)** - Contenido CMS (Público)
@@ -52,15 +60,16 @@ surveys/{id} = { question, responses, timestamp }
 
 RTDB almacena:
 
-- 📝 **Contenido del CMS** (`siteContent/main`)
-- 🖼️ **Portada (slides)**
-- 🎯 **Destinos**
-- 📰 **Blog**
-- 🖼️ **Galería**
-- 🍽️ **Gastronomía**
-- 🏨 **Hospedajes**
-- 🦋 **Flora/Fauna**
-- 🤝 **Cooperativas**
+- 📝 **Contenido CMS por nodo** (`content/{nodeKey}`)
+- 🖼️ Portada / heroSlides
+- 🎯 Destinos
+- 📰 Blog
+- 🖼️ Galeria
+- 🍽️ Gastronomia
+- 🏨 Hospedajes
+- 🦋 Flora y fauna
+- 🤝 Cooperativas
+- 🗓️ Eventos
 
 **Por qué RTDB:**
 
@@ -73,18 +82,16 @@ RTDB almacena:
 
 ```javascript
 {
-  "siteContent": {
-    "main": {
-      "portada": [ { id, title, image, ... }, ... ],
-      "destinos": [ { id, title, coords, ... }, ... ],
-      "eventos": [ { id, name, date, ... }, ... ],
-      "blog": [ { id, title, content, ... }, ... ],
-      "galeria": [ { id, images, ... }, ... ],
-      "gastronomia": [ { id, name, description, ... }, ... ],
-      "hospedajes": [ { id, name, location, ... }, ... ],
-      "floraFauna": [ { id, name, type, ... }, ... ],
-      "cooperativas": [ { id, name, contact, ... }, ... ]
-    }
+  "content": {
+    "heroSlides": { "-id": { "title": "", "bg": "", "order": 1 } },
+    "destinos": { "-id": { "nombre": "", "lat": 0, "lng": 0 } },
+    "blog": { "-id": { "titulo": "", "contenido": "" } },
+    "galeria": { "-id": { "titulo": "", "url": "" } },
+    "gastronomia": { "-id": { "nombre": "", "descripcion": "" } },
+    "hospedajes": { "-id": { "nombre": "", "ubicacion": "" } },
+    "floraFauna": { "-id": { "nombre": "", "tipo": "" } },
+    "cooperativas": { "-id": { "nombre": "", "ruta": "" } },
+    "eventos": { "-id": { "nombre": "", "fecha": "" } }
   }
 }
 ```
@@ -121,21 +128,21 @@ VITE_FIREBASE_MEASUREMENT_ID=G-XXXXX
 **Firestore - Seguridad Estricta:**
 
 ```javascript
-// Solo usuarios autenticados
+// Usuarios públicos
 match /usersPublic/{uid} {
-  allow read: if request.auth.uid == uid || isAdmin(request.auth.uid);
-  allow write: if isAdmin(request.auth.uid);
+  allow read: if request.auth.uid == uid || isAdmin();
+  allow write: if isAdmin();
 }
 
 // Solo admins
 match /usersPrivate/{uid} {
-  allow read, write: if isAdmin(request.auth.uid);
+  allow read, write: if isAdmin();
 }
 
 // Analytics - solo escritura desde backend
 match /analytics/{document=**} {
-  allow read: if isAdmin(request.auth.uid);
-  allow write: if false;  // Bloqueado, usa Cloud Functions
+  allow read: if request.auth != null;
+  allow write: if false;
 }
 ```
 
@@ -143,13 +150,11 @@ match /analytics/{document=**} {
 
 ```json
 {
+{
   "rules": {
-    "siteContent": {
+    "content": {
       ".read": true,
-      ".write": false,
-      "main": {
-        ".write": "auth.uid !== null && (root.child('admins').child(auth.uid).val() === true)"
-      }
+      ".write": false
     }
   }
 }
@@ -249,7 +254,7 @@ visit-santa-rosa/
 El contador de visitas usa Cloud Functions:
 
 ```javascript
-// Registra una visita automáticamente
+// Registra una visita automaticamente
 import { recordVisit } from "@/services/visitCounter";
 recordVisit("/destinos"); // registra visita a /destinos
 
@@ -258,6 +263,46 @@ import { subscribeVisitMetrics } from "@/context/ContentContext";
 const unsubscribe = subscribeVisitMetrics((metrics) => {
   console.log(metrics); // { "/": 450, "/destinos": 120, ... }
 });
+
+## 📨 Formularios publicos (contacto / encuesta)
+
+Endpoints:
+
+- `POST /api/contact`
+- `POST /api/survey`
+
+Payloads (JSON):
+
+```json
+{
+  "nombre": "Juan Perez",
+  "correo": "juan@mail.com",
+  "mensaje": "Hola",
+  "captchaToken": "..."
+}
+```
+
+```json
+{
+  "puntuacion": 5,
+  "comentarios": "Excelente",
+  "captchaToken": "..."
+}
+```
+
+`captchaToken` es opcional si no configuraste `CAPTCHA_SECRET`.
+
+## Variables de entorno para funciones (produccion)
+
+Configura variables de entorno en Firebase Functions (Runtime env vars). Para secretos, usa Secret Manager y exponelos como env vars en la funcion.
+
+Variables usadas:
+
+- `CAPTCHA_SECRET`: secreto de Turnstile o hCaptcha.
+- `CAPTCHA_PROVIDER`: `turnstile` (por defecto) o `hcaptcha`.
+- `ALLOWED_ORIGINS`: lista separada por comas para CORS/origen (usa `*` para permitir todos).
+- `IP_HASH_SECRET`: secreto para hash de IP (privacidad). Si no se define, `ipHash` queda en `null`.
+
 ```
 
 ## ✅ Checklist de Configuración

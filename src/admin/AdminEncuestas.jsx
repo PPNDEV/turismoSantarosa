@@ -15,11 +15,11 @@ const PAGE_LIMIT = 50;
 
 function StarRating({ value }) {
   return (
-    <span style={{ color: "#e8a733", fontSize: "1rem", letterSpacing: "2px" }}>
+    <span className="star-rating">
       {[1, 2, 3, 4, 5].map((star) => (
         <FaStar
           key={star}
-          style={{ opacity: star <= value ? 1 : 0.2 }}
+          className={`star-rating-icon ${star <= value ? "is-active" : ""}`}
           aria-hidden="true"
         />
       ))}
@@ -138,91 +138,36 @@ export default function AdminEncuestas({
           </button>
         </div>
 
-        <div
-          style={{
-            padding: "1.5rem",
-            display: "flex",
-            gap: "2rem",
-            flexWrap: "wrap",
-            borderBottom: "1px solid var(--gray-200)",
-          }}
-        >
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{
-                fontSize: "2rem",
-                fontWeight: 700,
-                color: "var(--ocean)",
-              }}
-            >
+        <div className="admin-survey-summary">
+          <div className="admin-survey-metric">
+            <div className="admin-survey-value admin-survey-value-ocean">
               {avg}
             </div>
-            <div style={{ fontSize: "0.82rem", color: "var(--gray-500)" }}>
+            <div className="admin-survey-label">
               Promedio
             </div>
             <StarRating value={Math.round(Number(avg))} />
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{
-                fontSize: "2rem",
-                fontWeight: 700,
-                color: "var(--gold-dark)",
-              }}
-            >
+          <div className="admin-survey-metric">
+            <div className="admin-survey-value admin-survey-value-gold">
               {total}
             </div>
-            <div style={{ fontSize: "0.82rem", color: "var(--gray-500)" }}>
+            <div className="admin-survey-label">
               Total respuestas
             </div>
           </div>
-          <div style={{ flex: 1, minWidth: "200px" }}>
+          <div className="admin-survey-distribution">
             {distribution.map((d) => (
-              <div
-                key={d.star}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  marginBottom: "0.25rem",
-                }}
-              >
-                <span
-                  style={{
-                    width: "20px",
-                    textAlign: "right",
-                    fontSize: "0.82rem",
-                    fontWeight: 600,
-                  }}
-                >
+              <div key={d.star} className="admin-survey-dist-row">
+                <span className="admin-survey-dist-star">
                   {d.star}*
                 </span>
-                <div
-                  style={{
-                    flex: 1,
-                    height: "8px",
-                    background: "var(--gray-200)",
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: total > 0 ? `${(d.count / total) * 100}%` : "0%",
-                      height: "100%",
-                      background: "var(--ocean)",
-                      borderRadius: "4px",
-                      transition: "width 0.3s",
-                    }}
-                  />
-                </div>
-                <span
-                  style={{
-                    width: "30px",
-                    fontSize: "0.78rem",
-                    color: "var(--gray-500)",
-                  }}
-                >
+                <progress
+                  className="admin-survey-progress"
+                  value={d.count}
+                  max={total || 1}
+                />
+                <span className="admin-survey-dist-count">
                   {d.count}
                 </span>
               </div>
@@ -231,30 +176,18 @@ export default function AdminEncuestas({
         </div>
 
         {!loading && encuestas.length >= PAGE_LIMIT && (
-          <p className="admin-inspector-muted" style={{ padding: "0 1.5rem" }}>
+          <p className="admin-inspector-muted admin-inspector-pad">
             Mostrando las {PAGE_LIMIT} encuestas mas recientes para reducir
             lecturas.
           </p>
         )}
 
         {loading ? (
-          <div
-            style={{
-              padding: "2rem",
-              textAlign: "center",
-              color: "var(--gray-500)",
-            }}
-          >
+          <div className="admin-loading-state">
             Cargando encuestas...
           </div>
         ) : encuestas.length === 0 ? (
-          <div
-            style={{
-              padding: "2rem",
-              textAlign: "center",
-              color: "var(--gray-500)",
-            }}
-          >
+          <div className="admin-loading-state">
             No hay encuestas de satisfaccion registradas.
           </div>
         ) : (
@@ -273,9 +206,9 @@ export default function AdminEncuestas({
                   <td>
                     <StarRating value={e.puntuacion} />
                   </td>
-                  <td style={{ maxWidth: "400px" }}>
+                  <td className="admin-comment-cell">
                     {e.comentarios || (
-                      <em style={{ color: "var(--gray-400)" }}>
+                      <em className="admin-comment-empty">
                         Sin comentarios
                       </em>
                     )}

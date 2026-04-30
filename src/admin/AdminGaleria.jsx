@@ -259,50 +259,20 @@ export default function AdminGaleria({
           </div>
         )}
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-            gap: "1rem",
-            padding: "1.5rem",
-          }}
-        >
+        <div className="admin-gallery-grid">
           {galeria.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                position: "relative",
-                borderRadius: "8px",
-                overflow: "hidden",
-                background: "var(--gray-100)",
-              }}
-            >
+            <div key={item.id} className="admin-gallery-item">
               <img
                 src={item.url}
                 alt={item.titulo}
-                style={{
-                  width: "100%",
-                  height: "130px",
-                  objectFit: "cover",
-                  display: "block",
-                }}
+                className="admin-gallery-image"
+                loading="lazy"
+                decoding="async"
               />
-              <div
-                style={{
-                  padding: "0.5rem",
-                  fontSize: "0.78rem",
-                  color: "var(--gray-800)",
-                }}
-              >
+              <div className="admin-gallery-title">
                 {item.titulo}
               </div>
-              <div
-                style={{
-                  padding: "0 0.5rem 0.5rem",
-                  display: "flex",
-                  gap: "0.35rem",
-                }}
-              >
+              <div className="admin-gallery-actions">
                 <button
                   className="action-btn edit-btn"
                   onClick={() => openEdit(item)}
@@ -314,22 +284,7 @@ export default function AdminGaleria({
               <button
                 onClick={() => del(item.id)}
                 disabled={!canEdit}
-                style={{
-                  position: "absolute",
-                  top: "6px",
-                  right: "6px",
-                  background: "rgba(185,28,28,0.85)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "50%",
-                  width: "24px",
-                  height: "24px",
-                  cursor: "pointer",
-                  fontSize: "0.75rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+                className="admin-gallery-delete"
               >
                 <FaTimes aria-hidden="true" />
               </button>

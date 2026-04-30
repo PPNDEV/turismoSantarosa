@@ -16,7 +16,7 @@ export default function HospedajePage() {
   return (
     <>
       <Header />
-      <div style={{ paddingTop: "clamp(68px, 7vw, 80px)" }}>
+      <div className="page-shell">
         <div className="page-banner">
           <h1 className="page-banner-title">
             <FaBed className="inline-icon" aria-hidden="true" />
@@ -37,7 +37,12 @@ export default function HospedajePage() {
             <div className="info-grid">
               {hospedajes.map((hospedaje) => (
                 <article key={hospedaje.id} className="info-card">
-                  <img src={hospedaje.imagen} alt={hospedaje.nombre} />
+                  <img
+                    src={hospedaje.imagen}
+                    alt={hospedaje.nombre}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="info-card-body">
                     <span className="badge badge-ocean">{hospedaje.isla}</span>
                     <h3>{hospedaje.nombre}</h3>

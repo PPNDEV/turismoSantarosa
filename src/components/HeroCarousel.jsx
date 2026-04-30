@@ -59,8 +59,16 @@ export default function HeroCarousel() {
         <div
           key={i}
           className={`hero-slide ${i === activeIndex ? "active" : ""}`}
-          style={{ backgroundImage: `url('${slide.bg}')` }}
-        />
+        >
+          <img
+            src={slide.bg}
+            alt=""
+            aria-hidden="true"
+            className="hero-slide-bg"
+            loading={i === activeIndex ? "eager" : "lazy"}
+            decoding="async"
+          />
+        </div>
       ))}
       <div className="hero-overlay" />
 

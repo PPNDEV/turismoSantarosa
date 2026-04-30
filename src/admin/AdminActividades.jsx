@@ -481,14 +481,7 @@ export default function AdminActividades({
                   </strong>
                 </td>
                 <td>{a.isla || "-"}</td>
-                <td
-                  style={{
-                    maxWidth: "300px",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+                <td className="admin-cell-ellipsis">
                   {a.descripcion}
                 </td>
                 <td>

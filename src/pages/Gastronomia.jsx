@@ -9,7 +9,7 @@ export default function GastronomiaPage() {
   return (
     <>
       <Header />
-      <div style={{ paddingTop: "clamp(68px, 7vw, 80px)" }}>
+      <div className="page-shell">
         <div className="page-banner">
           <h1 className="page-banner-title">
             <FaUtensils className="inline-icon" aria-hidden="true" />
@@ -30,7 +30,12 @@ export default function GastronomiaPage() {
             <div className="info-grid">
               {gastronomia.map((restaurante) => (
                 <article key={restaurante.id} className="info-card">
-                  <img src={restaurante.imagen} alt={restaurante.nombre} />
+                  <img
+                    src={restaurante.imagen}
+                    alt={restaurante.nombre}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="info-card-body">
                     <span className="badge badge-gold">{restaurante.isla}</span>
                     <h3>{restaurante.nombre}</h3>

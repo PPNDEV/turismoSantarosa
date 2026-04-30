@@ -28,19 +28,19 @@
     │  FIREBASE PROJECT   │             │ CLOUD FUNCTIONS  │   │Storage │
     │                     │             │                  │   │Bucket  │
     │ ┌─────────────────┐ │             │ • countVisit()   │   └────────┘
-    │ │   Firestore     │ │             │ • webhooks       │
-    │ │                 │ │             └──────────────────┘
-    │ │ • usersPublic   │ │
-    │ │ • usersPrivate  │ │
-    │ │ • messages      │ │
-    │ │ • surveys       │ │
+    │ │   Firestore     │ │             │ • submitContact  │
+    │ │                 │ │             │ • submitSurvey   │
+    │ │ • usersPublic   │ │             │ • admin* (callable)
+    │ │ • usersPrivate  │ │             └──────────────────┘
+    │ │ • mensajes_*    │ │
+    │ │ • encuestas_*   │ │
     │ │ • analytics     │ │
     │ └─────────────────┘ │
     │                     │
     │ ┌─────────────────┐ │
     │ │  Realtime DB    │ │
     │ │                 │ │
-    │ │ • siteContent   │ │
+    │ │ • content       │ │
     │ │   - portada     │ │
     │ │   - destinos    │ │
     │ │   - eventos     │ │
@@ -124,7 +124,8 @@ Autenticación: REQUERIDA
 ┌──────────────────────────┐
 │ usersPublic              │ → Todos ven roles/nombres
 │ usersPrivate             │ → Solo admin ve emails
-│ messages                 │ → Solo admin lee
+│ mensajes_contacto         │ → Solo admin lee
+│ encuestas_satisfaccion   │ → Solo admin lee
 │ analytics                │ → Solo admin + Cloud Function
 └──────────────────────────┘
 ```
@@ -134,7 +135,7 @@ Autenticación: REQUERIDA
 ```
 Autenticación: OPCIONAL
 ┌──────────────────────────┐
-│ siteContent.main         │ → Todos LEN, admin ESCRIBE
+│ content/*                │ → Todos LEN, admin ESCRIBE
 │ (lectura pública)        │
 └──────────────────────────┘
 ```
@@ -155,7 +156,7 @@ Sin exposición directa
 ### Realtime DB → UI
 
 ```
-RTDB siteContent.main
+RTDB content/*
         ↓
 onValue() listener
         ↓
@@ -187,7 +188,7 @@ UI actualizada ⚡ (100-500ms)
 ```mermaid
 graph LR
     A[Usuario visita web] -->|Lee| B[Realtime DB]
-    B -->|siteContent.main| C[Portada, Destinos, Blog...]
+        B -->|content/*| C[Portada, Destinos, Blog...]
     C -->|Renderiza| D[Página Pública]
     E[visitCounter.js] -->|POST /api/visits| F[Cloud Function]
     F -->|Escribe| G[Firestore analytics]
@@ -200,7 +201,7 @@ graph LR
 graph LR
     A[Editor inicia sesión] -->|Firebase Auth| B[Firestore usersPublic]
     B -->|Obtiene rol=editor| C[Acceso a /admin]
-    C -->|Edita contenido| D[Realtime DB siteContent]
+        C -->|Edita contenido| D[Realtime DB content]
     D -->|Notifica| E[Usuarios ven cambios]
     F[Firebase Auth] -->|Detecta cambios| G[AdminDashboard muestra cambios]
 ```
@@ -214,7 +215,7 @@ graph LR
     C -->|Crea usuarios| D[Cloud Function signUp]
     C -->|Edita contenido| E[Realtime DB]
     C -->|Monitora visitas| F[Firestore analytics]
-    C -->|Lee mensajes| G[Firestore messages]
+        C -->|Lee mensajes| G[Firestore mensajes_contacto]
 ```
 
 ## 🔄 Flujo Completo: Editar un Evento
@@ -317,7 +318,7 @@ Firebase Console > Firestore > Colecciones
 
 ```
 Firebase Console > Realtime Database > Datos
-- Verifica siteContent.main existe
+- Verifica content/* existe
 - Verifica portada, destinos, eventos tienen contenido
 ```
 

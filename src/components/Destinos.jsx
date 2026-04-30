@@ -44,8 +44,13 @@ export default function Destinos() {
 
             return (
               <div key={d.id} className="destino-card reveal">
-                <div style={{ overflow: "hidden" }}>
-                  <img src={d.imagen} alt={translatedName} />
+                <div className="media-crop">
+                  <img
+                    src={d.imagen}
+                    alt={translatedName}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <div className="destino-info">
                   <div className="destino-cat">
@@ -60,7 +65,7 @@ export default function Destinos() {
             );
           })}
         </div>
-        <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
+        <div className="cta-center">
           <Link to="/destinos" className="btn btn-primary">
             {t("destinosSection.cta")} →
           </Link>

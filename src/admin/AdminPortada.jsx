@@ -323,22 +323,15 @@ export default function AdminPortada({
                 </td>
                 <td>
                   <strong>{slide.title}</strong>
-                  <div
-                    style={{
-                      fontSize: "0.78rem",
-                      color: "var(--gray-500)",
-                      marginTop: "0.2rem",
-                    }}
-                  >
+                  <div className="admin-slide-tag-muted">
                     {slide.tag}
                   </div>
                 </td>
                 <td>{slide.cta}</td>
                 <td>
                   <button
-                    className="action-btn move-btn icon-btn"
+                    className="action-btn move-btn icon-btn icon-btn-spaced"
                     onClick={() => moveHeroSlide(slide.id, -1)}
-                    style={{ marginRight: "0.35rem" }}
                     disabled={!canEdit || index === 0}
                     title="Subir slide"
                     aria-label="Subir slide"
@@ -346,9 +339,8 @@ export default function AdminPortada({
                     <FaArrowUp aria-hidden="true" />
                   </button>
                   <button
-                    className="action-btn move-btn icon-btn"
+                    className="action-btn move-btn icon-btn icon-btn-spaced"
                     onClick={() => moveHeroSlide(slide.id, 1)}
-                    style={{ marginRight: "0.35rem" }}
                     disabled={!canEdit || index === heroSlides.length - 1}
                     title="Bajar slide"
                     aria-label="Bajar slide"
@@ -516,10 +508,15 @@ export default function AdminPortada({
                 <h3 className="admin-preview-title">
                   Vista previa de la portada
                 </h3>
-                <article
-                  className="admin-slide-preview"
-                  style={{ backgroundImage: `url(${previewSlide.bg})` }}
-                >
+                <article className="admin-slide-preview">
+                  <img
+                    src={previewSlide.bg}
+                    alt=""
+                    aria-hidden="true"
+                    className="admin-slide-preview-bg"
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="admin-slide-overlay">
                     <span className="admin-slide-tag">{previewSlide.tag}</span>
                     <h3 className="admin-slide-title">{previewSlide.title}</h3>

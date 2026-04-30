@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaArrowLeft,
@@ -20,20 +20,20 @@ import {
   FaUtensils,
 } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
-import AdminPortada from "../admin/AdminPortada";
-import AdminDashboard from "../admin/AdminDashboard";
-import AdminEventos from "../admin/AdminEventos";
-import AdminBlog from "../admin/AdminBlog";
-import AdminDestinos from "../admin/AdminDestinos";
-import AdminGaleria from "../admin/AdminGaleria";
-import AdminGastronomia from "../admin/AdminGastronomia";
-import AdminHospedajes from "../admin/AdminHospedajes";
-import AdminFloraFauna from "../admin/AdminFloraFauna";
-import AdminUsuarios from "../admin/AdminUsuarios";
-import AdminActividades from "../admin/AdminActividades";
-import AdminTransporte from "../admin/AdminTransporte";
-import AdminMensajes from "../admin/AdminMensajes";
-import AdminEncuestas from "../admin/AdminEncuestas";
+const AdminPortada = lazy(() => import("../admin/AdminPortada"));
+const AdminDashboard = lazy(() => import("../admin/AdminDashboard"));
+const AdminEventos = lazy(() => import("../admin/AdminEventos"));
+const AdminBlog = lazy(() => import("../admin/AdminBlog"));
+const AdminDestinos = lazy(() => import("../admin/AdminDestinos"));
+const AdminGaleria = lazy(() => import("../admin/AdminGaleria"));
+const AdminGastronomia = lazy(() => import("../admin/AdminGastronomia"));
+const AdminHospedajes = lazy(() => import("../admin/AdminHospedajes"));
+const AdminFloraFauna = lazy(() => import("../admin/AdminFloraFauna"));
+const AdminUsuarios = lazy(() => import("../admin/AdminUsuarios"));
+const AdminActividades = lazy(() => import("../admin/AdminActividades"));
+const AdminTransporte = lazy(() => import("../admin/AdminTransporte"));
+const AdminMensajes = lazy(() => import("../admin/AdminMensajes"));
+const AdminEncuestas = lazy(() => import("../admin/AdminEncuestas"));
 
 const menuItems = [
   {
@@ -420,40 +420,19 @@ export default function AdminLayout() {
           })}
         </nav>
         <div className="sidebar-footer">
-          <div
-            style={{
-              fontSize: "0.78rem",
-              opacity: 0.6,
-              marginBottom: "0.75rem",
-            }}
-          >
+          <div className="admin-user-meta">
             <FaUser className="inline-icon" aria-hidden="true" />
             {user?.displayName || user?.email}
           </div>
           <button
             onClick={handleLogout}
-            className="btn btn-outline"
-            style={{
-              color: "white",
-              borderColor: "rgba(255,255,255,0.3)",
-              width: "100%",
-              justifyContent: "center",
-              fontSize: "0.85rem",
-            }}
+            className="btn btn-outline admin-sidebar-btn"
           >
             Cerrar Sesión
           </button>
           <button
             onClick={() => navigate("/")}
-            className="btn"
-            style={{
-              width: "100%",
-              justifyContent: "center",
-              marginTop: "0.5rem",
-              fontSize: "0.85rem",
-              background: "rgba(255,255,255,0.08)",
-              color: "white",
-            }}
+            className="btn admin-sidebar-btn admin-sidebar-secondary"
           >
             <FaArrowLeft className="inline-icon" aria-hidden="true" />
             Ver Sitio
@@ -495,7 +474,15 @@ export default function AdminLayout() {
         </div>
 
         <div className="admin-workspace">
-          <div className="admin-content">{renderContent()}</div>
+          <div className="admin-content">
+            <Suspense
+              fallback={
+                <div className="admin-loading">Cargando modulo...</div>
+              }
+            >
+              {renderContent()}
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>

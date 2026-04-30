@@ -118,30 +118,18 @@ export default function AdminMensajes({
         </div>
 
         {!loading && mensajes.length >= PAGE_LIMIT && (
-          <p className="admin-inspector-muted" style={{ padding: "0 1.5rem" }}>
+          <p className="admin-inspector-muted admin-inspector-pad">
             Mostrando los {PAGE_LIMIT} mensajes mas recientes para reducir
             lecturas.
           </p>
         )}
 
         {loading ? (
-          <div
-            style={{
-              padding: "2rem",
-              textAlign: "center",
-              color: "var(--gray-500)",
-            }}
-          >
+          <div className="admin-loading-state">
             Cargando mensajes...
           </div>
         ) : mensajes.length === 0 ? (
-          <div
-            style={{
-              padding: "2rem",
-              textAlign: "center",
-              color: "var(--gray-500)",
-            }}
-          >
+          <div className="admin-loading-state">
             No hay mensajes de contacto recibidos.
           </div>
         ) : (
@@ -160,7 +148,7 @@ export default function AdminMensajes({
                 <tr
                   key={m.id}
                   onClick={() => setSelected(selected === m.id ? null : m.id)}
-                  style={{ cursor: "pointer" }}
+                  className="admin-row-clickable"
                 >
                   <td>
                     <strong>{m.remitente}</strong>
@@ -168,12 +156,7 @@ export default function AdminMensajes({
                   <td>{m.correo}</td>
                   <td>{formatDate(m.fecha)}</td>
                   <td
-                    style={{
-                      maxWidth: "350px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: selected === m.id ? "normal" : "nowrap",
-                    }}
+                    className={`admin-msg-cell ${selected === m.id ? "is-expanded" : ""}`}
                   >
                     {m.consulta_sugerencia}
                   </td>

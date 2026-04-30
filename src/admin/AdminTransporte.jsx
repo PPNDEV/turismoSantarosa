@@ -198,7 +198,7 @@ export default function AdminTransporte({
               <div className="admin-preview-column">
                 <h3 className="admin-preview-title">Vista previa</h3>
                 <div className="admin-preview-card-frame">
-                  <article className="cooperativa-card" style={{ padding: "1.5rem" }}>
+                  <article className="cooperativa-card cooperativa-card-admin">
                     <h3><FaBus className="inline-icon" aria-hidden="true" /> {preview.nombre}</h3>
                     <p>{preview.ruta}</p>
                     <div className="info-meta"><strong>Frecuencia:</strong> {preview.frecuencia}</div>

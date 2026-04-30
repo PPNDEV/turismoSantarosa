@@ -20,7 +20,7 @@ export default function Blog() {
     return translated === key ? fallback : translated;
   };
   return (
-    <section style={{ background: "var(--gray-50)" }}>
+    <section className="section-gray">
       <div className="container">
         <div className="section-header reveal">
           <h2 className="section-title">
@@ -51,18 +51,18 @@ export default function Blog() {
 
               return (
                 <div key={art.id} className="blog-card reveal">
-                  <img src={art.imagen} alt={translatedTitle} />
+                  <img
+                    src={art.imagen}
+                    alt={translatedTitle}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="blog-body">
                     <div className="blog-meta">
                       <span className="badge badge-ocean">
                         {translatedCategory}
                       </span>
-                      <span
-                        style={{
-                          fontSize: "0.78rem",
-                          color: "var(--gray-400)",
-                        }}
-                      >
+                      <span className="meta-xs">
                         {formatFecha(art.fecha, locale)}
                       </span>
                     </div>
@@ -70,9 +70,7 @@ export default function Blog() {
                     <p>{translatedSummary}</p>
                   </div>
                   <div className="blog-footer">
-                    <span
-                      style={{ fontSize: "0.82rem", color: "var(--gray-400)" }}
-                    >
+                    <span className="meta-sm">
                       <FaPenNib className="inline-icon" aria-hidden="true" />
                       {translatedAuthor}
                     </span>
@@ -85,7 +83,7 @@ export default function Blog() {
             })(),
           )}
         </div>
-        <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
+        <div className="cta-center">
           <Link to="/blog" className="btn btn-outline">
             {t("blogSection.viewAll")}
           </Link>

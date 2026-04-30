@@ -235,14 +235,7 @@ export default function AdminDestinos({
                   </td>
                   <td>{d.isla || "-"}</td>
                   <td>{d.categoria}</td>
-                  <td
-                    style={{
-                      maxWidth: "300px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  <td className="admin-cell-ellipsis">
                     {d.descripcion}
                   </td>
                   <td>

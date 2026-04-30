@@ -343,12 +343,7 @@ export default function AdminBlog({
                         <span className="badge badge-ocean">
                           {previewBlog.categoria}
                         </span>
-                        <span
-                          style={{
-                            fontSize: "0.78rem",
-                            color: "var(--gray-400)",
-                          }}
-                        >
+                        <span className="meta-xs">
                           {formatFecha(previewBlog.fecha)}
                         </span>
                       </div>
@@ -356,12 +351,7 @@ export default function AdminBlog({
                       <p>{previewBlog.resumen}</p>
                     </div>
                     <div className="blog-footer">
-                      <span
-                        style={{
-                          fontSize: "0.82rem",
-                          color: "var(--gray-400)",
-                        }}
-                      >
+                      <span className="meta-sm">
                         <FaPenNib className="inline-icon" aria-hidden="true" />
                         {previewBlog.autor}
                       </span>

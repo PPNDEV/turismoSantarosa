@@ -123,7 +123,7 @@ export default function InformacionTuristica() {
   return (
     <>
       <Header />
-      <div style={{ paddingTop: "clamp(68px, 7vw, 80px)" }}>
+      <div className="page-shell">
         <div className="page-banner">
           <h1 className="page-banner-title">
             <FaMapMarkedAlt className="inline-icon" aria-hidden="true" />
@@ -146,7 +146,12 @@ export default function InformacionTuristica() {
             <div className="info-grid">
               {gastronomia.map((restaurante) => (
                 <article key={restaurante.id} className="info-card">
-                  <img src={restaurante.imagen} alt={restaurante.nombre} />
+                  <img
+                    src={restaurante.imagen}
+                    alt={restaurante.nombre}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="info-card-body">
                     <span className="badge badge-gold">{restaurante.isla}</span>
                     <h3>{restaurante.nombre}</h3>
@@ -185,7 +190,12 @@ export default function InformacionTuristica() {
             <div className="info-grid">
               {hospedajes.map((hospedaje) => (
                 <article key={hospedaje.id} className="info-card">
-                  <img src={hospedaje.imagen} alt={hospedaje.nombre} />
+                  <img
+                    src={hospedaje.imagen}
+                    alt={hospedaje.nombre}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="info-card-body">
                     <span className="badge badge-ocean">{hospedaje.isla}</span>
                     <h3>{hospedaje.nombre}</h3>
@@ -228,7 +238,12 @@ export default function InformacionTuristica() {
             <div className="info-grid">
               {floraFauna.map((registro) => (
                 <article key={registro.id} className="info-card">
-                  <img src={registro.imagen} alt={registro.nombre} />
+                  <img
+                    src={registro.imagen}
+                    alt={registro.nombre}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="info-card-body">
                     <span className="badge badge-ocean">{registro.tipo}</span>
                     <h3>{registro.nombre}</h3>
@@ -324,9 +339,11 @@ export default function InformacionTuristica() {
               </MapContainer>
 
               <div className="map-legend">
-                {Object.entries(markerColors).map(([key, color]) => (
+                {Object.entries(markerColors).map(([key]) => (
                   <div key={key} className="map-legend-item">
-                    <span style={{ background: color }} />
+                    <span
+                      className={`map-legend-swatch map-legend-${key.toLowerCase()}`}
+                    />
                     <p>{key}</p>
                   </div>
                 ))}

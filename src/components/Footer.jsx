@@ -16,32 +16,32 @@ import {
   FaPhoneAlt,
 } from "react-icons/fa";
 import { useLanguage } from "../context/useLanguage";
+import { useContent } from "../context/useContent";
 
 const socialLinks = [
   {
     label: "Facebook",
     href: "https://www.facebook.com/municipiosr/",
     icon: FaFacebookF,
-    background: "#1877F2",
+    className: "social-facebook",
   },
   {
     label: "YouTube",
     href: "https://www.youtube.com/channel/UCgaGV99aMfrmnThzoO1dqJg",
     icon: FaYoutube,
-    background: "#FF0000",
+    className: "social-youtube",
   },
   {
     label: "X",
     href: "https://twitter.com/municipiosr",
     icon: FaXTwitter,
-    background: "#111827",
+    className: "social-x",
   },
   {
     label: "Instagram",
     href: "https://www.instagram.com/gad_santarosa_ec/",
     icon: FaInstagram,
-    background:
-      "linear-gradient(135deg, #f58529 0%, #dd2a7b 42%, #8134af 72%, #515bd4 100%)",
+    className: "social-instagram",
   },
 ];
 
@@ -50,14 +50,55 @@ const crestSrc = `${import.meta.env.BASE_URL}escudo-vector-02-247x300.png`;
 export default function Footer() {
   const [form, setForm] = useState({ nombre: "", email: "", mensaje: "" });
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
   const { t } = useLanguage();
+  const { enviarMensajeContacto } = useContent();
 
-  const handleSubmit = (e) => {
+  const normalizeText = (value) =>
+    String(value || "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const isValidEmail = (value) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // En producción: guardar en Firestore
-    setSent(true);
-    setForm({ nombre: "", email: "", mensaje: "" });
-    setTimeout(() => setSent(false), 4000);
+    setError("");
+    if (sending) {
+      return;
+    }
+
+    const nombre = normalizeText(form.nombre).slice(0, 80);
+    const email = normalizeText(form.email).slice(0, 120);
+    const mensaje = normalizeText(form.mensaje).slice(0, 1000);
+
+    if (!nombre || !email || !mensaje) {
+      setError("Completa todos los campos.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Correo invalido.");
+      return;
+    }
+
+    setSending(true);
+    try {
+      await enviarMensajeContacto({
+        remitente: nombre,
+        correo: email,
+        consulta_sugerencia: mensaje,
+      });
+      setSent(true);
+      setForm({ nombre: "", email: "", mensaje: "" });
+      setTimeout(() => setSent(false), 4000);
+    } catch {
+      setError("No se pudo enviar el mensaje. Intenta mas tarde.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -66,7 +107,7 @@ export default function Footer() {
         <div className="footer-grid">
           {/* Brand */}
           <div className="footer-brand">
-            <div className="logo" style={{ marginBottom: "1rem" }}>
+            <div className="logo footer-logo">
               <div className="logo-icon">
                 <img
                   src={crestSrc}
@@ -81,16 +122,15 @@ export default function Footer() {
             </div>
             <p>{t("footer.brandDescription")}</p>
             <div className="footer-social">
-              {socialLinks.map(({ label, href, icon, background }) => (
+              {socialLinks.map(({ label, href, icon, className }) => (
                 <a
                   key={label}
                   href={href}
-                  className="social-btn"
+                  className={`social-btn ${className}`}
                   title={label}
                   aria-label={label}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ background }}
                 >
                   {createElement(icon)}
                 </a>
@@ -151,27 +191,29 @@ export default function Footer() {
           <div>
             <h4>{t("footer.writeUsTitle")}</h4>
             {sent ? (
-              <div
-                style={{
-                  background: "rgba(10,126,164,0.2)",
-                  border: "1px solid var(--ocean)",
-                  borderRadius: "8px",
-                  padding: "1rem",
-                  color: "white",
-                  fontSize: "0.88rem",
-                }}
-              >
+              <div className="footer-success">
                 <FaCheckCircle className="inline-icon" aria-hidden="true" />
                 {t("footer.messageSent")}
               </div>
             ) : (
               <form className="contact-form" onSubmit={handleSubmit}>
+                {error && (
+                  <div
+                    className="login-error form-error"
+                    role="alert"
+                    aria-live="polite"
+                  >
+                    {error}
+                  </div>
+                )}
                 <input
                   type="text"
                   placeholder={t("footer.form.namePlaceholder")}
                   value={form.nombre}
                   onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                   required
+                  maxLength={80}
+                  disabled={sending}
                 />
                 <input
                   type="email"
@@ -179,6 +221,8 @@ export default function Footer() {
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   required
+                  maxLength={120}
+                  disabled={sending}
                 />
                 <textarea
                   placeholder={t("footer.form.messagePlaceholder")}
@@ -187,14 +231,16 @@ export default function Footer() {
                     setForm({ ...form, mensaje: e.target.value })
                   }
                   required
+                  maxLength={1000}
+                  disabled={sending}
                 />
                 <button
                   type="submit"
-                  className="btn btn-gold"
-                  style={{ width: "100%", justifyContent: "center" }}
+                  className="btn btn-gold btn-full"
+                  disabled={sending}
                 >
                   <FaPaperPlane className="inline-icon" aria-hidden="true" />
-                  {t("footer.sendMessage")}
+                  {sending ? "Enviando..." : t("footer.sendMessage")}
                 </button>
               </form>
             )}

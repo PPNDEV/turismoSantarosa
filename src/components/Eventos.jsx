@@ -50,7 +50,7 @@ export default function Eventos() {
   };
 
   return (
-    <section style={{ background: "var(--gray-50)" }}>
+    <section className="section-gray">
       <div className="container">
         <div className="section-header reveal">
           <h2 className="section-title">
@@ -88,6 +88,8 @@ export default function Eventos() {
                     <img
                       src={getEventImage(ev.imagen)}
                       alt={translatedName}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_EVENT_IMAGE) {
                           e.currentTarget.src = FALLBACK_EVENT_IMAGE;
@@ -122,7 +124,7 @@ export default function Eventos() {
           </div>
         )}
 
-        <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
+        <div className="cta-center">
           <Link to="/eventos" className="btn btn-primary">
             {t("eventosSection.cta")} →
           </Link>
