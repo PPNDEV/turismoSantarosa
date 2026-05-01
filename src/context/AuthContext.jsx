@@ -484,11 +484,13 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      const adminUpdateUserRole = httpsCallable(
-        functions,
-        "adminUpdateUserRole",
-      );
-      await adminUpdateUserRole({ uid, role });
+      const asignarRol = httpsCallable(functions, "asignarRol");
+      await asignarRol({ targetUid: uid, newRole: role });
+
+      // Forzar el refresco del token local para obtener el nuevo custom claim
+      if (auth.currentUser) {
+        await auth.currentUser.getIdToken(true);
+      }
     } catch (error) {
       throw new Error(error?.message || "Error al actualizar el rol.");
     }

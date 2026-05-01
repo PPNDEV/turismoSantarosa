@@ -32,3 +32,7 @@ dist-ssr
 *.sln
 *.sw?
 
+# Project specific
+estructura.txt
+functions/serviceAccountKey.json
+serviceAccountKey.json

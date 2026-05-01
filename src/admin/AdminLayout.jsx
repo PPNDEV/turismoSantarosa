@@ -13,6 +13,7 @@ import {
   FaGlobe,
   FaHiking,
   FaImage,
+  FaInbox,
   FaLeaf,
   FaMapMarkerAlt,
   FaUser,
@@ -34,6 +35,7 @@ const AdminActividades = lazy(() => import("../admin/AdminActividades"));
 const AdminTransporte = lazy(() => import("../admin/AdminTransporte"));
 const AdminMensajes = lazy(() => import("../admin/AdminMensajes"));
 const AdminEncuestas = lazy(() => import("../admin/AdminEncuestas"));
+const AdminSolicitudes = lazy(() => import("../admin/AdminSolicitudes"));
 
 const menuItems = [
   {
@@ -154,6 +156,16 @@ const menuItems = [
       "Crea usuarios y asigna permisos: administrador, editor y visualizador.",
     requiresAdmin: true,
   },
+  {
+    key: "solicitudes",
+    icon: FaInbox,
+    label: "Solicitudes",
+    title: "Bandeja de Entrada",
+    previewPath: "/admin",
+    description:
+      "Modera y aprueba las solicitudes de nuevos negocios turísticos.",
+    requiresAdmin: true,
+  },
 ];
 
 function openSite(path) {
@@ -244,6 +256,7 @@ export default function AdminLayout() {
       mensajes: (isDirty) => handleDirtySectionChange("mensajes", isDirty),
       encuestas: (isDirty) => handleDirtySectionChange("encuestas", isDirty),
       usuarios: (isDirty) => handleDirtySectionChange("usuarios", isDirty),
+      solicitudes: (isDirty) => handleDirtySectionChange("solicitudes", isDirty),
     }),
     [handleDirtySectionChange],
   );
@@ -368,6 +381,12 @@ export default function AdminLayout() {
           <AdminUsuarios
             onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.usuarios}
+          />
+        );
+      case "solicitudes":
+        return (
+          <AdminSolicitudes
+            onLivePreviewChange={handleLivePreviewChange}
           />
         );
       default:

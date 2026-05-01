@@ -117,6 +117,15 @@ exports.adminCreateUser = onCall({ region: "us-central1" }, async (request) => {
 
   const uid = userRecord.uid;
 
+  try {
+    await admin.auth().setCustomUserClaims(uid, { role: normalizedRole });
+  } catch (e) {
+    logger.error("Error setting custom claims", e);
+    await admin.auth().deleteUser(uid);
+    throw new HttpsError("internal", e.message);
+  }
+
+
   const batch = db.batch();
   const publicRef = db.collection("usersPublic").doc(uid);
   const privateRef = db.collection("usersPrivate").doc(uid);
@@ -240,4 +249,47 @@ exports.adminDeleteUser = onCall({ region: "us-central1" }, async (request) => {
     { uid },
   );
   return { success: true };
+});
+
+exports.asignarRol = onCall({ region: "us-central1" }, async (request) => {
+  if (!request.auth || request.auth.token.role !== ROLE_ADMIN) {
+    throw new HttpsError(
+      "permission-denied",
+      "Solo los administradores pueden asignar roles."
+    );
+  }
+
+  const { targetUid, newRole } = request.data;
+  const normalizedRole = normalizeRole(newRole);
+
+  if (!targetUid || !normalizedRole) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Faltan parámetros requeridos: targetUid y newRole."
+    );
+  }
+
+  try {
+    // 1. Inyectar custom claim
+    await admin.auth().setCustomUserClaims(targetUid, { role: normalizedRole });
+
+    // 2. Sincronizar con usersPublic para la UI
+    await db.collection("usersPublic").doc(targetUid).update({
+      role: normalizedRole,
+      active: true,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth.uid,
+      "user.role.assign",
+      { targetUid, role: normalizedRole }
+    );
+
+    return { success: true };
+  } catch (e) {
+    logger.error("Error al asignar rol", e);
+    throw new HttpsError("internal", e.message);
+  }
 });

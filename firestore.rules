@@ -9,15 +9,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function currentUserPublicDoc() {
-      return get(/databases/$(database)/documents/usersPublic/$(request.auth.uid));
-    }
-
-    function currentUserPublicExists() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/usersPublic/$(request.auth.uid));
-    }
-
     function isRoleAllowed(role) {
       return role in ["administrador", "editor", "visualizador"];
     }
@@ -67,19 +58,13 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return currentUserPublicExists()
-        && currentUserPublicDoc().data.active == true
-        && currentUserPublicDoc().data.role == "administrador";
+      return request.auth != null && request.auth.token.role == "administrador";
     }
 
     function canEditContent() {
-      return currentUserPublicExists()
-        && currentUserPublicDoc().data.active == true
-        && (
-          currentUserPublicDoc().data.role == "administrador"
-          || currentUserPublicDoc().data.role == "editor"
-        );
+      return request.auth != null && request.auth.token.role in ["administrador", "editor"];
     }
+
 
     // =========================================================================
     // 1. COLECCIONES PRINCIPALES (Núcleo turístico)
@@ -145,6 +130,13 @@ service cloud.firestore {
       allow create: if false;
       allow update, delete: if isAdmin();
     }
+
+    // Bandeja de entrada para solicitudes de negocios nuevos
+    match /solicitudes_negocios/{docId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if request.auth != null;
+    }
+
 
     // =========================================================================
     // 3. COLECCIONES ADMINISTRATIVAS
