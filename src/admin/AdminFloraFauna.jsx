@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaLeaf, FaPaw, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
-import { createContentId, uploadContentImage } from "./adminImageUpload";
+import { createContentId, uploadContentImage } from "../services/uploadService";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=900";
@@ -140,6 +140,8 @@ export default function AdminFloraFauna({
         lat: normalizeCoord(form.lat),
         lng: normalizeCoord(form.lng),
       });
+      setForm(emptyRegistro);
+      setInitialForm(emptyRegistro);
     } finally {
       setSaving(false);
     }

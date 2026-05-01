@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaCamera, FaEdit, FaSave, FaTimes, FaVideo } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
-import { createContentId, uploadContentImage } from "./adminImageUpload";
+import { createContentId, uploadContentImage } from "../services/uploadService";
 
 const FALLBACK_GALLERY_IMAGE =
   "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=900";

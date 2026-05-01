@@ -69,6 +69,10 @@ const ROUTE_NODES = {
   "/actividades": ["actividades", "actividadesEditorial"],
   "/destinos": ["destinos"],
   "/eventos": ["eventos"],
+  "/hospedaje": ["hospedajes"],
+  "/gastronomia": ["gastronomia"],
+  "/transporte": ["cooperativas"],
+  "/flora-fauna": ["floraFauna"],
   "/informacion": [
     "destinos",
     "gastronomia",

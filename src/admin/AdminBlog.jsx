@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaPenNib, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
-import { createContentId, uploadContentImage } from "./adminImageUpload";
+import { createContentId, uploadContentImage } from "../services/uploadService";
 
 const FALLBACK_BLOG_IMAGE =
   "https://images.unsplash.com/photo-1456324504439-367cee3b3c32?w=900";
@@ -103,6 +103,8 @@ export default function AdminBlog({
         : form.imagen;
 
       await upsertBlog({ ...form, imagen: imageUrl, id: itemId });
+      setForm(empty);
+      setInitialForm(empty);
       setModal(false);
       setImageFile(null);
       setImagePreviewUrl("");

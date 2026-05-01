@@ -6,9 +6,10 @@ import {
   query,
   onSnapshot,
   doc,
-  writeBatch,
   deleteDoc,
 } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../services/firebase";
 
 export default function AdminSolicitudes({ onLivePreviewChange = () => {} }) {
   const [solicitudes, setSolicitudes] = useState([]);
@@ -64,17 +65,16 @@ export default function AdminSolicitudes({ onLivePreviewChange = () => {} }) {
         throw new Error("La solicitud no tiene una categoría definida.");
       }
 
-      const batch = writeBatch(db);
-      
-      // 1. Crear documento en la colección pública (gastronomia, hospedajes, etc)
-      const targetRef = doc(db, categoria, id || solicitud.id);
-      batch.set(targetRef, datosLimpios);
+      const adminUpsertContent = httpsCallable(functions, "adminUpsertContent");
+      await adminUpsertContent({
+        nodeKey: categoria,
+        itemData: datosLimpios,
+        id: id || solicitud.id,
+      });
       
       // 2. Eliminar de solicitudes pendientes
-      const sourceRef = doc(db, "solicitudes_negocios", id || solicitud.id);
-      batch.delete(sourceRef);
+      await deleteDoc(doc(db, "solicitudes_negocios", id || solicitud.id));
 
-      await batch.commit();
       setSuccess("Solicitud aprobada y publicada correctamente.");
     } catch (err) {
       setError(err.message || "Error al aprobar la solicitud.");

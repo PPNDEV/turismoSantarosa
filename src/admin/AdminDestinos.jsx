@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaMapMarkerAlt, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
-import { createContentId, uploadContentImage } from "./adminImageUpload";
+import { createContentId, uploadContentImage } from "../services/uploadService";
 import {
   destinoIconOptions,
   getDestinoIconComponent,
@@ -112,6 +112,8 @@ export default function AdminDestinos({
         lat: normalizeCoord(form.lat),
         lng: normalizeCoord(form.lng),
       });
+      setForm(emptyDestino);
+      setInitialForm(emptyDestino);
       setModal(false);
       setImageFile(null);
       setImagePreviewUrl("");

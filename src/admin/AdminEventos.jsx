@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
-import { createContentId, uploadContentImage } from "./adminImageUpload";
+import { createContentId, uploadContentImage } from "../services/uploadService";
 
 const FALLBACK_EVENT_IMAGE =
   "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900";
@@ -165,6 +165,8 @@ export default function AdminEventos({
         : cleaned.imagen;
 
       await upsertEvento({ ...cleaned, imagen: imageUrl, id: itemId });
+      setForm(emptyEvento);
+      setInitialForm(emptyEvento);
       setError("");
       setModal(false);
       setImageFile(null);

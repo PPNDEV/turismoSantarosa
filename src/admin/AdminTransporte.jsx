@@ -79,6 +79,8 @@ export default function AdminTransporte({
       lng: normalizeCoord(form.lng),
     });
     setError("");
+    setForm(emptyCooperativa);
+    setInitialForm(emptyCooperativa);
     closeModal();
   };
 

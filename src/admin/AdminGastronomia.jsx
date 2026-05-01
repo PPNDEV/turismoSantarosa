@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaSave, FaTrash, FaUtensils } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
-import { createContentId, uploadContentImage } from "./adminImageUpload";
+import { createContentId, uploadContentImage } from "../services/uploadService";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900";
@@ -142,6 +142,8 @@ export default function AdminGastronomia({
         lat: normalizeCoord(form.lat),
         lng: normalizeCoord(form.lng),
       });
+      setForm(emptyRestaurante);
+      setInitialForm(emptyRestaurante);
     } finally {
       setSaving(false);
     }

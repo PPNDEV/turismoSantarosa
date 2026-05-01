@@ -14,7 +14,10 @@ import {
   FaMapMarkerAlt,
   FaUserShield,
   FaUtensils,
+  FaInbox,
 } from "react-icons/fa";
+import { collection, onSnapshot, query } from "firebase/firestore";
+import { db } from "../services/firebase";
 import { useContent } from "../context/useContent";
 import { subscribeVisitMetrics } from "../services/visitCounter";
 
@@ -46,6 +49,30 @@ export default function AdminDashboard({
     totalSessions: 0,
     routes: [],
   });
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  useEffect(() => {
+    if (!canManageUsers) return;
+
+    const q = query(collection(db, "solicitudes_negocios"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setPendingRequestsCount(snapshot.size);
+      },
+      (error) => {
+        console.warn("No se pudo cargar solicitudes:", error.message);
+        setPendingRequestsCount(0);
+      }
+    );
+    return () => {
+      try {
+        unsubscribe();
+      } catch (e) {
+        console.warn("Error al limpiar suscripción de solicitudes:", e);
+      }
+    };
+  }, [canManageUsers]);
 
   useEffect(() => {
     const unsubscribe = subscribeVisitMetrics(
@@ -59,7 +86,13 @@ export default function AdminDashboard({
       },
     );
 
-    return () => unsubscribe();
+    return () => {
+      try {
+        unsubscribe();
+      } catch (e) {
+        console.warn("Error al limpiar suscripción de visitas:", e);
+      }
+    };
   }, []);
 
   const sectionCards = [
@@ -148,6 +181,14 @@ export default function AdminDashboard({
       total: null,
     },
     {
+      key: "solicitudes",
+      icon: FaInbox,
+      title: "Solicitudes",
+      desc: "Revisa y aprueba nuevos negocios.",
+      total: pendingRequestsCount,
+      adminOnly: true,
+    },
+    {
       key: "usuarios",
       icon: FaUserShield,
       title: "Usuarios",
@@ -226,6 +267,12 @@ export default function AdminDashboard({
       value: galeria.length,
       icon: FaCamera,
       tone: "tone-blue",
+    },
+    {
+      label: "Solicitudes",
+      value: pendingRequestsCount,
+      icon: FaInbox,
+      tone: "tone-rose",
     },
     {
       label: "Sesiones",

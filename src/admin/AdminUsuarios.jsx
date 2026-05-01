@@ -38,6 +38,7 @@ export default function AdminUsuarios({
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [savingRole, setSavingRole] = useState(null);
 
   const adminCount = useMemo(
     () => users.filter((entry) => entry.role === "administrador").length,
@@ -66,12 +67,15 @@ export default function AdminUsuarios({
   const handleRoleChange = async (uid, role) => {
     setError("");
     setSuccess("");
+    setSavingRole(uid);
 
     try {
       await updateUserRole(uid, role);
       setSuccess("Rol actualizado correctamente.");
     } catch (updateError) {
       setError(updateError.message || "No se pudo actualizar el rol.");
+    } finally {
+      setSavingRole(null);
     }
   };
 
@@ -83,11 +87,14 @@ export default function AdminUsuarios({
       return;
     }
 
+    setSavingRole(uid);
     try {
       await deleteUser(uid);
       setSuccess("Usuario eliminado correctamente.");
     } catch (deleteError) {
       setError(deleteError.message || "No se pudo eliminar el usuario.");
+    } finally {
+      setSavingRole(null);
     }
   };
 
@@ -166,7 +173,7 @@ export default function AdminUsuarios({
                     onChange={(e) =>
                       handleRoleChange(entry.uid, e.target.value)
                     }
-                    disabled={!canManageUsers}
+                    disabled={!canManageUsers || savingRole === entry.uid}
                   >
                     {roleOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -179,7 +186,7 @@ export default function AdminUsuarios({
                   <button
                     className="action-btn del-btn"
                     onClick={() => handleDelete(entry.uid)}
-                    disabled={!canManageUsers || entry.uid === user?.uid}
+                    disabled={!canManageUsers || entry.uid === user?.uid || savingRole === entry.uid}
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                     Eliminar

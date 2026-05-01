@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaBed, FaEdit, FaMapMarkerAlt, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
-import { createContentId, uploadContentImage } from "./adminImageUpload";
+import { createContentId, uploadContentImage } from "../services/uploadService";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900";
@@ -131,29 +131,36 @@ export default function AdminHospedajes({
     const itemId = editing || createContentId("hospedaje", nombre);
     setSaving(true);
     try {
-      const imageUrl = imageFile
-        ? await uploadContentImage(imageFile, "hospedajes", itemId)
-        : form.imagen;
+      try {
+        const imageUrl = imageFile
+          ? await uploadContentImage(imageFile, "hospedajes", itemId)
+          : form.imagen;
 
-      await upsertHospedaje({
-        ...form,
-        imagen: imageUrl,
-        nombre,
-        isla,
-        ubicacion,
-        servicios,
-        contacto,
-        id: itemId,
-        lat: normalizeCoord(form.lat),
-        lng: normalizeCoord(form.lng),
-      });
-    } finally {
-      setSaving(false);
+        await upsertHospedaje({
+          ...form,
+          imagen: imageUrl,
+          nombre,
+          isla,
+          ubicacion,
+          servicios,
+          contacto,
+          id: itemId,
+          lat: normalizeCoord(form.lat),
+          lng: normalizeCoord(form.lng),
+        });
+        setForm(emptyHospedaje);
+        setInitialForm(emptyHospedaje);
+        setError("");
+        setModal(false);
+        setImageFile(null);
+        setImagePreviewUrl("");
+      } finally {
+        setSaving(false);
+      }
+    } catch (err) {
+      console.error("Error al guardar hospedaje:", err);
+      setError("Error al guardar: " + (err.message || "Error desconocido"));
     }
-    setError("");
-    setModal(false);
-    setImageFile(null);
-    setImagePreviewUrl("");
   };
 
   const del = (id) => {

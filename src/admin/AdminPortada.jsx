@@ -7,13 +7,8 @@ import {
   FaSave,
   FaTrash,
 } from "react-icons/fa";
-import {
-  getDownloadURL,
-  ref as storageRef,
-  uploadBytes,
-} from "firebase/storage";
 import { useContent } from "../context/useContent";
-import { storage } from "../services/firebase";
+import { uploadContentImage } from "../services/uploadService";
 
 const FALLBACK_HERO_IMAGE =
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600";
@@ -91,20 +86,6 @@ function getCtaOptionId(slide) {
   );
 }
 
-async function uploadHeroImage(file, slideId) {
-  const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const imageRef = storageRef(
-    storage,
-    `cms/heroSlides/${slideId}/${Date.now()}.${extension}`,
-  );
-
-  await uploadBytes(imageRef, file, {
-    contentType: file.type || "image/jpeg",
-    customMetadata: { slideId },
-  });
-
-  return getDownloadURL(imageRef);
-}
 
 export default function AdminPortada({
   canEdit = true,
@@ -207,7 +188,7 @@ export default function AdminPortada({
 
     try {
       const imageUrl = selectedFile
-        ? await uploadHeroImage(selectedFile, slideId)
+        ? await uploadContentImage(selectedFile, "heroSlides", slideId, true)
         : form.bg;
 
       await upsertHeroSlide({
@@ -216,6 +197,8 @@ export default function AdminPortada({
         id: slideId,
       });
 
+      setForm(emptySlide);
+      setInitialForm(emptySlide);
       setModal(false);
       setSelectedFile(null);
       setLocalPreviewUrl("");

@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
-import { createContentId, uploadContentImage } from "./adminImageUpload";
+import { createContentId, uploadContentImage } from "../services/uploadService";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=900";
@@ -203,6 +203,8 @@ export default function AdminActividades({
         descripcion,
         id: itemId,
       });
+      setForm(emptyActividad);
+      setInitialForm(emptyActividad);
     } finally {
       setSaving(false);
     }
