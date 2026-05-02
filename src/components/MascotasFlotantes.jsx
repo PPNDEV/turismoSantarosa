@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { motion as MotionDiv, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { subscribeToSiteConfig } from '../services/configService';
 
 import cangrejoVideo from '../assets/mascotas/cangrejo.webm';
@@ -152,7 +152,7 @@ const MascotasFlotantes = () => {
     >
       <AnimatePresence>
         {activeEvent && (
-          <MotionDiv
+          <motion.div
             key={activeEvent.id}
             initial={activeEvent.initial}
             animate={activeEvent.animate}
@@ -183,7 +183,7 @@ const MascotasFlotantes = () => {
                 }}
               />
             </div>
-          </MotionDiv>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
