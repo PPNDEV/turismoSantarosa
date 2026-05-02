@@ -9,6 +9,7 @@ import Generalidades from "../components/Generalidades";
 import Galeria from "../components/Galeria";
 import Blog from "../components/Blog";
 import Footer from "../components/Footer";
+import MascotasFlotantes from "../components/MascotasFlotantes";
 import { useLanguage } from "../context/useLanguage";
 
 export default function Home() {
@@ -70,6 +71,7 @@ export default function Home() {
         <Blog />
       </main>
       <Footer />
+      <MascotasFlotantes />
     </>
   );
 }

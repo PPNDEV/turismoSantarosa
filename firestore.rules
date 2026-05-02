@@ -142,6 +142,12 @@ service cloud.firestore {
     // 3. COLECCIONES ADMINISTRATIVAS
     // =========================================================================
 
+    // Configuración global del sitio (Mascotas, etc.)
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Métricas del sitio (RF09) – Lectura autenticada, escritura solo backend
     match /metricas_sitio/{docId} {
       allow read: if isSignedIn();

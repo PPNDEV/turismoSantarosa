@@ -1,55 +1,90 @@
-# React + Vite
+# 🌴 PROMOWEAPP - Turismo Santa Rosa
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Bienvenido al repositorio oficial del proyecto **Turismo Santa Rosa**, una plataforma web moderna, rápida y escalable desarrollada para potenciar el turismo en el archipiélago de Jambelí, cantón Santa Rosa, Ecuador.
 
-Currently, two official plugins are available:
+## 🚀 Características Principales
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+*   **🌍 Mapa Turístico Interactivo**: Desarrollado con `Leaflet` y `react-leaflet`, permite visualizar rutas y destinos destacados de manera dinámica y optimizada.
+*   **🐶 Los 4 Fantásticos (Animaciones Interactivas)**: Integración de mascotas animadas (`framer-motion`) que nadan o saltan aleatoriamente por la pantalla. ¡Totalmente configurables desde el panel de administrador en tiempo real!
+*   **🛠️ Sistema de Gestión de Contenidos (CMS)**:
+    *   Arquitectura basada en `Realtime Database` de Firebase para permitir ediciones instantáneas en textos, destinos e imágenes del portal.
+    *   **RBAC (Control de Acceso Basado en Roles)**: Diferenciación estricta entre Administradores, Editores y Visitantes para restringir y proteger las modificaciones a través de reglas de seguridad avanzadas en Firebase.
+*   **📊 Analítica y Tráfico**:
+    *   Contador de visitas deduplicado a nivel de servidor utilizando **Cloud Functions** y **Firestore**.
+    *   Dashboard analítico que visualiza tráfico real e interacciones del sitio.
+*   **📩 Sistema de Contacto y Encuestas**:
+    *   Bandejas de entrada administrativas para recepcionar peticiones de negocios, mensajes de turistas y encuestas de satisfacción.
+*   **🌐 Internacionalización (i18n)**: Sistema robusto con soporte nativo de multi-idioma integrado desde la arquitectura (`LanguageContext`).
 
-## React Compiler
+## 🛠️ Stack Tecnológico
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Frontend:**
+- **[React 19](https://react.dev/)** + **[Vite 8](https://vitejs.dev/)** (Máximo rendimiento en desarrollo y construcción)
+- **CSS Vanilla / Variables CSS** (Arquitectura limpia y libre de frameworks pesados de utilidades)
+- **Framer Motion** (Animaciones de UI complejas y físicas)
+- **Leaflet** (Mapas)
 
-## Expanding the ESLint configuration
+**Backend & Cloud (Firebase):**
+- **Firebase Auth** (Autenticación y manejo de sesión).
+- **Firestore** (Datos seguros, analítica, mensajería).
+- **Realtime Database** (CMS hiperrápido de contenido público).
+- **Cloud Functions (Node 20)** (Procesamiento y conteos de visitas).
+- **Firebase Hosting** (Despliegue de frontend y redirecciones al backend).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 💻 Desarrollo Local
 
-## Contador de visitas (Cloud Function + Firestore)
+### Prerrequisitos
+- Node.js versión v20+
+- Firebase CLI (`npm install -g firebase-tools`)
 
-El proyecto incluye un contador de visitas listo para produccion:
+### 1. Clonar e Instalar Frontend
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd turismoSantarosa
+npm install
+```
 
-- El frontend envia visitas a `POST /api/visits`.
-- Firebase Hosting reescribe esa ruta a la funcion `countVisit`.
-- La funcion actualiza `analytics/traffic` y deduplica sesiones en backend.
-- Firestore bloquea escritura directa del cliente en `analytics/*`.
+### 2. Configurar Firebase / Funciones
+El backend local de Cloud Functions permite emular el contador de visitas:
+```bash
+cd functions
+npm install
+```
 
-### Variables opcionales en frontend
+### 3. Ejecución
+Para iniciar el proyecto completo en tu entorno de desarrollo, lo más óptimo es utilizar el emulador de backend junto al frontend.
 
-- `VITE_VISITS_API_URL`: URL del endpoint de visitas. Por defecto `/api/visits`.
-- `VITE_VISITS_BACKEND_MODE`: por defecto `function`.
-  - `function`: usa Cloud Function.
-  - `firestore-direct`: modo local/no recomendado para produccion.
-- `VITE_VISITS_ALLOW_DIRECT_FALLBACK=true`: fallback de emergencia a Firestore directo.
+Abre dos terminales:
 
-### Desarrollo local con emulador
+**Terminal 1 (Emulador de Cloud Functions):**
+```bash
+cd functions
+npm run serve
+```
 
-1. Instala dependencias de funciones:
-   - `cd functions`
-   - `npm install`
-2. Inicia emulador de funciones (desde raiz o desde `functions`):
-   - `firebase emulators:start --only functions`
-3. Inicia frontend:
-   - `npm run dev`
+**Terminal 2 (Frontend React):**
+```bash
+npm run dev
+```
+> El proxy de Vite se encargará de redirigir los llamados de la API (`/api/visits`) directamente hacia tu emulador local para que la experiencia de desarrollo sea perfecta y libre de CORS.
 
-El proxy de Vite redirige `/api/visits` al emulador local.
+## 🔒 Reglas de Seguridad y Acceso
+Todo el backend está protegido mediante `firestore.rules` y `database.rules.json`.
+- **Colección `/settings`**: El estado de la plataforma (como las mascotas flotantes) es de lectura pública, pero su modificación requiere estatus de `isAdmin()`.
+- **Colección `/content` (RTDB)**: Totalmente público para lectura, modificable solo si el usuario tiene rol `canEditContent()`.
 
-### Despliegue
+## 📦 Despliegue a Producción
 
-1. Compila frontend:
-   - `npm run build`
-2. Instala dependencias en `functions` (si aun no estan):
-   - `cd functions`
-   - `npm install`
-3. Despliega funciones, reglas y hosting:
-   - `firebase deploy --only functions,firestore:rules,hosting`
+La plataforma se despliega fácilmente en Firebase. Desde la raíz del proyecto:
+
+1. Compila la versión de producción del frontend:
+```bash
+npm run build
+```
+2. Despliega todas las funciones, reglas de seguridad y la página web:
+```bash
+firebase deploy --only functions,firestore:rules,database:rules,hosting
+```
+
+---
+*Desarrollado con ❤️ para el turismo de Santa Rosa y el Archipiélago de Jambelí.*

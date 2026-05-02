@@ -18,6 +18,7 @@ import {
 } from "react-icons/fa";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { db } from "../services/firebase";
+import { subscribeToSiteConfig, updateMascotasEnabled } from "../services/configService";
 import { useContent } from "../context/useContent";
 import { subscribeVisitMetrics } from "../services/visitCounter";
 
@@ -50,6 +51,37 @@ export default function AdminDashboard({
     routes: [],
   });
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [siteConfig, setSiteConfig] = useState({ mascotasEnabled: true });
+  const [isToggling, setIsToggling] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSiteConfig((config) => {
+      setSiteConfig(config);
+    });
+    return () => {
+      try {
+        unsubscribe();
+      } catch {
+        // ignorar
+      }
+    };
+  }, []);
+
+  const handleToggleMascotas = async () => {
+    if (!canEditContent) return;
+    setIsToggling(true);
+    const newState = !siteConfig.mascotasEnabled;
+    try {
+      await updateMascotasEnabled(newState);
+      setToastMessage(newState ? "Mascotas activadas en el sitio" : "Mascotas desactivadas en todo el sitio");
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch {
+      alert("Error al actualizar la configuración");
+    } finally {
+      setIsToggling(false);
+    }
+  };
 
   useEffect(() => {
     if (!canManageUsers) return;
@@ -291,11 +323,52 @@ export default function AdminDashboard({
   return (
     <div>
       <div className="admin-dashboard-actions admin-table-card">
-        <div className="admin-table-header">
+        {toastMessage && (
+          <div style={{ background: '#10b981', color: 'white', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', textAlign: 'center', fontWeight: 'bold' }}>
+            {toastMessage}
+          </div>
+        )}
+        <div className="admin-table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <h2>
             <FaCogs className="inline-icon" aria-hidden="true" />
             Editor Completo del Sitio
           </h2>
+          {canEditContent && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(0,0,0,0.03)', padding: '0.5rem 1rem', borderRadius: '50px' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--gray-600)' }}>
+                Animaciones (Mascotas)
+              </span>
+              <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}>
+                <input 
+                  type="checkbox" 
+                  checked={siteConfig.mascotasEnabled} 
+                  onChange={handleToggleMascotas}
+                  disabled={isToggling}
+                  style={{ opacity: 0, position: 'absolute', width: 0, height: 0 }}
+                />
+                <div style={{
+                  width: '46px',
+                  height: '24px',
+                  background: siteConfig.mascotasEnabled ? 'var(--ocean)' : 'var(--gray-400)',
+                  borderRadius: '24px',
+                  transition: 'background-color 0.3s',
+                  position: 'relative'
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: '2px',
+                    left: siteConfig.mascotasEnabled ? '24px' : '2px',
+                    width: '20px',
+                    height: '20px',
+                    background: 'white',
+                    borderRadius: '50%',
+                    transition: 'left 0.3s',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }} />
+                </div>
+              </label>
+            </div>
+          )}
         </div>
         {!canEditContent && (
           <div className="admin-readonly-note">
