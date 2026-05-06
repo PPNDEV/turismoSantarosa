@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FaBed,
-  FaBus,
   FaCalendarAlt,
   FaCamera,
   FaChartPie,
-  FaCogs,
   FaEnvelope,
   FaFileAlt,
   FaHiking,
+  FaHistory,
   FaImage,
   FaLeaf,
   FaMapMarkerAlt,
+  FaShip,
   FaUserShield,
   FaUtensils,
   FaInbox,
@@ -32,10 +32,10 @@ export default function AdminDashboard({
   onNavigateSection = () => {},
   canEditContent = true,
   canManageUsers = false,
+  recentSectionKeys = [],
 }) {
   const {
     heroSlides,
-    blog,
     eventos,
     destinos,
     galeria,
@@ -74,10 +74,19 @@ export default function AdminDashboard({
     const newState = !siteConfig.mascotasEnabled;
     try {
       await updateMascotasEnabled(newState);
-      setToastMessage(newState ? "Mascotas activadas en el sitio" : "Mascotas desactivadas en todo el sitio");
+      setToastMessage({
+        type: "success",
+        message: newState
+          ? "Mascotas activadas en el sitio."
+          : "Mascotas desactivadas en todo el sitio.",
+      });
       setTimeout(() => setToastMessage(null), 3000);
     } catch {
-      alert("Error al actualizar la configuración");
+      setToastMessage({
+        type: "error",
+        message: "No se pudo actualizar la configuracion. Intenta nuevamente.",
+      });
+      setTimeout(() => setToastMessage(null), 4500);
     } finally {
       setIsToggling(false);
     }
@@ -150,13 +159,6 @@ export default function AdminDashboard({
       total: eventos.length,
     },
     {
-      key: "blog",
-      icon: FaFileAlt,
-      title: "Blog",
-      desc: "Edita noticias, artículos y contenido de promoción.",
-      total: blog.length,
-    },
-    {
       key: "destinos",
       icon: FaMapMarkerAlt,
       title: "Destinos",
@@ -186,9 +188,9 @@ export default function AdminDashboard({
     },
     {
       key: "transporte",
-      icon: FaBus,
-      title: "Transporte",
-      desc: "Cooperativas, rutas y frecuencias de movilización.",
+      icon: FaShip,
+      title: "Transporte fluvial",
+      desc: "Rutas, frecuencias y muelles de embarcacion.",
       total: cooperativas.length,
     },
     {
@@ -253,12 +255,6 @@ export default function AdminDashboard({
       tone: "tone-orange",
     },
     {
-      label: "Artículos",
-      value: blog.length,
-      icon: FaFileAlt,
-      tone: "tone-gold",
-    },
-    {
       label: "Eventos",
       value: eventos.length,
       icon: FaCalendarAlt,
@@ -289,9 +285,9 @@ export default function AdminDashboard({
       tone: "tone-lime",
     },
     {
-      label: "Transporte",
+      label: "Transporte fluvial",
       value: cooperativas.length,
-      icon: FaBus,
+      icon: FaShip,
       tone: "tone-purple",
     },
     {
@@ -320,18 +316,33 @@ export default function AdminDashboard({
     },
   ];
 
+  const availableSectionCards = sectionCards.filter(
+    (section) => !section.adminOnly || canManageUsers,
+  );
+  const recentSectionCards = recentSectionKeys
+    .map((sectionKey) =>
+      availableSectionCards.find((section) => section.key === sectionKey),
+    )
+    .filter(Boolean);
+
   return (
     <div>
       <div className="admin-dashboard-actions admin-table-card">
         {toastMessage && (
-          <div style={{ background: '#10b981', color: 'white', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', textAlign: 'center', fontWeight: 'bold' }}>
-            {toastMessage}
+          <div
+            className={`admin-alert ${
+              toastMessage.type === "error"
+                ? "admin-alert-error"
+                : "admin-alert-success"
+            }`}
+          >
+            {toastMessage.message}
           </div>
         )}
         <div className="admin-table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <h2>
-            <FaCogs className="inline-icon" aria-hidden="true" />
-            Editor Completo del Sitio
+            <FaHistory className="inline-icon" aria-hidden="true" />
+            Visitados recientemente
           </h2>
           {canEditContent && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(0,0,0,0.03)', padding: '0.5rem 1rem', borderRadius: '50px' }}>
@@ -376,43 +387,45 @@ export default function AdminDashboard({
           </div>
         )}
         <div className="admin-module-grid">
-          {sectionCards
-            .filter((section) => !section.adminOnly || canManageUsers)
-            .map((section) => {
-              return (
-                <article
-                  key={section.key}
-                  className="admin-module-card"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onNavigateSection(section.key)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onNavigateSection(section.key);
-                    }
-                  }}
-                  aria-label={`Abrir ${section.title}`}
-                >
-                  <div className="admin-module-title">
-                    <span>
-                      <section.icon aria-hidden="true" />
-                    </span>
-                    <h3>{section.title}</h3>
-                  </div>
-                  <p>{section.desc}</p>
-                  {section.total !== null && (
-                    <div className="admin-module-total">
-                      {section.total} items
-                    </div>
-                  )}
-                </article>
-              );
-            })}
+          {recentSectionCards.length === 0 && (
+            <div className="admin-module-empty">
+              Aun no hay secciones visitadas recientemente desde el sidebar.
+            </div>
+          )}
+          {recentSectionCards.map((section) => {
+            return (
+              <article
+                key={section.key}
+                className="admin-module-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => onNavigateSection(section.key)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onNavigateSection(section.key);
+                  }
+                }}
+                aria-label={`Abrir ${section.title}`}
+              >
+                <div className="admin-module-title">
+                  <span>
+                    <section.icon aria-hidden="true" />
+                  </span>
+                  <h3>{section.title}</h3>
+                </div>
+                <p>{section.desc}</p>
+                {section.total !== null && (
+                  <div className="admin-module-total">{section.total} items</div>
+                )}
+              </article>
+            );
+          })}
         </div>
       </div>
 
-      <div className="admin-stats-grid">
+      <div className="admin-dashboard-overview">
+        <div className="admin-stats-grid">
         {stats.map((s, i) => (
           <div key={i} className="admin-stat-card">
             <div>
@@ -428,7 +441,7 @@ export default function AdminDashboard({
         ))}
       </div>
 
-      <div className="admin-table-card">
+        <div className="admin-table-card admin-events-overview-card">
         <div className="admin-table-header">
           <h2>
             <FaCalendarAlt className="inline-icon" aria-hidden="true" />
@@ -464,6 +477,7 @@ export default function AdminDashboard({
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

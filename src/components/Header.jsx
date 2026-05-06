@@ -124,6 +124,8 @@ export default function Header() {
                 src={crestSrc}
                 alt={t("header.logoAlt")}
                 className="logo-image"
+                decoding="async"
+                fetchPriority="high"
               />
             </div>
             <div className="logo-text">
@@ -172,6 +174,7 @@ export default function Header() {
                     alt=""
                     aria-hidden="true"
                     className="language-picker-flag"
+                    decoding="async"
                   />
                   <span>{activeLanguage?.label}</span>
                 </span>
@@ -203,6 +206,7 @@ export default function Header() {
                       alt=""
                       aria-hidden="true"
                       className="language-picker-item-flag"
+                      decoding="async"
                     />
                     <span>{languageOption.label}</span>
                   </button>

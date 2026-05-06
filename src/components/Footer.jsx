@@ -113,6 +113,8 @@ export default function Footer() {
                   src={crestSrc}
                   alt={t("header.logoAlt")}
                   className="logo-image"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
               <div className="logo-text">

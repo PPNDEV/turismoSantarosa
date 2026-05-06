@@ -9,13 +9,27 @@ lerna-debug.log*
 
 node_modules
 functions/node_modules
+.venv/
 dist
 dist-ssr
+.vite/
+.cache/
+.eslintcache
 *.local
 .firebase
 
+# Test and coverage output
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+
 # Environment variables (NEVER commit these)
 .env
+.env.*
+!.env.example
 .env.local
 .env.production
 .env.development
@@ -34,5 +48,21 @@ dist-ssr
 
 # Project specific
 estructura.txt
+lint_output.txt
 functions/serviceAccountKey.json
 serviceAccountKey.json
+**/serviceAccountKey*.json
+**/*service*account*.json
+**/*firebase-adminsdk*.json
+**/*credential*.json
+**/*credentials*.json
+**/*secret*.json
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+.runtimeconfig.json
+functions/.runtimeconfig.json
+firebase-export/
+firebase-export-*/
+emulator-data/

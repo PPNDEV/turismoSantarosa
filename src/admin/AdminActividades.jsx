@@ -304,7 +304,9 @@ export default function AdminActividades({
           </div>
         )}
 
-        {editorialError && <div className="login-error">{editorialError}</div>}
+        {editorialError && (
+          <div className="admin-alert admin-alert-error">{editorialError}</div>
+        )}
 
         <div className="admin-form-preview-grid">
           <div className="admin-form-column">
@@ -430,6 +432,8 @@ export default function AdminActividades({
                   <img
                     src={editorialPreview.heroImage}
                     alt={editorialPreview.title}
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="activities-quote-card">
                     <FaQuoteLeft
@@ -509,13 +513,24 @@ export default function AdminActividades({
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div
             className="modal-box modal-box-preview"
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closeModal}
+              disabled={saving}
+              aria-label="Cerrar"
+            >
+              x
+            </button>
             <h2>{editing ? "Editar Actividad" : "Nueva Actividad"}</h2>
-            {error && <div className="login-error">{error}</div>}
+            {error && (
+              <div className="admin-alert admin-alert-error">{error}</div>
+            )}
             <div className="admin-form-preview-grid">
               <div className="admin-form-column">
                 {["nombre"].map((f) => (
@@ -589,6 +604,8 @@ export default function AdminActividades({
                     <img
                       src={preview.imagen}
                       alt={preview.nombre}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_IMAGE)
                           e.currentTarget.src = FALLBACK_IMAGE;

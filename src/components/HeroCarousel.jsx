@@ -5,9 +5,15 @@ import { useLanguage } from "../context/useLanguage";
 
 export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
+  const [loadDeferredSlides, setLoadDeferredSlides] = useState(false);
   const { heroSlides } = useContent();
   const { t } = useLanguage();
-  const activeIndex = heroSlides.length > 0 ? current % heroSlides.length : 0;
+  const activeIndex =
+    heroSlides.length > 0 &&
+    Number.isFinite(current) &&
+    current < heroSlides.length
+      ? current % heroSlides.length
+      : 0;
 
   const getTranslatedValue = (key, fallback) => {
     const translated = t(key);
@@ -37,17 +43,43 @@ export default function HeroCarousel() {
     : null;
 
   const next = useCallback(() => {
-    setCurrent((c) => (c + 1) % heroSlides.length);
+    setCurrent((c) => {
+      if (heroSlides.length === 0) return 0;
+      const base = Number.isFinite(c) ? c : 0;
+      return (base + 1) % heroSlides.length;
+    });
   }, [heroSlides.length]);
 
   const prev = useCallback(() => {
-    setCurrent((c) => (c - 1 + heroSlides.length) % heroSlides.length);
+    setCurrent((c) => {
+      if (heroSlides.length === 0) return 0;
+      const base = Number.isFinite(c) ? c : 0;
+      return (base - 1 + heroSlides.length) % heroSlides.length;
+    });
   }, [heroSlides.length]);
 
   useEffect(() => {
+    if (heroSlides.length <= 1) return undefined;
     const timer = setInterval(next, 5500);
     return () => clearInterval(timer);
-  }, [next]);
+  }, [heroSlides.length, next]);
+
+  useEffect(() => {
+    const scheduleIdleLoad =
+      typeof window !== "undefined" && "requestIdleCallback" in window
+        ? window.requestIdleCallback
+        : (callback) => window.setTimeout(callback, 2500);
+    const cancelIdleLoad =
+      typeof window !== "undefined" && "cancelIdleCallback" in window
+        ? window.cancelIdleCallback
+        : window.clearTimeout;
+
+    const idleId = scheduleIdleLoad(() => setLoadDeferredSlides(true), {
+      timeout: 3500,
+    });
+
+    return () => cancelIdleLoad(idleId);
+  }, [heroSlides.length]);
 
   if (!heroSlides.length) {
     return <section className="hero" />;
@@ -57,17 +89,23 @@ export default function HeroCarousel() {
     <section className="hero">
       {heroSlides.map((slide, i) => (
         <div
-          key={i}
+          key={slide.id || i}
           className={`hero-slide ${i === activeIndex ? "active" : ""}`}
         >
-          <img
-            src={slide.bg}
-            alt=""
-            aria-hidden="true"
-            className="hero-slide-bg"
-            loading={i === activeIndex ? "eager" : "lazy"}
-            decoding="async"
-          />
+          {(i === activeIndex || loadDeferredSlides) && (
+            <img
+              src={slide.bg}
+              alt=""
+              aria-hidden="true"
+              className="hero-slide-bg"
+              loading={i === activeIndex ? "eager" : "lazy"}
+              decoding="async"
+              fetchPriority={i === activeIndex ? "high" : "low"}
+              onLoad={() => {
+                if (i === activeIndex) setLoadDeferredSlides(true);
+              }}
+            />
+          )}
         </div>
       ))}
       <div className="hero-overlay" />

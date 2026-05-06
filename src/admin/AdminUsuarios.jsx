@@ -41,7 +41,14 @@ export default function AdminUsuarios({
   const [savingRole, setSavingRole] = useState(null);
 
   const adminCount = useMemo(
-    () => users.filter((entry) => entry.role === "administrador").length,
+    () =>
+      users.filter(
+        (entry) =>
+          entry.role === "administrador" &&
+          entry.active !== false &&
+          !entry.disabled &&
+          !entry.deletedAt,
+      ).length,
     [users],
   );
 
@@ -52,6 +59,10 @@ export default function AdminUsuarios({
 
     if (!canManageUsers) {
       setError("Solo un administrador puede crear usuarios.");
+      return;
+    }
+    if (!form.displayName || !form.email || !form.password) {
+      setError("Completa nombre, correo y contraseña antes de crear el usuario.");
       return;
     }
 
@@ -148,8 +159,10 @@ export default function AdminUsuarios({
           </div>
         )}
 
-        {error && <div className="login-error">{error}</div>}
-        {success && <div className="admin-success-note">{success}</div>}
+        {error && <div className="admin-alert admin-alert-error">{error}</div>}
+        {success && (
+          <div className="admin-alert admin-alert-success">{success}</div>
+        )}
 
         <table>
           <thead>
@@ -157,6 +170,7 @@ export default function AdminUsuarios({
               <th>Nombre</th>
               <th>Correo</th>
               <th>Rol</th>
+              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -183,6 +197,19 @@ export default function AdminUsuarios({
                   </select>
                 </td>
                 <td>
+                  <span
+                    className={`badge ${
+                      entry.active === false || entry.disabled || entry.deletedAt
+                        ? "badge-muted"
+                        : "badge-ocean"
+                    }`}
+                  >
+                    {entry.active === false || entry.disabled || entry.deletedAt
+                      ? "Inactivo"
+                      : "Activo"}
+                  </span>
+                </td>
+                <td>
                   <button
                     className="action-btn del-btn"
                     onClick={() => handleDelete(entry.uid)}
@@ -203,7 +230,7 @@ export default function AdminUsuarios({
           <h2>Crear Usuario</h2>
         </div>
 
-        <form className="admin-user-form" onSubmit={handleCreate}>
+        <form className="admin-user-form" onSubmit={handleCreate} noValidate>
           <div className="modal-field">
             <label>Nombre</label>
             <input
@@ -214,7 +241,6 @@ export default function AdminUsuarios({
               }
               placeholder="Ej: Editor Turismo"
               disabled={!canManageUsers}
-              required
             />
           </div>
 
@@ -226,7 +252,6 @@ export default function AdminUsuarios({
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="usuario@santarosa.ec"
               disabled={!canManageUsers}
-              required
             />
           </div>
 
@@ -238,7 +263,6 @@ export default function AdminUsuarios({
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder="Mínimo recomendado: 8 caracteres"
               disabled={!canManageUsers}
-              required
             />
           </div>
 

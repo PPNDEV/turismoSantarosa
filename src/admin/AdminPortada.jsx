@@ -38,12 +38,6 @@ const CTA_OPTIONS = [
     cta: "Ver galeria",
     ctaTo: "/galeria",
   },
-  {
-    id: "blog",
-    label: "Blog",
-    cta: "Leer noticias",
-    ctaTo: "/blog",
-  },
 ];
 
 const emptySlide = {
@@ -179,6 +173,7 @@ export default function AdminPortada({
       !form.ctaTo ||
       (!form.bg && !selectedFile)
     ) {
+      setError("Completa titulo, accion del boton e imagen de fondo.");
       return;
     }
 
@@ -277,7 +272,7 @@ export default function AdminPortada({
             onClick={openNew}
             disabled={!canEdit}
           >
-            + Nueva Slide
+            Añadir
           </button>
         </div>
 
@@ -354,11 +349,20 @@ export default function AdminPortada({
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div
             className="modal-box modal-box-preview"
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closeModal}
+              disabled={saving}
+              aria-label="Cerrar"
+            >
+              x
+            </button>
             <h2>{editing ? "Editar Slide" : "Nueva Slide"}</h2>
             <div className="admin-form-preview-grid">
               <div className="admin-form-column">
@@ -466,7 +470,9 @@ export default function AdminPortada({
                   <strong>{editing || "se genera al guardar"}</strong>
                 </div>
 
-                {error && <div className="login-error">{error}</div>}
+                {error && (
+                  <div className="admin-alert admin-alert-error">{error}</div>
+                )}
 
                 <div className="modal-actions">
                   <button

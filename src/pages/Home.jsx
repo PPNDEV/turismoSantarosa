@@ -7,7 +7,6 @@ import Destinos from "../components/Destinos";
 import Eventos from "../components/Eventos";
 import Generalidades from "../components/Generalidades";
 import Galeria from "../components/Galeria";
-import Blog from "../components/Blog";
 import Footer from "../components/Footer";
 import MascotasFlotantes from "../components/MascotasFlotantes";
 import { useLanguage } from "../context/useLanguage";
@@ -68,7 +67,6 @@ export default function Home() {
         <Eventos />
         <Generalidades />
         <Galeria />
-        <Blog />
       </main>
       <Footer />
       <MascotasFlotantes />

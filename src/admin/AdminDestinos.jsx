@@ -49,6 +49,7 @@ export default function AdminDestinos({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const openNew = () => {
     if (!canEdit) {
@@ -60,6 +61,7 @@ export default function AdminDestinos({
     setInitialForm(nextForm);
     setImageFile(null);
     setImagePreviewUrl("");
+    setError("");
     setEditing(null);
     setModal(true);
   };
@@ -73,6 +75,7 @@ export default function AdminDestinos({
     setInitialForm(nextForm);
     setImageFile(null);
     setImagePreviewUrl("");
+    setError("");
     setEditing(d.id);
     setModal(true);
   };
@@ -96,9 +99,19 @@ export default function AdminDestinos({
     if (!canEdit || saving) {
       return;
     }
+    if (
+      !form.nombre ||
+      !form.isla ||
+      !form.descripcion ||
+      (!form.imagen && !imageFile)
+    ) {
+      setError("Completa nombre, isla, descripcion e imagen antes de guardar.");
+      return;
+    }
 
     const itemId = editing || createContentId("destino", form.nombre);
     setSaving(true);
+    setError("");
     try {
       const imageUrl = imageFile
         ? await uploadContentImage(imageFile, "destinos", itemId)
@@ -117,6 +130,8 @@ export default function AdminDestinos({
       setModal(false);
       setImageFile(null);
       setImagePreviewUrl("");
+    } catch (saveError) {
+      setError(saveError?.message || "No se pudo guardar el destino.");
     } finally {
       setSaving(false);
     }
@@ -265,12 +280,24 @@ export default function AdminDestinos({
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div
             className="modal-box modal-box-preview"
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closeModal}
+              disabled={saving}
+              aria-label="Cerrar"
+            >
+              x
+            </button>
             <h2>{editing ? "Editar Destino" : "Nuevo Destino"}</h2>
+            {error && (
+              <div className="admin-alert admin-alert-error">{error}</div>
+            )}
             <div className="admin-form-preview-grid">
               <div className="admin-form-column">
                 {[
@@ -359,6 +386,8 @@ export default function AdminDestinos({
                     <img
                       src={previewDestino.imagen}
                       alt={previewDestino.nombre}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_DESTINO_IMAGE) {
                           e.currentTarget.src = FALLBACK_DESTINO_IMAGE;

@@ -286,13 +286,24 @@ export default function AdminGastronomia({
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div
             className="modal-box modal-box-preview"
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closeModal}
+              disabled={saving}
+              aria-label="Cerrar"
+            >
+              x
+            </button>
             <h2>{editing ? "Editar Restaurante" : "Nuevo Restaurante"}</h2>
-            {error && <div className="login-error">{error}</div>}
+            {error && (
+              <div className="admin-alert admin-alert-error">{error}</div>
+            )}
             <div className="admin-form-preview-grid">
               <div className="admin-form-column">
                 {[
@@ -376,6 +387,8 @@ export default function AdminGastronomia({
                     <img
                       src={previewItem.imagen}
                       alt={previewItem.nombre}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_IMAGE) {
                           e.currentTarget.src = FALLBACK_IMAGE;

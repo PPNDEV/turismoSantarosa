@@ -13,11 +13,20 @@ const STANDARD_OPTIONS = {
   useWebWorker: true,
 };
 
+const GALLERY_OPTIONS = {
+  maxSizeMB: 0.25,
+  maxWidthOrHeight: 1000,
+  useWebWorker: true,
+  initialQuality: 0.72,
+};
+
 // Configuración para portadas y hero slides
 const HIGH_QUALITY_OPTIONS = {
-  maxSizeMB: 1.5,
-  maxWidthOrHeight: 1920,
+  maxSizeMB: 0.8,
+  maxWidthOrHeight: 1600,
   useWebWorker: true,
+  initialQuality: 0.82,
+  alwaysKeepResolution: false,
 };
 
 export async function uploadContentImage(
@@ -30,7 +39,11 @@ export async function uploadContentImage(
     throw new Error("No se ha proporcionado ningún archivo para subir.");
   }
 
-  const options = isHighQuality ? HIGH_QUALITY_OPTIONS : STANDARD_OPTIONS;
+  const options = isHighQuality
+    ? HIGH_QUALITY_OPTIONS
+    : folder === "galeria"
+      ? GALLERY_OPTIONS
+      : STANDARD_OPTIONS;
 
   let compressedFile = file;
   try {

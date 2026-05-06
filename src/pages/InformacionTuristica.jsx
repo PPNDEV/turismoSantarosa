@@ -2,11 +2,11 @@ import { useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import {
   FaBed,
-  FaBus,
   FaLeaf,
   FaMapMarkedAlt,
   FaMapMarkerAlt,
   FaPhoneAlt,
+  FaShip,
   FaUtensils,
 } from "react-icons/fa";
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
@@ -263,12 +263,12 @@ export default function InformacionTuristica() {
           <section className="info-section-card" id="transporte">
             <header className="info-section-header">
               <h2>
-                <FaBus className="inline-icon" aria-hidden="true" />
-                Cooperativas de transporte
+                <FaShip className="inline-icon" aria-hidden="true" />
+                Transporte fluvial
               </h2>
               <p>
-                Cooperativas habilitadas para movilizacion hacia los muelles de
-                embarcacion.
+                Rutas fluviales habilitadas para movilizacion entre muelles,
+                islas y zonas de embarcacion.
               </p>
             </header>
             <div className="cooperativas-grid">
@@ -280,10 +280,12 @@ export default function InformacionTuristica() {
                     <strong>Frecuencia:</strong> {cooperativa.frecuencia}
                   </div>
                   <div className="info-meta">
-                    <strong>Salida:</strong> {cooperativa.puntoSalida}
+                    <strong>Muelle de salida:</strong>{" "}
+                    {cooperativa.puntoSalida}
                   </div>
                   <div className="info-meta">
-                    <strong>Llegada:</strong> {cooperativa.puntoLlegada}
+                    <strong>Muelle o isla de llegada:</strong>{" "}
+                    {cooperativa.puntoLlegada}
                   </div>
                   <div className="info-meta">
                     <FaPhoneAlt className="inline-icon" aria-hidden="true" />

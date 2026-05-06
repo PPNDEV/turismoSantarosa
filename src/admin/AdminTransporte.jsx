@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaBus, FaEdit, FaPhoneAlt, FaSave, FaTrash } from "react-icons/fa";
+import { FaEdit, FaPhoneAlt, FaSave, FaShip, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 
 const emptyCooperativa = {
@@ -91,11 +91,11 @@ export default function AdminTransporte({
 
   const preview = {
     nombre: form.nombre || form.cooperativa || "Nombre de la cooperativa",
-    ruta: form.ruta || form.ruta_hacia_muelle || "Ruta hacia muelle",
+    ruta: form.ruta || form.ruta_hacia_muelle || "Ruta fluvial",
     frecuencia: form.frecuencia || "Frecuencia por confirmar",
     contacto: form.contacto || "Contacto",
-    puntoSalida: form.puntoSalida || "Punto de salida",
-    puntoLlegada: form.puntoLlegada || "Punto de llegada",
+    puntoSalida: form.puntoSalida || "Muelle de salida",
+    puntoLlegada: form.puntoLlegada || "Muelle o isla de llegada",
   };
 
   useEffect(() => {
@@ -104,7 +104,7 @@ export default function AdminTransporte({
       section: "transporte",
       path: "/informacion#transporte",
       image: null,
-      badge: "Transporte",
+      badge: "Transporte fluvial",
       title: preview.nombre,
       subtitle: preview.ruta,
       body: `Frecuencia: ${preview.frecuencia}`,
@@ -123,7 +123,7 @@ export default function AdminTransporte({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Cooperativas de Transporte ({cooperativas.length})</h2>
+          <h2>Transporte fluvial ({cooperativas.length})</h2>
           <button className="btn btn-primary" onClick={openNew} disabled={!canEdit}>
             + Nueva Cooperativa
           </button>
@@ -131,7 +131,7 @@ export default function AdminTransporte({
 
         {!canEdit && (
           <div className="admin-readonly-note">
-            Modo visualizador: datos de transporte en solo lectura.
+            Modo visualizador: datos de transporte fluvial en solo lectura.
           </div>
         )}
 
@@ -148,7 +148,7 @@ export default function AdminTransporte({
           <tbody>
             {cooperativas.map((c) => (
               <tr key={c.id}>
-                <td><strong><FaBus className="inline-icon" aria-hidden="true" /> {c.nombre || c.cooperativa}</strong></td>
+                <td><strong><FaShip className="inline-icon" aria-hidden="true" /> {c.nombre || c.cooperativa}</strong></td>
                 <td>{c.ruta || c.ruta_hacia_muelle || "-"}</td>
                 <td>{c.frecuencia || "-"}</td>
                 <td>{c.contacto || "-"}</td>
@@ -167,19 +167,29 @@ export default function AdminTransporte({
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div className="modal-box modal-box-preview" onClick={(e) => e.stopPropagation()}>
-            <h2>{editing ? "Editar Cooperativa" : "Nueva Cooperativa"}</h2>
-            {error && <div className="login-error">{error}</div>}
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closeModal}
+              aria-label="Cerrar"
+            >
+              x
+            </button>
+            <h2>{editing ? "Editar transporte fluvial" : "Nuevo transporte fluvial"}</h2>
+            {error && (
+              <div className="admin-alert admin-alert-error">{error}</div>
+            )}
             <div className="admin-form-preview-grid">
               <div className="admin-form-column">
                 {[
-                  ["nombre", "Nombre de Cooperativa"],
-                  ["ruta", "Ruta"],
+                  ["nombre", "Nombre de operadora"],
+                  ["ruta", "Ruta fluvial"],
                   ["frecuencia", "Frecuencia"],
                   ["contacto", "Contacto"],
-                  ["puntoSalida", "Punto de Salida"],
-                  ["puntoLlegada", "Punto de Llegada"],
+                  ["puntoSalida", "Muelle de salida"],
+                  ["puntoLlegada", "Muelle o isla de llegada"],
                   ["lat", "Latitud"],
                   ["lng", "Longitud"],
                 ].map(([f, lbl]) => (
@@ -201,11 +211,11 @@ export default function AdminTransporte({
                 <h3 className="admin-preview-title">Vista previa</h3>
                 <div className="admin-preview-card-frame">
                   <article className="cooperativa-card cooperativa-card-admin">
-                    <h3><FaBus className="inline-icon" aria-hidden="true" /> {preview.nombre}</h3>
+                    <h3><FaShip className="inline-icon" aria-hidden="true" /> {preview.nombre}</h3>
                     <p>{preview.ruta}</p>
                     <div className="info-meta"><strong>Frecuencia:</strong> {preview.frecuencia}</div>
-                    <div className="info-meta"><strong>Salida:</strong> {preview.puntoSalida}</div>
-                    <div className="info-meta"><strong>Llegada:</strong> {preview.puntoLlegada}</div>
+                    <div className="info-meta"><strong>Muelle de salida:</strong> {preview.puntoSalida}</div>
+                    <div className="info-meta"><strong>Muelle o isla de llegada:</strong> {preview.puntoLlegada}</div>
                     <div className="info-meta"><FaPhoneAlt className="inline-icon" aria-hidden="true" /> {preview.contacto}</div>
                   </article>
                 </div>

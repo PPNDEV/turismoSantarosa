@@ -94,6 +94,7 @@ function ActivityCard({ activity, index }) {
           src={activity.imagen || FALLBACK_IMAGE}
           alt={activity.nombre}
           loading="lazy"
+          decoding="async"
         />
       </div>
       <div className="activity-card-body">
@@ -163,7 +164,12 @@ export default function QueHacer({ mode = "teaser" }) {
               </div>
 
               <div className="activities-hero-media">
-                <img src={heroImage} alt={editorial.title} loading="lazy" />
+                <img
+                  src={heroImage}
+                  alt={editorial.title}
+                  loading="lazy"
+                  decoding="async"
+                />
                 <div className="activities-quote-card">
                   <FaQuoteLeft
                     className="activities-quote-icon"

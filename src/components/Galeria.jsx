@@ -2,9 +2,11 @@ import { useState } from "react";
 import { FaCamera, FaFilm, FaVideo } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import { useLanguage } from "../context/useLanguage";
+import GalleryLightbox from "./GalleryLightbox";
 
 export default function Galeria() {
   const [tab, setTab] = useState("foto");
+  const [selectedItem, setSelectedItem] = useState(null);
   const { galeria } = useContent();
   const { t } = useLanguage();
   const filtered = galeria.filter((g) => g.tipo === tab);
@@ -59,7 +61,12 @@ export default function Galeria() {
                 );
 
                 return (
-                  <div key={g.id} className="galeria-item reveal">
+                  <button
+                    key={g.id}
+                    type="button"
+                    className="galeria-item reveal"
+                    onClick={() => setSelectedItem({ ...g, translatedTitle })}
+                  >
                     <img
                       src={g.url}
                       alt={translatedTitle}
@@ -69,13 +76,18 @@ export default function Galeria() {
                     <div className="galeria-overlay">
                       <span>{translatedTitle}</span>
                     </div>
-                  </div>
+                  </button>
                 );
               })(),
             )
           )}
         </div>
       </div>
+      <GalleryLightbox
+        item={selectedItem}
+        title={selectedItem?.translatedTitle}
+        onClose={() => setSelectedItem(null)}
+      />
     </section>
   );
 }

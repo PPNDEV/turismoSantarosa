@@ -1,4 +1,4 @@
-import { FaBus, FaPhoneAlt } from "react-icons/fa";
+import { FaPhoneAlt, FaShip } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
@@ -12,18 +12,18 @@ export default function TransportePage() {
       <div className="page-shell">
         <div className="page-banner">
           <h1 className="page-banner-title">
-            <FaBus className="inline-icon" aria-hidden="true" />
-            Transporte
+            <FaShip className="inline-icon" aria-hidden="true" />
+            Transporte fluvial
           </h1>
         </div>
 
         <main className="container info-page-content">
           <section className="info-section-card">
             <header className="info-section-header">
-              <h2>Cooperativas de transporte</h2>
+              <h2>Operadoras de transporte fluvial</h2>
               <p>
-                Cooperativas habilitadas para movilizacion hacia los muelles de
-                embarcacion.
+                Rutas fluviales habilitadas para movilizacion entre muelles,
+                islas y zonas de embarcacion.
               </p>
             </header>
 
@@ -36,10 +36,12 @@ export default function TransportePage() {
                     <strong>Frecuencia:</strong> {cooperativa.frecuencia}
                   </div>
                   <div className="info-meta">
-                    <strong>Salida:</strong> {cooperativa.puntoSalida}
+                    <strong>Muelle de salida:</strong>{" "}
+                    {cooperativa.puntoSalida}
                   </div>
                   <div className="info-meta">
-                    <strong>Llegada:</strong> {cooperativa.puntoLlegada}
+                    <strong>Muelle o isla de llegada:</strong>{" "}
+                    {cooperativa.puntoLlegada}
                   </div>
                   <div className="info-meta">
                     <FaPhoneAlt className="inline-icon" aria-hidden="true" />

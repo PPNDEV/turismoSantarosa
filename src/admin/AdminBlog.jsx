@@ -47,6 +47,7 @@ export default function AdminBlog({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const openNew = () => {
     if (!canEdit) {
@@ -58,6 +59,7 @@ export default function AdminBlog({
     setInitialForm(nextForm);
     setImageFile(null);
     setImagePreviewUrl("");
+    setError("");
     setEditing(null);
     setModal(true);
   };
@@ -71,6 +73,7 @@ export default function AdminBlog({
     setInitialForm(nextForm);
     setImageFile(null);
     setImagePreviewUrl("");
+    setError("");
     setEditing(art.id);
     setModal(true);
   };
@@ -94,9 +97,14 @@ export default function AdminBlog({
     if (!canEdit || saving) {
       return;
     }
+    if (!form.titulo || !form.resumen || (!form.imagen && !imageFile)) {
+      setError("Completa titulo, resumen e imagen antes de guardar.");
+      return;
+    }
 
     const itemId = editing || createContentId("blog", form.titulo);
     setSaving(true);
+    setError("");
     try {
       const imageUrl = imageFile
         ? await uploadContentImage(imageFile, "blog", itemId)
@@ -108,6 +116,8 @@ export default function AdminBlog({
       setModal(false);
       setImageFile(null);
       setImagePreviewUrl("");
+    } catch (saveError) {
+      setError(saveError?.message || "No se pudo guardar el articulo.");
     } finally {
       setSaving(false);
     }
@@ -249,12 +259,24 @@ export default function AdminBlog({
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div
             className="modal-box modal-box-preview"
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closeModal}
+              disabled={saving}
+              aria-label="Cerrar"
+            >
+              x
+            </button>
             <h2>{editing ? "Editar Artículo" : "Nuevo Artículo"}</h2>
+            {error && (
+              <div className="admin-alert admin-alert-error">{error}</div>
+            )}
             <div className="admin-form-preview-grid">
               <div className="admin-form-column">
                 {[
@@ -334,6 +356,8 @@ export default function AdminBlog({
                     <img
                       src={previewBlog.imagen}
                       alt={previewBlog.titulo}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_BLOG_IMAGE) {
                           e.currentTarget.src = FALLBACK_BLOG_IMAGE;
