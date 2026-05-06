@@ -37,6 +37,9 @@ const AdminMensajes = lazy(() => import("../admin/AdminMensajes"));
 const AdminEncuestas = lazy(() => import("../admin/AdminEncuestas"));
 const AdminSolicitudes = lazy(() => import("../admin/AdminSolicitudes"));
 
+const RECENT_SIDEBAR_SECTIONS_KEY = "adminRecentSidebarSections";
+const MAX_RECENT_SIDEBAR_SECTIONS = 5;
+
 const menuItems = [
   {
     key: "dashboard",
@@ -169,11 +172,41 @@ const menuItems = [
   },
 ];
 
-function openSite(path) {
+function getStoredRecentSidebarSections() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const storedSections = JSON.parse(
+      window.localStorage.getItem(RECENT_SIDEBAR_SECTIONS_KEY) || "[]",
+    );
+    if (!Array.isArray(storedSections)) {
+      return [];
+    }
+
+    const validKeys = new Set(menuItems.map((item) => item.key));
+    return storedSections
+      .filter((sectionKey) => validKeys.has(sectionKey) && sectionKey !== "dashboard")
+      .slice(0, MAX_RECENT_SIDEBAR_SECTIONS);
+  } catch {
+    return [];
+  }
+}
+
+function persistRecentSidebarSections(sectionKeys) {
   if (typeof window === "undefined") {
     return;
   }
-  window.open(path, "_blank", "noopener,noreferrer");
+
+  try {
+    window.localStorage.setItem(
+      RECENT_SIDEBAR_SECTIONS_KEY,
+      JSON.stringify(sectionKeys),
+    );
+  } catch {
+    // localStorage puede estar bloqueado en algunos navegadores.
+  }
 }
 
 function getRoleLabel(role) {
@@ -193,6 +226,9 @@ export default function AdminLayout() {
   const [active, setActive] = useState("dashboard");
   const [, setLivePreview] = useState(null);
   const [dirtySections, setDirtySections] = useState({});
+  const [recentSidebarSections, setRecentSidebarSections] = useState(
+    getStoredRecentSidebarSections,
+  );
   const { user, logout, canEditContent, canManageUsers } = useAuth();
   const navigate = useNavigate();
 
@@ -201,13 +237,32 @@ export default function AdminLayout() {
     [active],
   );
 
-  const handleSelectSection = (nextSection) => {
+  const rememberSidebarSection = (sectionKey) => {
+    if (sectionKey === "dashboard") {
+      return;
+    }
+
+    setRecentSidebarSections((previousSections) => {
+      const nextSections = [
+        sectionKey,
+        ...previousSections.filter((key) => key !== sectionKey),
+      ].slice(0, MAX_RECENT_SIDEBAR_SECTIONS);
+
+      persistRecentSidebarSections(nextSections);
+      return nextSections;
+    });
+  };
+
+  const handleSelectSection = (nextSection, options = {}) => {
     const nextItem = menuItems.find((item) => item.key === nextSection);
     if (nextItem?.requiresAdmin && !canManageUsers) {
       return;
     }
 
     if (nextSection === active) {
+      if (options.trackRecent) {
+        rememberSidebarSection(nextSection);
+      }
       return;
     }
 
@@ -224,6 +279,9 @@ export default function AdminLayout() {
     }
 
     setActive(nextSection);
+    if (options.trackRecent) {
+      rememberSidebarSection(nextSection);
+    }
     setLivePreview(null);
   };
 
@@ -282,6 +340,7 @@ export default function AdminLayout() {
             onNavigateSection={handleSelectSection}
             canEditContent={canEditContent}
             canManageUsers={canManageUsers}
+            recentSectionKeys={recentSidebarSections}
           />
         );
       case "portada":
@@ -397,6 +456,7 @@ export default function AdminLayout() {
             onNavigateSection={handleSelectSection}
             canEditContent={canEditContent}
             canManageUsers={canManageUsers}
+            recentSectionKeys={recentSidebarSections}
           />
         );
     }
@@ -407,7 +467,7 @@ export default function AdminLayout() {
       {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">
-          <h2>Santa Rosa</h2>
+          <h2>PROMOWEAPP</h2>
           <p>Panel de Administración</p>
         </div>
         <nav className="sidebar-nav">
@@ -418,7 +478,7 @@ export default function AdminLayout() {
               <button
                 key={item.key}
                 className={`sidebar-nav-item ${active === item.key ? "active" : ""} ${isLocked ? "is-disabled" : ""}`}
-                onClick={() => handleSelectSection(item.key)}
+                onClick={() => handleSelectSection(item.key, { trackRecent: true })}
                 disabled={isLocked}
                 title={
                   isLocked ? "Solo disponible para administradores" : undefined
@@ -466,11 +526,12 @@ export default function AdminLayout() {
         <div className="admin-topbar">
           <div>
             <h1>{activeItem.title}</h1>
-            <p className="admin-topbar-subtext">
-              {canEditContent
-                ? "Editor CMS con guardado automático para el contenido del sitio."
-                : "Modo visualizador: puedes navegar el panel sin permisos de edición."}
-            </p>
+            {!canEditContent && (
+              <p className="admin-topbar-subtext">
+                Modo visualizador: puedes navegar el panel sin permisos de
+                edición.
+              </p>
+            )}
             <p className="admin-role-pill">
               Rol activo: {getRoleLabel(user?.role)}
             </p>
@@ -486,7 +547,7 @@ export default function AdminLayout() {
           <div className="admin-topbar-actions">
             <button
               className="btn btn-primary admin-topbar-btn"
-              onClick={() => openSite("/")}
+              onClick={() => navigate("/")}
             >
               <FaGlobe className="inline-icon" aria-hidden="true" />
               Ver Sitio Completo

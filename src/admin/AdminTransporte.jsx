@@ -167,10 +167,20 @@ export default function AdminTransporte({
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay">
           <div className="modal-box modal-box-preview" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closeModal}
+              aria-label="Cerrar"
+            >
+              x
+            </button>
             <h2>{editing ? "Editar transporte fluvial" : "Nuevo transporte fluvial"}</h2>
-            {error && <div className="login-error">{error}</div>}
+            {error && (
+              <div className="admin-alert admin-alert-error">{error}</div>
+            )}
             <div className="admin-form-preview-grid">
               <div className="admin-form-column">
                 {[

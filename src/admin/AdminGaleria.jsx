@@ -30,6 +30,7 @@ export default function AdminGaleria({
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [error, setError] = useState("");
   const [deleteError, setDeleteError] = useState("");
 
   const openNew = () => {
@@ -41,6 +42,7 @@ export default function AdminGaleria({
     setEditing(null);
     setImageFile(null);
     setImagePreviewUrl("");
+    setError("");
     setShowForm(true);
   };
 
@@ -53,6 +55,7 @@ export default function AdminGaleria({
     setEditing(item.id);
     setImageFile(null);
     setImagePreviewUrl("");
+    setError("");
     setShowForm(true);
   };
 
@@ -73,10 +76,14 @@ export default function AdminGaleria({
 
   const save = async () => {
     if (!canEdit || saving) return;
-    if (!form.url && !imageFile) return;
+    if (!form.url && !imageFile) {
+      setError("Selecciona una imagen o escribe una URL antes de guardar.");
+      return;
+    }
 
     const itemId = editing || createContentId("galeria", form.titulo);
     setSaving(true);
+    setError("");
     try {
       const imageUrl = imageFile
         ? await uploadContentImage(imageFile, "galeria", itemId)
@@ -91,6 +98,8 @@ export default function AdminGaleria({
       setImageFile(null);
       setImagePreviewUrl("");
       setShowForm(false);
+    } catch (saveError) {
+      setError(saveError?.message || "No se pudo guardar la imagen.");
     } finally {
       setSaving(false);
     }
@@ -193,6 +202,9 @@ export default function AdminGaleria({
         {showForm && (
           <div className="admin-inline-editor">
             <div className="admin-inline-editor-fields">
+              {error && (
+                <div className="admin-alert admin-alert-error">{error}</div>
+              )}
               <AdminImageField
                 label="Imagen de galeria"
                 value={form.url}
@@ -314,12 +326,20 @@ export default function AdminGaleria({
           role="dialog"
           aria-modal="true"
           aria-labelledby="gallery-delete-title"
-          onClick={() => !deletingId && setPendingDelete(null)}
         >
           <div
             className="modal-box admin-confirm-dialog"
             onClick={(event) => event.stopPropagation()}
           >
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setPendingDelete(null)}
+              disabled={Boolean(deletingId)}
+              aria-label="Cerrar"
+            >
+              x
+            </button>
             <div className="admin-confirm-icon">
               <FaTimes aria-hidden="true" />
             </div>
@@ -328,7 +348,9 @@ export default function AdminGaleria({
               Se quitara "{pendingDelete.titulo || "esta imagen"}" de la
               galeria publica. Esta accion no se puede deshacer desde el panel.
             </p>
-            {deleteError && <div className="login-error">{deleteError}</div>}
+            {deleteError && (
+              <div className="admin-alert admin-alert-error">{deleteError}</div>
+            )}
             <div className="modal-actions">
               <button
                 className="btn btn-outline"

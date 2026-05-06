@@ -69,6 +69,10 @@ export default function AdminUsuarios({
       setError("Solo un administrador puede crear usuarios.");
       return;
     }
+    if (!form.displayName || !form.email || !form.password) {
+      setError("Completa nombre, correo y contraseña antes de crear el usuario.");
+      return;
+    }
 
     try {
       await createUser(form);
@@ -190,8 +194,10 @@ export default function AdminUsuarios({
           </div>
         )}
 
-        {error && <div className="login-error">{error}</div>}
-        {success && <div className="admin-success-note">{success}</div>}
+        {error && <div className="admin-alert admin-alert-error">{error}</div>}
+        {success && (
+          <div className="admin-alert admin-alert-success">{success}</div>
+        )}
 
         <table>
           <thead>
@@ -353,7 +359,9 @@ export default function AdminUsuarios({
               </button>
             </div>
 
-            {error && <div className="login-error">{error}</div>}
+            {error && (
+              <div className="admin-alert admin-alert-error">{error}</div>
+            )}
 
             <form
               className="admin-user-form admin-user-modal-form"

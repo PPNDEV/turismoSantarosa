@@ -113,8 +113,10 @@ export default function AdminSolicitudes({ onLivePreviewChange = () => {} }) {
           </h2>
         </div>
 
-        {error && <div className="login-error">{error}</div>}
-        {success && <div className="admin-success-note">{success}</div>}
+        {error && <div className="admin-alert admin-alert-error">{error}</div>}
+        {success && (
+          <div className="admin-alert admin-alert-success">{success}</div>
+        )}
 
         {loading ? (
           <div className="admin-loading">Cargando solicitudes...</div>
