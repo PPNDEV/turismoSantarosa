@@ -7,7 +7,6 @@ import Destinos from "../components/Destinos";
 import Eventos from "../components/Eventos";
 import Generalidades from "../components/Generalidades";
 import Galeria from "../components/Galeria";
-import Blog from "../components/Blog";
 import Footer from "../components/Footer";
 import MascotasFlotantes from "../components/MascotasFlotantes";
 import { useLanguage } from "../context/useLanguage";
@@ -16,6 +15,13 @@ export default function Home() {
   const { t } = useLanguage();
 
   useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") {
+      document
+        .querySelectorAll(".reveal")
+        .forEach((el) => el.classList.add("visible"));
+      return undefined;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -26,8 +32,43 @@ export default function Home() {
       },
       { threshold: 0.1, rootMargin: "0px 0px -40px 0px" },
     );
-    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+
+    const observed = new WeakSet();
+    const observeRevealElements = (root = document) => {
+      root.querySelectorAll(".reveal").forEach((el) => {
+        if (!observed.has(el)) {
+          observed.add(el);
+          observer.observe(el);
+        }
+      });
+    };
+
+    observeRevealElements();
+
+    const mutationObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+
+          if (node.matches(".reveal") && !observed.has(node)) {
+            observed.add(node);
+            observer.observe(node);
+          }
+
+          observeRevealElements(node);
+        });
+      });
+    });
+
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      mutationObserver.disconnect();
+      observer.disconnect();
+    };
   }, []);
 
   return (
@@ -68,7 +109,6 @@ export default function Home() {
         <Eventos />
         <Generalidades />
         <Galeria />
-        <Blog />
       </main>
       <Footer />
       <MascotasFlotantes />

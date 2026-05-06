@@ -28,11 +28,12 @@ export default function AdminGaleria({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
 
   const openNew = () => {
-    if (!canEdit) {
-      return;
-    }
+    if (!canEdit) return;
 
     const nextForm = { url: "", titulo: "", tipo: "foto" };
     setForm(nextForm);
@@ -44,9 +45,7 @@ export default function AdminGaleria({
   };
 
   const openEdit = (item) => {
-    if (!canEdit) {
-      return;
-    }
+    if (!canEdit) return;
 
     const nextForm = { ...item };
     setForm(nextForm);
@@ -73,11 +72,9 @@ export default function AdminGaleria({
   };
 
   const save = async () => {
-    if (!canEdit || saving) {
-      return;
-    }
-
+    if (!canEdit || saving) return;
     if (!form.url && !imageFile) return;
+
     const itemId = editing || createContentId("galeria", form.titulo);
     setSaving(true);
     try {
@@ -86,29 +83,46 @@ export default function AdminGaleria({
         : form.url;
 
       await upsertGaleria({ ...form, url: imageUrl, id: itemId });
+
+      const resetForm = { url: "", titulo: "", tipo: "foto" };
+      setForm(resetForm);
+      setInitialForm(resetForm);
+      setEditing(null);
+      setImageFile(null);
+      setImagePreviewUrl("");
+      setShowForm(false);
     } finally {
       setSaving(false);
     }
-    const resetForm = { url: "", titulo: "", tipo: "foto" };
-    setForm(resetForm);
-    setInitialForm(resetForm);
-    setEditing(null);
-    setImageFile(null);
-    setImagePreviewUrl("");
-    setShowForm(false);
   };
 
-  const del = (id) => {
-    if (!canEdit) {
-      return;
-    }
+  const del = (item) => {
+    if (!canEdit) return;
 
-    if (confirm("¿Eliminar?")) deleteGaleria(id);
+    setDeleteError("");
+    setPendingDelete(item);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deletingId) return;
+
+    setDeleteError("");
+    setDeletingId(pendingDelete.id);
+    try {
+      await deleteGaleria(pendingDelete.id);
+      setPendingDelete(null);
+    } catch (error) {
+      setDeleteError(
+        error?.message || "No se pudo eliminar la imagen. Intenta nuevamente.",
+      );
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const previewItem = {
     url: imagePreviewUrl || form.url || FALLBACK_GALLERY_IMAGE,
-    titulo: form.titulo || "Título de la imagen",
+    titulo: form.titulo || "Titulo de la imagen",
     tipo: form.tipo || "foto",
   };
 
@@ -124,9 +138,9 @@ export default function AdminGaleria({
       image: previewItem.url,
       badge: previewItem.tipo === "video" ? "Video" : "Foto",
       title: previewItem.titulo,
-      subtitle: "Elemento de galería",
-      body: "Vista previa de cómo aparecerá en la galería pública.",
-      status: "Edición en curso",
+      subtitle: "Elemento de galeria",
+      body: "Vista previa de como aparecera en la galeria publica.",
+      status: "Edicion en curso",
     });
   }, [
     showForm,
@@ -160,7 +174,7 @@ export default function AdminGaleria({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Galería ({galeria.length})</h2>
+          <h2>Galeria ({galeria.length})</h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
@@ -172,7 +186,7 @@ export default function AdminGaleria({
 
         {!canEdit && (
           <div className="admin-readonly-note">
-            Modo visualizador: el contenido de galería es solo de lectura.
+            Modo visualizador: el contenido de galeria es solo de lectura.
           </div>
         )}
 
@@ -188,11 +202,11 @@ export default function AdminGaleria({
               />
 
               <div className="admin-inline-field">
-                <label>Título</label>
+                <label>Titulo</label>
                 <input
                   value={form.titulo}
                   onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                  placeholder="Descripción..."
+                  placeholder="Descripcion..."
                 />
               </div>
 
@@ -214,7 +228,7 @@ export default function AdminGaleria({
                   disabled={saving}
                 >
                   <FaSave className="inline-icon" aria-hidden="true" />
-                  {saving ? "Guardando..." : "Guardar"}
+                  {saving ? "Optimizando y guardando..." : "Guardar"}
                 </button>
                 <button
                   className="btn btn-outline"
@@ -227,11 +241,13 @@ export default function AdminGaleria({
             </div>
 
             <div className="admin-inline-preview">
-              <h3 className="admin-preview-title">Vista previa de galería</h3>
+              <h3 className="admin-preview-title">Vista previa de galeria</h3>
               <article className="admin-gallery-preview-card">
                 <img
                   src={previewItem.url}
                   alt={previewItem.titulo}
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     if (e.currentTarget.src !== FALLBACK_GALLERY_IMAGE) {
                       e.currentTarget.src = FALLBACK_GALLERY_IMAGE;
@@ -269,9 +285,7 @@ export default function AdminGaleria({
                 loading="lazy"
                 decoding="async"
               />
-              <div className="admin-gallery-title">
-                {item.titulo}
-              </div>
+              <div className="admin-gallery-title">{item.titulo}</div>
               <div className="admin-gallery-actions">
                 <button
                   className="action-btn edit-btn"
@@ -282,9 +296,10 @@ export default function AdminGaleria({
                 </button>
               </div>
               <button
-                onClick={() => del(item.id)}
+                onClick={() => del(item)}
                 disabled={!canEdit}
                 className="admin-gallery-delete"
+                title="Eliminar imagen"
               >
                 <FaTimes aria-hidden="true" />
               </button>
@@ -292,6 +307,47 @@ export default function AdminGaleria({
           ))}
         </div>
       </div>
+
+      {pendingDelete && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gallery-delete-title"
+          onClick={() => !deletingId && setPendingDelete(null)}
+        >
+          <div
+            className="modal-box admin-confirm-dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-confirm-icon">
+              <FaTimes aria-hidden="true" />
+            </div>
+            <h2 id="gallery-delete-title">Eliminar foto de la galeria</h2>
+            <p>
+              Se quitara "{pendingDelete.titulo || "esta imagen"}" de la
+              galeria publica. Esta accion no se puede deshacer desde el panel.
+            </p>
+            {deleteError && <div className="login-error">{deleteError}</div>}
+            <div className="modal-actions">
+              <button
+                className="btn btn-outline"
+                onClick={() => setPendingDelete(null)}
+                disabled={Boolean(deletingId)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={confirmDelete}
+                disabled={Boolean(deletingId)}
+              >
+                {deletingId ? "Eliminando..." : "Eliminar foto"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

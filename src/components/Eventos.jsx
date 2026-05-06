@@ -86,7 +86,7 @@ export default function Eventos() {
                 return (
                   <div key={ev.id} className="evento-card reveal">
                     <img
-                      src={getEventImage(ev.imagen)}
+                      src={getEventImage(ev.imagen || ev.url || ev.url_archivo)}
                       alt={translatedName}
                       loading="lazy"
                       decoding="async"

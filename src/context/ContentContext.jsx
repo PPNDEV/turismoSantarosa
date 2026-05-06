@@ -51,6 +51,8 @@ const RTDB_NODES = [
   "destinos",
   "blog",
   "heroSlides",
+  "comoLlegarIntro",
+  "comoLlegar",
   "cooperativas",
 ];
 
@@ -65,6 +67,8 @@ const ROUTE_NODES = {
     "eventos",
     "galeria",
     "blog",
+    "comoLlegarIntro",
+    "comoLlegar",
   ],
   "/actividades": ["actividades", "actividadesEditorial"],
   "/destinos": ["destinos"],
@@ -129,6 +133,8 @@ export function ContentProvider({ children }) {
   const [destinos, setDestinos] = useState([]);
   const [blog, setBlog] = useState([]);
   const [heroSlides, setHeroSlidesState] = useState([]);
+  const [comoLlegarIntro, setComoLlegarIntro] = useState([]);
+  const [comoLlegar, setComoLlegar] = useState([]);
   const [cooperativas, setCooperativas] = useState([]);
   const [loadedNodes, setLoadedNodes] = useState(() => new Set());
   const requiredNodes = useMemo(
@@ -153,6 +159,8 @@ export function ContentProvider({ children }) {
       destinos: setDestinos,
       blog: setBlog,
       heroSlides: setHeroSlidesState,
+      comoLlegarIntro: setComoLlegarIntro,
+      comoLlegar: setComoLlegar,
       cooperativas: setCooperativas,
     }),
     [],
@@ -187,6 +195,10 @@ export function ContentProvider({ children }) {
             items.forEach((item) => {
               item.tag = cleanHeroTag(item.tag);
             });
+            items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          }
+
+          if (nodeKey === "comoLlegar") {
             items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
           }
 
@@ -335,6 +347,14 @@ export function ContentProvider({ children }) {
     (id) => deleteFromRTDB("heroSlides", id),
     [deleteFromRTDB],
   );
+  const upsertComoLlegar = useCallback(
+    (item) => upsertToRTDB("comoLlegar", item),
+    [upsertToRTDB],
+  );
+  const upsertComoLlegarIntro = useCallback(
+    (item) => upsertToRTDB("comoLlegarIntro", item),
+    [upsertToRTDB],
+  );
   const setHeroSlides = useCallback(
     async (nextSlides) => {
       const slides =
@@ -412,6 +432,8 @@ export function ContentProvider({ children }) {
       destinos,
       blog,
       heroSlides,
+      comoLlegarIntro,
+      comoLlegar,
       cooperativas,
       loading,
 
@@ -434,6 +456,8 @@ export function ContentProvider({ children }) {
       deleteBlog,
       upsertHeroSlide,
       deleteHeroSlide,
+      upsertComoLlegarIntro,
+      upsertComoLlegar,
       setHeroSlides,
       moveHeroSlide,
       upsertCooperativa,
@@ -452,6 +476,8 @@ export function ContentProvider({ children }) {
       destinos,
       blog,
       heroSlides,
+      comoLlegarIntro,
+      comoLlegar,
       cooperativas,
       loading,
       upsertActividad,
@@ -473,6 +499,8 @@ export function ContentProvider({ children }) {
       deleteBlog,
       upsertHeroSlide,
       deleteHeroSlide,
+      upsertComoLlegarIntro,
+      upsertComoLlegar,
       setHeroSlides,
       moveHeroSlide,
       upsertCooperativa,

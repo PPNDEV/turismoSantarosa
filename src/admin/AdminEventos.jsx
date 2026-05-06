@@ -435,6 +435,8 @@ export default function AdminEventos({
                     <img
                       src={previewEvento.imagen}
                       alt={previewEvento.nombre}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_EVENT_IMAGE) {
                           e.currentTarget.src = FALLBACK_EVENT_IMAGE;

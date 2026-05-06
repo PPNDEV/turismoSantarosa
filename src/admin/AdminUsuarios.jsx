@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaSave, FaTrash, FaUserShield } from "react-icons/fa";
+import {
+  FaSave,
+  FaTimes,
+  FaTrash,
+  FaUserPlus,
+  FaUserShield,
+} from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 
 const initialForm = {
@@ -39,9 +45,18 @@ export default function AdminUsuarios({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [savingRole, setSavingRole] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const renderInlineCreateForm = false;
 
   const adminCount = useMemo(
-    () => users.filter((entry) => entry.role === "administrador").length,
+    () =>
+      users.filter(
+        (entry) =>
+          entry.role === "administrador" &&
+          entry.active !== false &&
+          !entry.disabled &&
+          !entry.deletedAt,
+      ).length,
     [users],
   );
 
@@ -59,9 +74,27 @@ export default function AdminUsuarios({
       await createUser(form);
       setSuccess("Usuario creado correctamente.");
       setForm(initialForm);
+      setShowCreateForm(false);
     } catch (creationError) {
       setError(creationError.message || "No se pudo crear el usuario.");
     }
+  };
+
+  const openCreateForm = () => {
+    if (!canManageUsers) {
+      setError("Solo un administrador puede crear usuarios.");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setShowCreateForm(true);
+  };
+
+  const closeCreateForm = () => {
+    setForm(initialForm);
+    setShowCreateForm(false);
+    setError("");
   };
 
   const handleRoleChange = async (uid, role) => {
@@ -134,6 +167,15 @@ export default function AdminUsuarios({
             <FaUserShield className="inline-icon" aria-hidden="true" />
             Gestión de Roles ({users.length})
           </h2>
+          <button
+            className="btn btn-primary"
+            onClick={openCreateForm}
+            disabled={!canManageUsers}
+            type="button"
+          >
+            <FaUserPlus className="inline-icon" aria-hidden="true" />
+            Crear Usuario
+          </button>
         </div>
 
         <div className="admin-users-meta">
@@ -157,6 +199,7 @@ export default function AdminUsuarios({
               <th>Nombre</th>
               <th>Correo</th>
               <th>Rol</th>
+              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -183,6 +226,19 @@ export default function AdminUsuarios({
                   </select>
                 </td>
                 <td>
+                  <span
+                    className={`badge ${
+                      entry.active === false || entry.disabled || entry.deletedAt
+                        ? "badge-muted"
+                        : "badge-ocean"
+                    }`}
+                  >
+                    {entry.active === false || entry.disabled || entry.deletedAt
+                      ? "Inactivo"
+                      : "Activo"}
+                  </span>
+                </td>
+                <td>
                   <button
                     className="action-btn del-btn"
                     onClick={() => handleDelete(entry.uid)}
@@ -196,79 +252,189 @@ export default function AdminUsuarios({
             ))}
           </tbody>
         </table>
+
+        {renderInlineCreateForm && (
+          <form className="admin-user-form" onSubmit={handleCreate}>
+            <div className="admin-table-header">
+              <h2>Crear Usuario</h2>
+            </div>
+
+            <div className="modal-field">
+              <label>Nombre</label>
+              <input
+                type="text"
+                value={form.displayName}
+                onChange={(e) =>
+                  setForm({ ...form, displayName: e.target.value })
+                }
+                placeholder="Ej: Editor Turismo"
+                disabled={!canManageUsers}
+                required
+              />
+            </div>
+
+            <div className="modal-field">
+              <label>Correo</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="usuario@santarosa.ec"
+                disabled={!canManageUsers}
+                required
+              />
+            </div>
+
+            <div className="modal-field">
+              <label>Contraseña</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) =>
+                  setForm({ ...form, password: e.target.value })
+                }
+                placeholder="Mínimo recomendado: 8 caracteres"
+                disabled={!canManageUsers}
+                required
+              />
+            </div>
+
+            <div className="modal-field">
+              <label>Rol</label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                disabled={!canManageUsers}
+              >
+                {roleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn btn-outline"
+                type="button"
+                onClick={closeCreateForm}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={!canManageUsers}
+              >
+                <FaSave className="inline-icon" aria-hidden="true" />
+                Crear Usuario
+              </button>
+            </div>
+          </form>
+        )}
       </div>
 
-      <div className="admin-table-card">
-        <div className="admin-table-header">
-          <h2>Crear Usuario</h2>
+      {showCreateForm && (
+        <div className="modal-overlay" onClick={closeCreateForm}>
+          <div
+            className="modal-box admin-user-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="admin-modal-header">
+              <h2>Crear Usuario</h2>
+              <button
+                className="action-btn"
+                type="button"
+                onClick={closeCreateForm}
+                aria-label="Cerrar formulario"
+              >
+                <FaTimes className="inline-icon" aria-hidden="true" />
+              </button>
+            </div>
+
+            {error && <div className="login-error">{error}</div>}
+
+            <form
+              className="admin-user-form admin-user-modal-form"
+              onSubmit={handleCreate}
+            >
+              <div className="modal-field">
+                <label>Nombre</label>
+                <input
+                  type="text"
+                  value={form.displayName}
+                  onChange={(e) =>
+                    setForm({ ...form, displayName: e.target.value })
+                  }
+                  placeholder="Ej: Editor Turismo"
+                  disabled={!canManageUsers}
+                  required
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Correo</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="usuario@santarosa.ec"
+                  disabled={!canManageUsers}
+                  required
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Contraseña</label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
+                  placeholder="Mínimo recomendado: 8 caracteres"
+                  disabled={!canManageUsers}
+                  required
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Rol</label>
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  disabled={!canManageUsers}
+                >
+                  {roleOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  className="btn btn-outline"
+                  type="button"
+                  onClick={closeCreateForm}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={!canManageUsers}
+                >
+                  <FaSave className="inline-icon" aria-hidden="true" />
+                  Crear Usuario
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-
-        <form className="admin-user-form" onSubmit={handleCreate}>
-          <div className="modal-field">
-            <label>Nombre</label>
-            <input
-              type="text"
-              value={form.displayName}
-              onChange={(e) =>
-                setForm({ ...form, displayName: e.target.value })
-              }
-              placeholder="Ej: Editor Turismo"
-              disabled={!canManageUsers}
-              required
-            />
-          </div>
-
-          <div className="modal-field">
-            <label>Correo</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="usuario@santarosa.ec"
-              disabled={!canManageUsers}
-              required
-            />
-          </div>
-
-          <div className="modal-field">
-            <label>Contraseña</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="Mínimo recomendado: 8 caracteres"
-              disabled={!canManageUsers}
-              required
-            />
-          </div>
-
-          <div className="modal-field">
-            <label>Rol</label>
-            <select
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-              disabled={!canManageUsers}
-            >
-              {roleOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="modal-actions">
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={!canManageUsers}
-            >
-              <FaSave className="inline-icon" aria-hidden="true" />
-              Crear Usuario
-            </button>
-          </div>
-        </form>
-      </div>
+      )}
     </div>
   );
 }

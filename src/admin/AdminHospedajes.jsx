@@ -372,6 +372,8 @@ export default function AdminHospedajes({
                     <img
                       src={previewItem.imagen}
                       alt={previewItem.nombre}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_IMAGE) {
                           e.currentTarget.src = FALLBACK_IMAGE;

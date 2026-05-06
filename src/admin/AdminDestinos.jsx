@@ -359,6 +359,8 @@ export default function AdminDestinos({
                     <img
                       src={previewDestino.imagen}
                       alt={previewDestino.nombre}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_DESTINO_IMAGE) {
                           e.currentTarget.src = FALLBACK_DESTINO_IMAGE;

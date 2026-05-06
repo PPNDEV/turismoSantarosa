@@ -3,19 +3,19 @@ import { useNavigate } from "react-router-dom";
 import {
   FaArrowLeft,
   FaBed,
-  FaBus,
   FaCalendarAlt,
   FaCamera,
   FaChartBar,
   FaChartPie,
   FaEnvelope,
-  FaFileAlt,
   FaGlobe,
   FaHiking,
   FaImage,
   FaInbox,
   FaLeaf,
   FaMapMarkerAlt,
+  FaRoute,
+  FaShip,
   FaUser,
   FaUserShield,
   FaUtensils,
@@ -24,7 +24,6 @@ import { useAuth } from "../context/useAuth";
 const AdminPortada = lazy(() => import("../admin/AdminPortada"));
 const AdminDashboard = lazy(() => import("../admin/AdminDashboard"));
 const AdminEventos = lazy(() => import("../admin/AdminEventos"));
-const AdminBlog = lazy(() => import("../admin/AdminBlog"));
 const AdminDestinos = lazy(() => import("../admin/AdminDestinos"));
 const AdminGaleria = lazy(() => import("../admin/AdminGaleria"));
 const AdminGastronomia = lazy(() => import("../admin/AdminGastronomia"));
@@ -33,6 +32,7 @@ const AdminFloraFauna = lazy(() => import("../admin/AdminFloraFauna"));
 const AdminUsuarios = lazy(() => import("../admin/AdminUsuarios"));
 const AdminActividades = lazy(() => import("../admin/AdminActividades"));
 const AdminTransporte = lazy(() => import("../admin/AdminTransporte"));
+const AdminComoLlegar = lazy(() => import("../admin/AdminComoLlegar"));
 const AdminMensajes = lazy(() => import("../admin/AdminMensajes"));
 const AdminEncuestas = lazy(() => import("../admin/AdminEncuestas"));
 const AdminSolicitudes = lazy(() => import("../admin/AdminSolicitudes"));
@@ -72,14 +72,6 @@ const menuItems = [
     description: "Publica, oculta y actualiza eventos informativos.",
   },
   {
-    key: "blog",
-    icon: FaFileAlt,
-    label: "Blog",
-    title: "Blog & Noticias",
-    previewPath: "/blog",
-    description: "Administra artículos, autores, fechas e imagen destacada.",
-  },
-  {
     key: "destinos",
     icon: FaMapMarkerAlt,
     label: "Destinos",
@@ -115,12 +107,21 @@ const menuItems = [
   },
   {
     key: "transporte",
-    icon: FaBus,
+    icon: FaShip,
     label: "Transporte",
-    title: "Cooperativas de Transporte",
+    title: "Transporte Fluvial",
     previewPath: "/informacion#transporte",
     description:
-      "Administra cooperativas, rutas, frecuencias y puntos de salida/llegada.",
+      "Administra rutas fluviales, frecuencias y muelles de salida/llegada.",
+  },
+  {
+    key: "comoLlegar",
+    icon: FaRoute,
+    label: "Como Llegar",
+    title: "Como Llegar",
+    previewPath: "/#como-llegar",
+    description:
+      "Edita las tres tarjetas de conectividad de la pagina principal.",
   },
   {
     key: "galeria",
@@ -245,13 +246,14 @@ export default function AdminLayout() {
       actividades: (isDirty) =>
         handleDirtySectionChange("actividades", isDirty),
       eventos: (isDirty) => handleDirtySectionChange("eventos", isDirty),
-      blog: (isDirty) => handleDirtySectionChange("blog", isDirty),
       destinos: (isDirty) => handleDirtySectionChange("destinos", isDirty),
       gastronomia: (isDirty) =>
         handleDirtySectionChange("gastronomia", isDirty),
       hospedajes: (isDirty) => handleDirtySectionChange("hospedajes", isDirty),
       floraFauna: (isDirty) => handleDirtySectionChange("floraFauna", isDirty),
       transporte: (isDirty) => handleDirtySectionChange("transporte", isDirty),
+      comoLlegar: (isDirty) =>
+        handleDirtySectionChange("comoLlegar", isDirty),
       galeria: (isDirty) => handleDirtySectionChange("galeria", isDirty),
       mensajes: (isDirty) => handleDirtySectionChange("mensajes", isDirty),
       encuestas: (isDirty) => handleDirtySectionChange("encuestas", isDirty),
@@ -306,14 +308,6 @@ export default function AdminLayout() {
             onDirtyChange={dirtyChangeHandlers.eventos}
           />
         );
-      case "blog":
-        return (
-          <AdminBlog
-            canEdit={canEditContent}
-            onLivePreviewChange={handleLivePreviewChange}
-            onDirtyChange={dirtyChangeHandlers.blog}
-          />
-        );
       case "destinos":
         return (
           <AdminDestinos
@@ -352,6 +346,14 @@ export default function AdminLayout() {
             canEdit={canEditContent}
             onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.transporte}
+          />
+        );
+      case "comoLlegar":
+        return (
+          <AdminComoLlegar
+            canEdit={canEditContent}
+            onLivePreviewChange={handleLivePreviewChange}
+            onDirtyChange={dirtyChangeHandlers.comoLlegar}
           />
         );
       case "galeria":

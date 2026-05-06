@@ -9,10 +9,8 @@ import {
   doc,
   getDoc,
   onSnapshot,
-  query,
   serverTimestamp,
   setDoc,
-  where,
 } from "firebase/firestore";
 import { AuthContext } from "./auth-context";
 import { auth, db, functions, firebaseConfig } from "../services/firebase";
@@ -46,6 +44,7 @@ function sanitizeProfile(rawProfile) {
       String(rawProfile?.displayName || "Usuario").trim() || "Usuario",
     role: normalizeRole(rawProfile?.role),
     active: rawProfile?.active !== false,
+    disabled: rawProfile?.disabled === true,
     deletedAt: rawProfile?.deletedAt || null,
   };
 }
@@ -85,20 +84,48 @@ function buildClientProfile(
   });
 }
 
-function mergePublicAndPrivateUsers(
+function mergeAuthPublicAndPrivateUsers(
+  authUsers,
   publicUsers,
   privateUsersByUid,
   currentUser,
 ) {
-  return publicUsers
-    .map((publicProfile) => {
-      const privateProfile = privateUsersByUid.get(publicProfile.uid) || null;
-      const ownPrimaryEmail =
-        currentUser?.uid === publicProfile.uid ? currentUser?.email || "" : "";
+  const publicByUid = new Map(publicUsers.map((entry) => [entry.uid, entry]));
+  const authByUid = new Map(authUsers.map((entry) => [entry.uid, entry]));
+  const allUids = new Set([...publicByUid.keys(), ...authByUid.keys()]);
 
-      return buildClientProfile(publicProfile, privateProfile, ownPrimaryEmail);
+  return Array.from(allUids)
+    .map((uid) => {
+      const authProfile = authByUid.get(uid) || {};
+      const publicProfile = publicByUid.get(uid) || {};
+      const privateProfile = privateUsersByUid.get(uid) || {};
+      const ownPrimaryEmail = currentUser?.uid === uid ? currentUser.email : "";
+
+      return sanitizeProfile({
+        uid,
+        email: authProfile.email || privateProfile.email || ownPrimaryEmail,
+        displayName:
+          publicProfile.displayName ||
+          authProfile.displayName ||
+          authProfile.email,
+        role: publicProfile.role || authProfile.role,
+        active:
+          typeof publicProfile.active === "boolean"
+            ? publicProfile.active
+            : authProfile.active !== false,
+        disabled: authProfile.disabled === true,
+        deletedAt:
+          privateProfile.deletedAt ||
+          publicProfile.deletedAt ||
+          authProfile.deletedAt ||
+          null,
+      });
     })
-    .filter((entry) => entry.active !== false && !entry.deletedAt);
+    .sort((a, b) => {
+      const left = a.email || a.displayName || "";
+      const right = b.email || b.displayName || "";
+      return left.localeCompare(right);
+    });
 }
 
 function createSessionUser(userAccount) {
@@ -197,17 +224,16 @@ export function AuthProvider({ children }) {
     }
 
     if (user.role === ROLE_ADMIN) {
-      const usersPublicRef = query(
-        collection(db, USERS_PUBLIC_COLLECTION),
-        where("active", "==", true),
-      );
+      const usersPublicRef = collection(db, USERS_PUBLIC_COLLECTION);
       const usersPrivateRef = collection(db, USERS_PRIVATE_COLLECTION);
 
+      let authUsers = [];
       let publicUsers = [];
       let privateUsersByUid = new Map();
 
       const syncUsersState = () => {
-        const nextUsers = mergePublicAndPrivateUsers(
+        const nextUsers = mergeAuthPublicAndPrivateUsers(
+          authUsers,
           publicUsers,
           privateUsersByUid,
           user,
@@ -237,6 +263,21 @@ export function AuthProvider({ children }) {
           );
         }
       };
+
+      const loadAuthUsers = async () => {
+        try {
+          const adminListUsers = httpsCallable(functions, "adminListUsers");
+          const result = await adminListUsers();
+          authUsers = Array.isArray(result?.data?.users)
+            ? result.data.users.map(sanitizeProfile)
+            : [];
+          syncUsersState();
+        } catch (error) {
+          console.warn("No se pudieron cargar usuarios de Firebase Auth:", error);
+        }
+      };
+
+      void loadAuthUsers();
 
       const unsubscribePublic = onSnapshot(
         usersPublicRef,

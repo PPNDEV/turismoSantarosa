@@ -334,6 +334,8 @@ export default function AdminBlog({
                     <img
                       src={previewBlog.imagen}
                       alt={previewBlog.titulo}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_BLOG_IMAGE) {
                           e.currentTarget.src = FALLBACK_BLOG_IMAGE;

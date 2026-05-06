@@ -180,6 +180,64 @@ exports.adminCreateUser = onCall({ region: "us-central1" }, async (request) => {
   };
 });
 
+exports.adminListUsers = onCall({ region: "us-central1" }, async (request) => {
+  await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
+
+  const authUsers = [];
+  let pageToken;
+
+  do {
+    const result = await admin.auth().listUsers(1000, pageToken);
+    authUsers.push(...result.users);
+    pageToken = result.pageToken;
+  } while (pageToken);
+
+  const [publicSnapshot, privateSnapshot] = await Promise.all([
+    db.collection("usersPublic").get(),
+    db.collection("usersPrivate").get(),
+  ]);
+
+  const publicByUid = new Map(
+    publicSnapshot.docs.map((entry) => [entry.id, entry.data()]),
+  );
+  const privateByUid = new Map(
+    privateSnapshot.docs.map((entry) => [entry.id, entry.data()]),
+  );
+
+  const users = authUsers.map((authUser) => {
+    const publicProfile = publicByUid.get(authUser.uid) || {};
+    const privateProfile = privateByUid.get(authUser.uid) || {};
+    const role = normalizeRole(
+      publicProfile.role || authUser.customClaims?.role || ROLE_VIEWER,
+    );
+
+    return {
+      uid: authUser.uid,
+      email: String(authUser.email || privateProfile.email || "")
+        .trim()
+        .toLowerCase(),
+      displayName:
+        String(
+          publicProfile.displayName ||
+            authUser.displayName ||
+            authUser.email ||
+            "Usuario",
+        ).trim() || "Usuario",
+      role,
+      active:
+        typeof publicProfile.active === "boolean"
+          ? publicProfile.active
+          : !authUser.disabled,
+      disabled: Boolean(authUser.disabled),
+      deletedAt: privateProfile.deletedAt || publicProfile.deletedAt || null,
+    };
+  });
+
+  users.sort((a, b) => a.email.localeCompare(b.email));
+
+  return { users };
+});
+
 exports.adminUpdateUserRole = onCall(
   { region: "us-central1" },
   async (request) => {
@@ -190,11 +248,14 @@ exports.adminUpdateUserRole = onCall(
       throw new HttpsError("invalid-argument", "Faltan datos.");
     }
 
-    await db.collection("usersPublic").doc(uid).update({
+    const targetUser = await admin.auth().getUser(uid).catch(() => null);
+
+    await db.collection("usersPublic").doc(uid).set({
+      displayName: targetUser?.displayName || targetUser?.email || "Usuario",
       role,
       active: true,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true });
 
     await logAdminAction(
       { db, FieldValue: admin.firestore.FieldValue, logger },
@@ -226,16 +287,16 @@ exports.adminDeleteUser = onCall({ region: "us-central1" }, async (request) => {
   const publicRef = db.collection("usersPublic").doc(uid);
   const privateRef = db.collection("usersPrivate").doc(uid);
 
-  batch.update(publicRef, {
+  batch.set(publicRef, {
     active: false,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  }, { merge: true });
 
   try {
-    batch.update(privateRef, {
+    batch.set(privateRef, {
       deletedAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true });
     await admin.auth().updateUser(uid, { disabled: true });
   } catch (e) {
     logger.warn(`Could not disable auth user ${uid}`, e);
@@ -274,11 +335,14 @@ exports.asignarRol = onCall({ region: "us-central1" }, async (request) => {
     await admin.auth().setCustomUserClaims(targetUid, { role: normalizedRole });
 
     // 2. Sincronizar con usersPublic para la UI
-    await db.collection("usersPublic").doc(targetUid).update({
+    const targetUser = await admin.auth().getUser(targetUid).catch(() => null);
+
+    await db.collection("usersPublic").doc(targetUid).set({
+      displayName: targetUser?.displayName || targetUser?.email || "Usuario",
       role: normalizedRole,
       active: true,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true });
 
     await logAdminAction(
       { db, FieldValue: admin.firestore.FieldValue, logger },

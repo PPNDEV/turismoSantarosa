@@ -430,6 +430,8 @@ export default function AdminActividades({
                   <img
                     src={editorialPreview.heroImage}
                     alt={editorialPreview.title}
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="activities-quote-card">
                     <FaQuoteLeft
@@ -589,6 +591,8 @@ export default function AdminActividades({
                     <img
                       src={preview.imagen}
                       alt={preview.nombre}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (e.currentTarget.src !== FALLBACK_IMAGE)
                           e.currentTarget.src = FALLBACK_IMAGE;

@@ -61,6 +61,21 @@ const NODE_FIELDS = {
     "publicado",
   ],
   heroSlides: ["tag", "title", "sub", "cta", "ctaTo", "bg", "order"],
+  comoLlegarIntro: [
+    "tituloInicio",
+    "tituloAcento",
+    "signo",
+    "subtitulo",
+    "tarjetasTitulo",
+  ],
+  comoLlegar: [
+    "titulo",
+    "descripcion",
+    "itemsText",
+    "icono",
+    "order",
+    "activo",
+  ],
   cooperativas: [
     "nombre",
     "cooperativa",
@@ -84,6 +99,8 @@ const REQUIRED_FIELDS = {
   destinos: ["nombre"],
   blog: ["titulo"],
   heroSlides: ["title"],
+  comoLlegarIntro: ["tituloInicio"],
+  comoLlegar: ["titulo"],
   cooperativas: ["nombre"],
 };
 

@@ -1,8 +1,10 @@
 import { FaCamera } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import GalleryLightbox from "../components/GalleryLightbox";
 import { useContent } from "../context/useContent";
 import { useLanguage } from "../context/useLanguage";
+import { useState } from "react";
 
 function getLocalizedValue(t, key, fallback) {
   const translated = t(key);
@@ -10,6 +12,7 @@ function getLocalizedValue(t, key, fallback) {
 }
 
 export default function GaleriaPage() {
+  const [selectedItem, setSelectedItem] = useState(null);
   const { galeria } = useContent();
   const { t } = useLanguage();
 
@@ -34,7 +37,12 @@ export default function GaleriaPage() {
               );
 
               return (
-                <div key={g.id} className="galeria-item">
+                <button
+                  key={g.id}
+                  type="button"
+                  className="galeria-item"
+                  onClick={() => setSelectedItem({ ...g, translatedTitle })}
+                >
                   <img
                     src={g.url}
                     alt={translatedTitle}
@@ -44,12 +52,17 @@ export default function GaleriaPage() {
                   <div className="galeria-overlay">
                     <span>{translatedTitle}</span>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         </main>
       </div>
+      <GalleryLightbox
+        item={selectedItem}
+        title={selectedItem?.translatedTitle}
+        onClose={() => setSelectedItem(null)}
+      />
       <Footer />
     </>
   );

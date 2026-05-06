@@ -38,12 +38,6 @@ const CTA_OPTIONS = [
     cta: "Ver galeria",
     ctaTo: "/galeria",
   },
-  {
-    id: "blog",
-    label: "Blog",
-    cta: "Leer noticias",
-    ctaTo: "/blog",
-  },
 ];
 
 const emptySlide = {

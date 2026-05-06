@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FaBed,
-  FaBus,
   FaCalendarAlt,
   FaCamera,
   FaChartPie,
@@ -12,6 +11,7 @@ import {
   FaImage,
   FaLeaf,
   FaMapMarkerAlt,
+  FaShip,
   FaUserShield,
   FaUtensils,
   FaInbox,
@@ -35,7 +35,6 @@ export default function AdminDashboard({
 }) {
   const {
     heroSlides,
-    blog,
     eventos,
     destinos,
     galeria,
@@ -150,13 +149,6 @@ export default function AdminDashboard({
       total: eventos.length,
     },
     {
-      key: "blog",
-      icon: FaFileAlt,
-      title: "Blog",
-      desc: "Edita noticias, artículos y contenido de promoción.",
-      total: blog.length,
-    },
-    {
       key: "destinos",
       icon: FaMapMarkerAlt,
       title: "Destinos",
@@ -186,9 +178,9 @@ export default function AdminDashboard({
     },
     {
       key: "transporte",
-      icon: FaBus,
-      title: "Transporte",
-      desc: "Cooperativas, rutas y frecuencias de movilización.",
+      icon: FaShip,
+      title: "Transporte fluvial",
+      desc: "Rutas, frecuencias y muelles de embarcacion.",
       total: cooperativas.length,
     },
     {
@@ -253,12 +245,6 @@ export default function AdminDashboard({
       tone: "tone-orange",
     },
     {
-      label: "Artículos",
-      value: blog.length,
-      icon: FaFileAlt,
-      tone: "tone-gold",
-    },
-    {
       label: "Eventos",
       value: eventos.length,
       icon: FaCalendarAlt,
@@ -289,9 +275,9 @@ export default function AdminDashboard({
       tone: "tone-lime",
     },
     {
-      label: "Transporte",
+      label: "Transporte fluvial",
       value: cooperativas.length,
-      icon: FaBus,
+      icon: FaShip,
       tone: "tone-purple",
     },
     {

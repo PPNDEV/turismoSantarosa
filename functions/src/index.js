@@ -104,6 +104,7 @@ const adminFunctions = require("./admin");
 exports.adminUpsertContent = adminFunctions.adminUpsertContent;
 exports.adminDeleteContent = adminFunctions.adminDeleteContent;
 exports.adminCreateUser = adminFunctions.adminCreateUser;
+exports.adminListUsers = adminFunctions.adminListUsers;
 exports.adminUpdateUserRole = adminFunctions.adminUpdateUserRole;
 exports.adminDeleteUser = adminFunctions.adminDeleteUser;
 exports.asignarRol = adminFunctions.asignarRol;

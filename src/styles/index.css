@@ -211,6 +211,10 @@ section:nth-child(even) {
   background: #fef3cd;
   color: var(--gold-dark);
 }
+.badge-muted {
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
 
 .header {
   position: fixed;
@@ -1799,10 +1803,17 @@ section:nth-child(even) {
 }
 .galeria-item {
   position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
   border-radius: var(--radius);
   overflow: hidden;
   aspect-ratio: 4/3;
+  background: var(--gray-100);
   cursor: pointer;
+  font: inherit;
+  text-align: left;
 }
 .galeria-item img {
   width: 100%;
@@ -1830,6 +1841,55 @@ section:nth-child(even) {
   color: white;
   font-size: 0.85rem;
   font-weight: 600;
+}
+.gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgba(2, 8, 23, 0.9);
+}
+.gallery-lightbox-close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.gallery-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+.gallery-lightbox-frame {
+  max-width: min(1100px, 94vw);
+  max-height: 88vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.gallery-lightbox-frame img {
+  max-width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+.gallery-lightbox-frame figcaption {
+  color: white;
+  font-weight: 600;
+  text-align: center;
 }
 
 /* ===== BLOG ===== */
@@ -3006,7 +3066,92 @@ section:nth-child(even) {
   background: var(--gray-100);
 }
 .admin-user-form {
+  margin-top: 1rem;
   padding: 1.2rem 1.5rem 1.4rem;
+  border-top: 1px solid var(--gray-200);
+}
+.admin-user-modal {
+  max-width: 620px;
+}
+.admin-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+.admin-modal-header h2 {
+  color: var(--navy);
+  font-size: 1.15rem;
+}
+.admin-user-modal-form {
+  margin-top: 0;
+  border-top: 0;
+}
+.admin-route-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+.admin-route-intro {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+.admin-route-intro-preview {
+  margin-bottom: 1rem;
+}
+.admin-route-intro-preview h3 {
+  color: var(--navy);
+  font-size: 1.5rem;
+  margin-bottom: 0.35rem;
+}
+.admin-route-intro-preview p {
+  color: var(--gray-600);
+  line-height: 1.55;
+}
+.admin-route-intro-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 120px;
+  gap: 1rem;
+}
+.admin-table-subheader {
+  padding: 1rem 1.5rem 0;
+}
+.admin-table-subheader h3 {
+  color: var(--navy);
+  font-size: 1rem;
+}
+.admin-route-card {
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 1rem;
+  background: white;
+}
+.admin-route-card-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-100);
+}
+.admin-route-card-preview h3 {
+  color: var(--navy);
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+.admin-route-card-preview p {
+  color: var(--gray-600);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.admin-route-icon {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  font-size: 1.35rem;
 }
 table {
   width: 100%;
@@ -3087,6 +3232,16 @@ tr:hover td {
 }
 .del-btn:hover {
   background: #b91c1c;
+  color: white;
+}
+.btn-danger {
+  background: #b91c1c;
+  color: white;
+  border-color: #b91c1c;
+}
+.btn-danger:hover {
+  background: #991b1b;
+  border-color: #991b1b;
   color: white;
 }
 
@@ -3212,6 +3367,27 @@ tr:hover td {
 }
 .modal-box-preview {
   max-width: 940px;
+}
+.admin-confirm-dialog {
+  max-width: 420px;
+  text-align: center;
+}
+.admin-confirm-dialog h2 {
+  margin-bottom: 0.75rem;
+}
+.admin-confirm-dialog p {
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+.admin-confirm-icon {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #b91c1c;
+  display: grid;
+  place-items: center;
 }
 .admin-form-preview-grid {
   display: grid;
