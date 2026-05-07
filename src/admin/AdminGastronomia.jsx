@@ -16,21 +16,10 @@ const emptyRestaurante = {
   horario: "",
   contacto: "",
   imagen: "",
-  lat: "",
-  lng: "",
 };
 
 function hasDraftChanges(currentForm, initialForm) {
   return JSON.stringify(currentForm) !== JSON.stringify(initialForm);
-}
-
-function normalizeCoord(value) {
-  if (value === "" || value === null || value === undefined) {
-    return "";
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : "";
 }
 
 export default function AdminGastronomia({
@@ -69,11 +58,7 @@ export default function AdminGastronomia({
     }
 
     setError("");
-    const nextForm = {
-      ...restaurante,
-      lat: restaurante.lat ?? "",
-      lng: restaurante.lng ?? "",
-    };
+    const nextForm = { ...restaurante };
     setForm(nextForm);
     setInitialForm(nextForm);
     setImageFile(null);
@@ -113,16 +98,6 @@ export default function AdminGastronomia({
       return;
     }
 
-    if (form.lat !== "" && Number.isNaN(Number(form.lat))) {
-      setError("La latitud debe ser un numero valido o quedar vacia.");
-      return;
-    }
-
-    if (form.lng !== "" && Number.isNaN(Number(form.lng))) {
-      setError("La longitud debe ser un numero valido o quedar vacia.");
-      return;
-    }
-
     const itemId = editing || createContentId("gastronomia", nombre);
     setSaving(true);
     try {
@@ -139,8 +114,6 @@ export default function AdminGastronomia({
         ubicacion,
         contacto,
         id: itemId,
-        lat: normalizeCoord(form.lat),
-        lng: normalizeCoord(form.lng),
       });
       setForm(emptyRestaurante);
       setInitialForm(emptyRestaurante);
@@ -312,8 +285,6 @@ export default function AdminGastronomia({
                   ["ubicacion", "Ubicación"],
                   ["horario", "Horario"],
                   ["contacto", "Contacto"],
-                  ["lat", "Latitud"],
-                  ["lng", "Longitud"],
                 ].map(([field, label]) => (
                   <div key={field} className="modal-field">
                     <label>{label}</label>

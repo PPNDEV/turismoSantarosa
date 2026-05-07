@@ -14,21 +14,10 @@ const emptyRegistro = {
   estado: "",
   descripcion: "",
   imagen: "",
-  lat: "",
-  lng: "",
 };
 
 function hasDraftChanges(currentForm, initialForm) {
   return JSON.stringify(currentForm) !== JSON.stringify(initialForm);
-}
-
-function normalizeCoord(value) {
-  if (value === "" || value === null || value === undefined) {
-    return "";
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : "";
 }
 
 export default function AdminFloraFauna({
@@ -67,11 +56,7 @@ export default function AdminFloraFauna({
     }
 
     setError("");
-    const nextForm = {
-      ...registro,
-      lat: registro.lat ?? "",
-      lng: registro.lng ?? "",
-    };
+    const nextForm = { ...registro };
     setForm(nextForm);
     setInitialForm(nextForm);
     setImageFile(null);
@@ -111,16 +96,6 @@ export default function AdminFloraFauna({
       return;
     }
 
-    if (form.lat !== "" && Number.isNaN(Number(form.lat))) {
-      setError("La latitud debe ser un numero valido o quedar vacia.");
-      return;
-    }
-
-    if (form.lng !== "" && Number.isNaN(Number(form.lng))) {
-      setError("La longitud debe ser un numero valido o quedar vacia.");
-      return;
-    }
-
     const itemId = editing || createContentId("flora-fauna", nombre);
     setSaving(true);
     try {
@@ -137,8 +112,6 @@ export default function AdminFloraFauna({
         estado,
         descripcion,
         id: itemId,
-        lat: normalizeCoord(form.lat),
-        lng: normalizeCoord(form.lng),
       });
       setForm(emptyRegistro);
       setInitialForm(emptyRegistro);
@@ -306,8 +279,6 @@ export default function AdminFloraFauna({
                   ["nombre", "Nombre"],
                   ["zona", "Zona turística"],
                   ["estado", "Estado"],
-                  ["lat", "Latitud"],
-                  ["lng", "Longitud"],
                 ].map(([field, label]) => (
                   <div key={field} className="modal-field">
                     <label>{label}</label>

@@ -11,15 +11,7 @@ const emptyCooperativa = {
   contacto: "",
   puntoSalida: "",
   puntoLlegada: "",
-  lat: "",
-  lng: "",
 };
-
-function normalizeCoord(value) {
-  if (value === "" || value === null || value === undefined) return "";
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : "";
-}
 
 function hasDraftChanges(a, b) {
   return JSON.stringify(a) !== JSON.stringify(b);
@@ -50,7 +42,7 @@ export default function AdminTransporte({
   const openEdit = (item) => {
     if (!canEdit) return;
     setError("");
-    const f = { ...item, lat: item.lat ?? "", lng: item.lng ?? "" };
+    const f = { ...item };
     setForm(f);
     setInitialForm(f);
     setEditing(item.id);
@@ -75,8 +67,6 @@ export default function AdminTransporte({
       ruta,
       ruta_hacia_muelle: ruta,
       id: editing || Date.now().toString(),
-      lat: normalizeCoord(form.lat),
-      lng: normalizeCoord(form.lng),
     });
     setError("");
     setForm(emptyCooperativa);
@@ -190,8 +180,6 @@ export default function AdminTransporte({
                   ["contacto", "Contacto"],
                   ["puntoSalida", "Muelle de salida"],
                   ["puntoLlegada", "Muelle o isla de llegada"],
-                  ["lat", "Latitud"],
-                  ["lng", "Longitud"],
                 ].map(([f, lbl]) => (
                   <div key={f} className="modal-field">
                     <label>{lbl}</label>

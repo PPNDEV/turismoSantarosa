@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
   FaBed,
@@ -9,39 +9,9 @@ import {
   FaShip,
   FaUtensils,
 } from "react-icons/fa";
-import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
-
-const MAP_CENTER = [-3.43, -80.12];
-
-const markerColors = {
-  Destino: "#0a7ea4",
-  Gastronomia: "#e8a733",
-  Hospedaje: "#16a34a",
-  Cooperativa: "#6d28d9",
-};
-
-function getMapPoint({ idPrefix, id, nombre, detalle, isla, lat, lng, tipo }) {
-  const latitude = Number(lat);
-  const longitude = Number(lng);
-
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return null;
-  }
-
-  return {
-    id: `${idPrefix}-${id}`,
-    nombre,
-    detalle,
-    isla,
-    tipo,
-    lat: latitude,
-    lng: longitude,
-  };
-}
 
 function splitServices(services) {
   return String(services || "")
@@ -51,8 +21,7 @@ function splitServices(services) {
 }
 
 export default function InformacionTuristica() {
-  const { destinos, gastronomia, hospedajes, floraFauna, cooperativas } =
-    useContent();
+  const { gastronomia, hospedajes, floraFauna, cooperativas } = useContent();
   const { hash } = useLocation();
 
   useEffect(() => {
@@ -64,61 +33,6 @@ export default function InformacionTuristica() {
         ?.scrollIntoView({ block: "start", behavior: "smooth" });
     });
   }, [hash]);
-
-  const mapPoints = useMemo(() => {
-    const points = [
-      ...destinos.map((destino) =>
-        getMapPoint({
-          idPrefix: "destino",
-          id: destino.id,
-          nombre: destino.nombre,
-          detalle: destino.categoria,
-          isla: destino.isla || "No especificada",
-          lat: destino.lat,
-          lng: destino.lng,
-          tipo: "Destino",
-        }),
-      ),
-      ...gastronomia.map((restaurante) =>
-        getMapPoint({
-          idPrefix: "gastronomia",
-          id: restaurante.id,
-          nombre: restaurante.nombre,
-          detalle: restaurante.platoTipico,
-          isla: restaurante.isla,
-          lat: restaurante.lat,
-          lng: restaurante.lng,
-          tipo: "Gastronomia",
-        }),
-      ),
-      ...hospedajes.map((hospedaje) =>
-        getMapPoint({
-          idPrefix: "hospedaje",
-          id: hospedaje.id,
-          nombre: hospedaje.nombre,
-          detalle: hospedaje.ubicacion,
-          isla: hospedaje.isla,
-          lat: hospedaje.lat,
-          lng: hospedaje.lng,
-          tipo: "Hospedaje",
-        }),
-      ),
-      ...cooperativas.map((cooperativa) =>
-        getMapPoint({
-          idPrefix: "cooperativa",
-          id: cooperativa.id,
-          nombre: cooperativa.nombre,
-          detalle: cooperativa.ruta,
-          isla: "Acceso al muelle",
-          lat: cooperativa.lat,
-          lng: cooperativa.lng,
-          tipo: "Cooperativa",
-        }),
-      ),
-    ];
-
-    return points.filter(Boolean);
-  }, [destinos, gastronomia, hospedajes, cooperativas]);
 
   return (
     <>
@@ -224,7 +138,7 @@ export default function InformacionTuristica() {
             </div>
           </section>
 
-          <section className="info-section-card" id="flora-fauna">
+          <section className="info-section-card flora-fauna-section" id="flora-fauna">
             <header className="info-section-header">
               <h2>
                 <FaLeaf className="inline-icon" aria-hidden="true" />
@@ -293,63 +207,6 @@ export default function InformacionTuristica() {
                   </div>
                 </article>
               ))}
-            </div>
-          </section>
-
-          <section className="info-section-card" id="mapa">
-            <header className="info-section-header">
-              <h2>
-                <FaMapMarkedAlt className="inline-icon" aria-hidden="true" />
-                Mapa georreferenciado
-              </h2>
-              <p>
-                Visualizacion de atractivos, gastronomia, hospedajes y
-                cooperativas con coordenadas geograficas.
-              </p>
-            </header>
-            <div className="map-layout">
-              <MapContainer
-                center={MAP_CENTER}
-                zoom={10}
-                scrollWheelZoom
-                className="tourism-map"
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {mapPoints.map((point) => (
-                  <CircleMarker
-                    key={point.id}
-                    center={[point.lat, point.lng]}
-                    radius={8}
-                    pathOptions={{
-                      color: markerColors[point.tipo] || markerColors.Destino,
-                      fillOpacity: 0.75,
-                      weight: 2,
-                    }}
-                  >
-                    <Popup>
-                      <strong>{point.nombre}</strong>
-                      <br />
-                      {point.tipo} - {point.isla}
-                      <br />
-                      {point.detalle}
-                    </Popup>
-                  </CircleMarker>
-                ))}
-              </MapContainer>
-
-              <div className="map-legend">
-                {Object.entries(markerColors).map(([key]) => (
-                  <div key={key} className="map-legend-item">
-                    <span
-                      className={`map-legend-swatch map-legend-${key.toLowerCase()}`}
-                    />
-                    <p>{key}</p>
-                  </div>
-                ))}
-              </div>
             </div>
           </section>
         </main>

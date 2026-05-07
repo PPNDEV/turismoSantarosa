@@ -18,7 +18,7 @@ export default function FloraFaunaPage() {
         </div>
 
         <main className="container info-page-content">
-          <section className="info-section-card">
+          <section className="info-section-card flora-fauna-section">
             <header className="info-section-header">
               <h2>Biodiversidad local</h2>
               <p>

@@ -14,21 +14,10 @@ const emptyHospedaje = {
   servicios: "",
   contacto: "",
   imagen: "",
-  lat: "",
-  lng: "",
 };
 
 function hasDraftChanges(currentForm, initialForm) {
   return JSON.stringify(currentForm) !== JSON.stringify(initialForm);
-}
-
-function normalizeCoord(value) {
-  if (value === "" || value === null || value === undefined) {
-    return "";
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : "";
 }
 
 function splitServices(services) {
@@ -74,11 +63,7 @@ export default function AdminHospedajes({
     }
 
     setError("");
-    const nextForm = {
-      ...hospedaje,
-      lat: hospedaje.lat ?? "",
-      lng: hospedaje.lng ?? "",
-    };
+    const nextForm = { ...hospedaje };
     setForm(nextForm);
     setInitialForm(nextForm);
     setImageFile(null);
@@ -118,16 +103,6 @@ export default function AdminHospedajes({
       return;
     }
 
-    if (form.lat !== "" && Number.isNaN(Number(form.lat))) {
-      setError("La latitud debe ser un numero valido o quedar vacia.");
-      return;
-    }
-
-    if (form.lng !== "" && Number.isNaN(Number(form.lng))) {
-      setError("La longitud debe ser un numero valido o quedar vacia.");
-      return;
-    }
-
     const itemId = editing || createContentId("hospedaje", nombre);
     setSaving(true);
     try {
@@ -145,8 +120,6 @@ export default function AdminHospedajes({
           servicios,
           contacto,
           id: itemId,
-          lat: normalizeCoord(form.lat),
-          lng: normalizeCoord(form.lng),
         });
         setForm(emptyHospedaje);
         setInitialForm(emptyHospedaje);
@@ -318,8 +291,6 @@ export default function AdminHospedajes({
                   ["ubicacion", "Ubicación"],
                   ["servicios", "Servicios (separados por coma)"],
                   ["contacto", "Contacto"],
-                  ["lat", "Latitud"],
-                  ["lng", "Longitud"],
                 ].map(([field, label]) => (
                   <div key={field} className="modal-field">
                     <label>{label}</label>

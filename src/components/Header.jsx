@@ -167,7 +167,6 @@ export default function Header() {
                 aria-haspopup="menu"
                 onClick={() => setLanguageMenuOpen((current) => !current)}
               >
-                <span className="language-picker-label">IDIOMA</span>
                 <span className="language-picker-value">
                   <img
                     src={activeLanguage?.flagIcon}
@@ -176,7 +175,7 @@ export default function Header() {
                     className="language-picker-flag"
                     decoding="async"
                   />
-                  <span>{activeLanguage?.label}</span>
+                  <span>{activeLanguage?.code?.toUpperCase()}</span>
                 </span>
                 <FaChevronDown
                   className="language-picker-chevron"

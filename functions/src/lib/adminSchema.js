@@ -1,7 +1,7 @@
 const { HttpsError } = require("firebase-functions/v2/https");
 
 const NODE_FIELDS = {
-  actividades: ["nombre", "isla", "descripcion", "imagen", "lat", "lng"],
+  actividades: ["nombre", "isla", "descripcion", "imagen"],
   actividadesEditorial: ["titulo", "descripcion", "imagen", "icono", "orden"],
   gastronomia: [
     "nombre",
@@ -11,8 +11,6 @@ const NODE_FIELDS = {
     "ubicacion",
     "contacto",
     "imagen",
-    "lat",
-    "lng",
   ],
   hospedajes: [
     "nombre",
@@ -21,8 +19,6 @@ const NODE_FIELDS = {
     "servicios",
     "contacto",
     "imagen",
-    "lat",
-    "lng",
   ],
   eventos: [
     "nombre",
@@ -35,8 +31,6 @@ const NODE_FIELDS = {
     "contacto",
     "imagen",
     "activo",
-    "lat",
-    "lng",
   ],
   floraFauna: ["nombre", "tipo", "descripcion", "zona", "estado", "imagen"],
   galeria: ["titulo", "tipo", "url"],
@@ -47,8 +41,6 @@ const NODE_FIELDS = {
     "isla",
     "imagen",
     "icono",
-    "lat",
-    "lng",
   ],
   blog: [
     "titulo",
@@ -84,8 +76,6 @@ const NODE_FIELDS = {
     "puntoSalida",
     "puntoLlegada",
     "contacto",
-    "lat",
-    "lng",
   ],
 };
 

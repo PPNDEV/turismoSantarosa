@@ -19,18 +19,7 @@ const emptyDestino = {
   imagen: "",
   categoria: "",
   icono: "playa",
-  lat: "",
-  lng: "",
 };
-
-function normalizeCoord(value) {
-  if (value === "" || value === null || value === undefined) {
-    return "";
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : "";
-}
 
 function hasDraftChanges(currentForm, initialForm) {
   return JSON.stringify(currentForm) !== JSON.stringify(initialForm);
@@ -122,8 +111,6 @@ export default function AdminDestinos({
         imagen: imageUrl,
         icono: normalizeDestinoIcon(form.icono),
         id: itemId,
-        lat: normalizeCoord(form.lat),
-        lng: normalizeCoord(form.lng),
       });
       setForm(emptyDestino);
       setInitialForm(emptyDestino);
@@ -304,8 +291,6 @@ export default function AdminDestinos({
                   ["nombre", "Nombre"],
                   ["isla", "Isla"],
                   ["categoria", "Categoría"],
-                  ["lat", "Latitud"],
-                  ["lng", "Longitud"],
                 ].map(([f, lbl]) => (
                   <div key={f} className="modal-field">
                     <label>{lbl}</label>

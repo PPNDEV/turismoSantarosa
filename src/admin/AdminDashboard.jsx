@@ -148,7 +148,7 @@ export default function AdminDashboard({
       key: "actividades",
       icon: FaHiking,
       title: "Actividades",
-      desc: "Administra actividades turísticas con isla y coordenadas.",
+      desc: "Administra actividades turísticas por isla.",
       total: actividades.length,
     },
     {

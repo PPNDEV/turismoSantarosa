@@ -13,7 +13,7 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 const db = admin.firestore();
-const { GeoPoint, FieldValue } = admin.firestore;
+const { FieldValue } = admin.firestore;
 
 // ---------------------------------------------------------------------------
 // Demo data (duplicated from src/data/demoData.js for Node.js compat)
@@ -26,8 +26,6 @@ const demoActividades = [
     descripcion:
       "Recorrido guiado a través de los canales de manglar del Archipiélago de Jambelí.",
     isla: "Jambelí",
-    lat: -3.312,
-    lng: -80.083,
   },
   {
     id: "act-2",
@@ -35,8 +33,6 @@ const demoActividades = [
     descripcion:
       "Excursión marítima desde Puerto Hualtaco hacia Isla Santa Clara (agosto–octubre).",
     isla: "Costa Rica",
-    lat: -3.173,
-    lng: -80.435,
   },
   {
     id: "act-3",
@@ -44,8 +40,6 @@ const demoActividades = [
     descripcion:
       "Aventura de kayak en el humedal natural, rodeado de biodiversidad.",
     isla: "San Gregorio",
-    lat: -3.595,
-    lng: -79.971,
   },
 ];
 
@@ -55,8 +49,6 @@ const demoGastronomia = [
     nombre_local: "Comedor La Perla del Mar",
     platos_tipicos: ["Ceviche mixto", "Parihuela", "Arroz marinero"],
     isla: "Jambelí",
-    lat: -3.311,
-    lng: -80.084,
   },
   {
     id: "g-2",
@@ -67,16 +59,12 @@ const demoGastronomia = [
       "Ceviche de concha",
     ],
     isla: "Costa Rica",
-    lat: -3.256,
-    lng: -80.118,
   },
   {
     id: "g-3",
     nombre_local: "Marisquería San Gregorio",
     platos_tipicos: ["Sudado de cangrejo", "Arroz con concha", "Sopa marinera"],
     isla: "San Gregorio",
-    lat: -3.355,
-    lng: -80.109,
   },
 ];
 
@@ -87,8 +75,6 @@ const demoHospedajes = [
     servicios: ["Wifi", "Restaurante", "Piscina", "Kayak"],
     contacto: "+593 99 540 1200",
     isla: "Jambelí",
-    lat: -3.313,
-    lng: -80.085,
   },
   {
     id: "h-2",
@@ -96,8 +82,6 @@ const demoHospedajes = [
     servicios: ["Wifi", "Desayuno", "Tours", "Observación de aves"],
     contacto: "+593 98 120 7741",
     isla: "Costa Rica",
-    lat: -3.254,
-    lng: -80.116,
   },
   {
     id: "h-3",
@@ -105,8 +89,6 @@ const demoHospedajes = [
     servicios: ["Aire acondicionado", "Wifi", "Parqueo de lanchas"],
     contacto: "+593 99 330 6670",
     isla: "San Gregorio",
-    lat: -3.356,
-    lng: -80.108,
   },
 ];
 
@@ -202,13 +184,6 @@ const demoGaleria = [
 function prepareDoc(item) {
   const out = { ...item };
   delete out.id;
-
-  if (Number.isFinite(out.lat) && Number.isFinite(out.lng)) {
-    out.coordenadas = new GeoPoint(out.lat, out.lng);
-  }
-
-  delete out.lat;
-  delete out.lng;
 
   if (out.fecha && out.fecha instanceof Date) {
     out.fecha = admin.firestore.Timestamp.fromDate(out.fecha);
