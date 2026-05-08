@@ -9,17 +9,17 @@ import {
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import { uploadContentImage } from "../services/uploadService";
+import {
+  canManageContentItem,
+  getEditorOwnershipNote,
+  getVisibleAdminItems,
+  isAdminUser,
+} from "./adminOwnership";
 
 const FALLBACK_HERO_IMAGE =
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600";
 
 const CTA_OPTIONS = [
-  {
-    id: "destinos",
-    label: "Destinos",
-    cta: "Explorar destinos",
-    ctaTo: "/destinos",
-  },
   {
     id: "eventos",
     label: "Eventos",
@@ -83,6 +83,7 @@ function getCtaOptionId(slide) {
 
 export default function AdminPortada({
   canEdit = true,
+  currentUser = null,
   onLivePreviewChange = () => {},
   onDirtyChange = () => {},
 }) {
@@ -98,6 +99,13 @@ export default function AdminPortada({
   const [error, setError] = useState("");
 
   const ctaOptionId = useMemo(() => getCtaOptionId(form), [form]);
+  const visibleHeroSlides = useMemo(
+    () => getVisibleAdminItems(heroSlides, currentUser, canEdit),
+    [heroSlides, currentUser, canEdit],
+  );
+  const ownershipNote = getEditorOwnershipNote(currentUser, canEdit);
+  const canCreateSlide = canManageContentItem(null, currentUser, canEdit);
+  const canReorderSlides = canEdit && isAdminUser(currentUser);
 
   const previewSlide = {
     bg: localPreviewUrl || form.bg || FALLBACK_HERO_IMAGE,
@@ -111,7 +119,7 @@ export default function AdminPortada({
   };
 
   const openNew = () => {
-    if (!canEdit) return;
+    if (!canCreateSlide) return;
 
     const nextForm = { ...emptySlide };
     setForm(nextForm);
@@ -124,7 +132,7 @@ export default function AdminPortada({
   };
 
   const openEdit = (slide) => {
-    if (!canEdit) return;
+    if (!canManageContentItem(slide, currentUser, canEdit)) return;
 
     const nextForm = { ...emptySlide, ...slide };
     setForm(nextForm);
@@ -166,7 +174,11 @@ export default function AdminPortada({
   };
 
   const save = async () => {
-    if (!canEdit || saving) return;
+    if (
+      !canManageContentItem(editing ? initialForm : null, currentUser, canEdit) ||
+      saving
+    )
+      return;
     if (
       !form.title ||
       !form.cta ||
@@ -207,11 +219,11 @@ export default function AdminPortada({
     }
   };
 
-  const del = (id) => {
-    if (!canEdit) return;
+  const del = (slide) => {
+    if (!canManageContentItem(slide, currentUser, canEdit)) return;
 
     if (confirm("Eliminar slide de portada?")) {
-      deleteHeroSlide(id);
+      deleteHeroSlide(slide.id);
     }
   };
 
@@ -266,11 +278,11 @@ export default function AdminPortada({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Portada ({heroSlides.length})</h2>
+          <h2>Portada ({visibleHeroSlides.length})</h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
-            disabled={!canEdit}
+            disabled={!canCreateSlide}
           >
             Añadir
           </button>
@@ -280,6 +292,9 @@ export default function AdminPortada({
           <div className="admin-readonly-note">
             Modo visualizador: solo puedes revisar la portada publicada.
           </div>
+        )}
+        {ownershipNote && (
+          <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
         <table>
@@ -293,7 +308,7 @@ export default function AdminPortada({
             </tr>
           </thead>
           <tbody>
-            {heroSlides.map((slide, index) => (
+            {visibleHeroSlides.map((slide, index) => (
               <tr key={slide.id}>
                 <td>{index + 1}</td>
                 <td>
@@ -310,7 +325,7 @@ export default function AdminPortada({
                   <button
                     className="action-btn move-btn icon-btn icon-btn-spaced"
                     onClick={() => moveHeroSlide(slide.id, -1)}
-                    disabled={!canEdit || index === 0}
+                    disabled={!canReorderSlides || index === 0}
                     title="Subir slide"
                     aria-label="Subir slide"
                   >
@@ -319,7 +334,9 @@ export default function AdminPortada({
                   <button
                     className="action-btn move-btn icon-btn icon-btn-spaced"
                     onClick={() => moveHeroSlide(slide.id, 1)}
-                    disabled={!canEdit || index === heroSlides.length - 1}
+                    disabled={
+                      !canReorderSlides || index === visibleHeroSlides.length - 1
+                    }
                     title="Bajar slide"
                     aria-label="Bajar slide"
                   >
@@ -328,7 +345,7 @@ export default function AdminPortada({
                   <button
                     className="action-btn edit-btn icon-btn"
                     onClick={() => openEdit(slide)}
-                    disabled={!canEdit}
+                    disabled={!canManageContentItem(slide, currentUser, canEdit)}
                     title="Editar"
                     aria-label="Editar"
                   >
@@ -336,8 +353,8 @@ export default function AdminPortada({
                   </button>
                   <button
                     className="action-btn del-btn icon-btn"
-                    onClick={() => del(slide.id)}
-                    disabled={!canEdit}
+                    onClick={() => del(slide)}
+                    disabled={!canManageContentItem(slide, currentUser, canEdit)}
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>
@@ -459,7 +476,7 @@ export default function AdminPortada({
                         onChange={(e) =>
                           setForm({ ...form, ctaTo: e.target.value })
                         }
-                        placeholder="/destinos"
+                        placeholder="/eventos"
                       />
                     </div>
                   </>

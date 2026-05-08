@@ -1,6 +1,5 @@
 import Header from "../components/Header";
 import HeroCarousel from "../components/HeroCarousel";
-import ComoLlegar from "../components/ComoLlegar";
 import QueHacer from "../components/QueHacer";
 import MapaGeoreferencial from "../components/MapaGeoreferencial";
 import Eventos from "../components/Eventos";
@@ -45,7 +44,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <ComoLlegar />
         <QueHacer />
         <MapaGeoreferencial />
         <Eventos />

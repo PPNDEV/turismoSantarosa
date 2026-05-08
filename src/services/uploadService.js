@@ -4,7 +4,7 @@ import {
   ref as storageRef,
   uploadBytes,
 } from "firebase/storage";
-import { storage } from "./firebase";
+import { auth, storage } from "./firebase";
 
 // Configuración para módulos estándar
 const STANDARD_OPTIONS = {
@@ -55,9 +55,14 @@ export async function uploadContentImage(
 
   const extension =
     compressedFile.name.split(".").pop()?.toLowerCase() || "jpg";
+  const ownerUid = auth.currentUser?.uid;
+  if (!ownerUid) {
+    throw new Error("Debes iniciar sesion para subir imagenes.");
+  }
+
   const imageRef = storageRef(
     storage,
-    `cms/${folder}/${contentId}/${Date.now()}.${extension}`,
+    `cms/${ownerUid}/${folder}/${contentId}/${Date.now()}.${extension}`,
   );
 
   await uploadBytes(imageRef, compressedFile, {

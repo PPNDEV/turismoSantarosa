@@ -65,6 +65,35 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.role in ["administrador", "editor"];
     }
 
+    function isEditor() {
+      return request.auth != null && request.auth.token.role == "editor";
+    }
+
+    function canCreateOwnedContent() {
+      return isAdmin()
+        || (
+          isEditor()
+          && request.resource.data.ownerUid == request.auth.uid
+        );
+    }
+
+    function canUpdateOwnedContent() {
+      return isAdmin()
+        || (
+          isEditor()
+          && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+        );
+    }
+
+    function canDeleteOwnedContent() {
+      return isAdmin()
+        || (
+          isEditor()
+          && resource.data.ownerUid == request.auth.uid
+        );
+    }
+
 
     // =========================================================================
     // 1. COLECCIONES PRINCIPALES (Núcleo turístico)
@@ -74,31 +103,41 @@ service cloud.firestore {
     // Actividades turísticas (RF01, RF13)
     match /actividades/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // Gastronomía local (RF02, RF13)
     match /gastronomia/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // Hospedajes disponibles (RF03, RF13)
     match /hospedajes/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // Eventos del cantón (RF04, RF13)
     match /eventos/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // Flora y fauna (RF05, RF13)
     match /flora_fauna/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // =========================================================================
@@ -108,13 +147,17 @@ service cloud.firestore {
     // Transporte / cooperativas (RF07)
     match /transporte/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // Galería multimedia (RF09, RF13) – URLs de Storage
     match /galeria/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // Mensajes de contacto (RF11) – Cualquier visitante puede enviar
@@ -154,28 +197,28 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Destinos turísticos (colección existente del CMS)
-    match /destinos/{docId} {
-      allow read: if true;
-      allow create, update, delete: if canEditContent();
-    }
-
     // Blog / noticias
     match /blog/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // Hero slides de portada
     match /heroSlides/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // Cooperativas de transporte (colección legacy / CMS)
     match /cooperativas/{docId} {
       allow read: if true;
-      allow create, update, delete: if canEditContent();
+      allow create: if canCreateOwnedContent();
+      allow update: if canUpdateOwnedContent();
+      allow delete: if canDeleteOwnedContent();
     }
 
     // CMS principal: documento legacy – mantener acceso para migración.

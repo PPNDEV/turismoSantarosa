@@ -1,12 +1,6 @@
-import { createElement, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  FaFacebookF,
-  FaInstagram,
-  FaChevronDown,
-  FaYoutube,
-  FaXTwitter,
-} from "react-icons/fa6";
+import { FaChevronDown } from "react-icons/fa6";
 import { FaCog, FaLock } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 import { useLanguage } from "../context/useLanguage";
@@ -24,32 +18,6 @@ const navLinks = [
 
 const crestSrc = `${import.meta.env.BASE_URL}escudo-vector-02-247x300.png`;
 
-const socialLinks = [
-  {
-    label: "Facebook",
-    href: "https://www.facebook.com/municipiosr/",
-    icon: FaFacebookF,
-    className: "social-facebook",
-  },
-  {
-    label: "YouTube",
-    href: "https://www.youtube.com/channel/UCgaGV99aMfrmnThzoO1dqJg",
-    icon: FaYoutube,
-    className: "social-youtube",
-  },
-  {
-    label: "X",
-    href: "https://twitter.com/municipiosr",
-    icon: FaXTwitter,
-    className: "social-x",
-  },
-  {
-    label: "Instagram",
-    href: "https://www.instagram.com/gad_santarosa_ec/",
-    icon: FaInstagram,
-    className: "social-instagram",
-  },
-];
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -96,22 +64,6 @@ export default function Header() {
 
   return (
     <>
-      {/* Barra redes sociales flotante */}
-      <div className="floating-social" aria-label={t("header.socialLabel")}>
-        {socialLinks.map(({ label, href, icon, className }) => (
-          <a
-            key={label}
-            className={`float-social-btn ${className}`}
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            title={label}
-            aria-label={label}
-          >
-            {createElement(icon)}
-          </a>
-        ))}
-      </div>
 
       <header
         className={`header ${hidden ? "header-hidden" : isHome ? "header-home" : "header-page"}`}

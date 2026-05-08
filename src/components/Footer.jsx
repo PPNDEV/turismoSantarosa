@@ -145,9 +145,6 @@ export default function Footer() {
             <h4>{t("footer.discoverTitle")}</h4>
             <ul className="footer-links">
               <li>
-                <Link to="/destinos">{t("footer.links.destinations")}</Link>
-              </li>
-              <li>
                 <Link to="/eventos">{t("footer.links.events")}</Link>
               </li>
               <li>
@@ -155,12 +152,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link to="/galeria">{t("footer.links.gallery")}</Link>
-              </li>
-              <li>
-                <Link to="/blog">{t("footer.links.blog")}</Link>
-              </li>
-              <li>
-                <Link to="/#como-llegar">{t("footer.links.howToGet")}</Link>
               </li>
               <li>
                 <Link to="/actividades">{t("footer.links.activities")}</Link>

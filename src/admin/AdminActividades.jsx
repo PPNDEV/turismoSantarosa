@@ -10,6 +10,11 @@ import {
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
+import {
+  canManageContentItem,
+  getEditorOwnershipNote,
+  getVisibleAdminItems,
+} from "./adminOwnership";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=900";
@@ -32,8 +37,8 @@ const emptyEditorial = {
   quote: "Cada actividad suma una historia distinta al viaje.",
   quoteAuthor: "Dirección de Turismo",
   heroImage: "",
-  ctaLabel: "Explorar destinos",
-  ctaTo: "/destinos",
+  ctaLabel: "Explorar actividades",
+  ctaTo: "/actividades",
 };
 
 function hasDraftChanges(a, b) {
@@ -46,6 +51,7 @@ function normalizeEditorial(item) {
 
 export default function AdminActividades({
   canEdit = true,
+  currentUser = null,
   onLivePreviewChange = () => {},
   onDirtyChange = () => {},
 }) {
@@ -71,6 +77,17 @@ export default function AdminActividades({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const visibleActividades = useMemo(
+    () => getVisibleAdminItems(actividades, currentUser, canEdit),
+    [actividades, currentUser, canEdit],
+  );
+  const ownershipNote = getEditorOwnershipNote(currentUser, canEdit);
+  const canCreateActividad = canManageContentItem(null, currentUser, canEdit);
+  const canEditEditorial = canManageContentItem(
+    actividadesEditorial[0],
+    currentUser,
+    canEdit,
+  );
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -96,7 +113,7 @@ export default function AdminActividades({
     Boolean(editorialImageFile);
 
   const openNew = () => {
-    if (!canEdit) return;
+    if (!canCreateActividad) return;
     setError("");
     const f = { ...emptyActividad };
     setForm(f);
@@ -108,7 +125,7 @@ export default function AdminActividades({
   };
 
   const openEdit = (item) => {
-    if (!canEdit) return;
+    if (!canManageContentItem(item, currentUser, canEdit)) return;
     setError("");
     const f = { ...item };
     setForm(f);
@@ -143,7 +160,7 @@ export default function AdminActividades({
   };
 
   const saveEditorial = async () => {
-    if (!canEdit || editorialSaving) return;
+    if (!canEditEditorial || editorialSaving) return;
 
     const title = String(editorialForm.title || "").trim();
     const intro = String(editorialForm.intro || "").trim();
@@ -182,7 +199,11 @@ export default function AdminActividades({
   };
 
   const save = async () => {
-    if (!canEdit || saving) return;
+    if (
+      !canManageContentItem(editing ? initialForm : null, currentUser, canEdit) ||
+      saving
+    )
+      return;
     const nombre = String(form.nombre || "").trim();
     const descripcion = String(form.descripcion || "").trim();
     if (!nombre || !descripcion) {
@@ -214,9 +235,9 @@ export default function AdminActividades({
     setImagePreviewUrl("");
   };
 
-  const del = (id) => {
-    if (!canEdit) return;
-    if (confirm("¿Eliminar actividad?")) deleteActividad(id);
+  const del = (item) => {
+    if (!canManageContentItem(item, currentUser, canEdit)) return;
+    if (confirm("¿Eliminar actividad?")) deleteActividad(item.id);
   };
 
   const preview = useMemo(
@@ -290,7 +311,7 @@ export default function AdminActividades({
           <button
             className="btn btn-primary"
             onClick={saveEditorial}
-            disabled={!canEdit || editorialSaving}
+            disabled={!canEditEditorial || editorialSaving}
           >
             <FaSave className="inline-icon" aria-hidden="true" />
             {editorialSaving ? "Guardando..." : "Guardar portada"}
@@ -302,6 +323,9 @@ export default function AdminActividades({
             Modo visualizador: la portada editorial y las actividades son solo
             de consulta.
           </div>
+        )}
+        {ownershipNote && (
+          <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
         {editorialError && (
@@ -452,11 +476,11 @@ export default function AdminActividades({
 
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Actividades ({actividades.length})</h2>
+          <h2>Actividades ({visibleActividades.length})</h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
-            disabled={!canEdit}
+            disabled={!canCreateActividad}
           >
             + Nueva Actividad
           </button>
@@ -466,6 +490,9 @@ export default function AdminActividades({
           <div className="admin-readonly-note">
             Modo visualizador: actividades disponibles solo para consulta.
           </div>
+        )}
+        {ownershipNote && (
+          <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
         <table>
@@ -478,7 +505,7 @@ export default function AdminActividades({
             </tr>
           </thead>
           <tbody>
-            {actividades.map((a) => (
+            {visibleActividades.map((a) => (
               <tr key={a.id}>
                 <td>
                   <strong>
@@ -494,14 +521,14 @@ export default function AdminActividades({
                   <button
                     className="action-btn edit-btn"
                     onClick={() => openEdit(a)}
-                    disabled={!canEdit}
+                    disabled={!canManageContentItem(a, currentUser, canEdit)}
                   >
                     <FaEdit className="inline-icon" aria-hidden="true" /> Editar
                   </button>
                   <button
                     className="action-btn del-btn"
-                    onClick={() => del(a.id)}
-                    disabled={!canEdit}
+                    onClick={() => del(a)}
+                    disabled={!canManageContentItem(a, currentUser, canEdit)}
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>

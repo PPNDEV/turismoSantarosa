@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaBed, FaEdit, FaMapMarkerAlt, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
+import {
+  canManageContentItem,
+  getEditorOwnershipNote,
+  getVisibleAdminItems,
+} from "./adminOwnership";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900";
@@ -29,6 +34,7 @@ function splitServices(services) {
 
 export default function AdminHospedajes({
   canEdit = true,
+  currentUser = null,
   onLivePreviewChange = () => {},
   onDirtyChange = () => {},
 }) {
@@ -41,9 +47,15 @@ export default function AdminHospedajes({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const visibleHospedajes = useMemo(
+    () => getVisibleAdminItems(hospedajes, currentUser, canEdit),
+    [hospedajes, currentUser, canEdit],
+  );
+  const ownershipNote = getEditorOwnershipNote(currentUser, canEdit);
+  const canCreateHospedaje = canManageContentItem(null, currentUser, canEdit);
 
   const openNew = () => {
-    if (!canEdit) {
+    if (!canCreateHospedaje) {
       return;
     }
 
@@ -58,7 +70,7 @@ export default function AdminHospedajes({
   };
 
   const openEdit = (hospedaje) => {
-    if (!canEdit) {
+    if (!canManageContentItem(hospedaje, currentUser, canEdit)) {
       return;
     }
 
@@ -88,7 +100,10 @@ export default function AdminHospedajes({
   };
 
   const save = async () => {
-    if (!canEdit || saving) {
+    if (
+      !canManageContentItem(editing ? initialForm : null, currentUser, canEdit) ||
+      saving
+    ) {
       return;
     }
 
@@ -136,13 +151,13 @@ export default function AdminHospedajes({
     }
   };
 
-  const del = (id) => {
-    if (!canEdit) {
+  const del = (hospedaje) => {
+    if (!canManageContentItem(hospedaje, currentUser, canEdit)) {
       return;
     }
 
     if (confirm("¿Eliminar hospedaje?")) {
-      deleteHospedaje(id);
+      deleteHospedaje(hospedaje.id);
     }
   };
 
@@ -207,11 +222,11 @@ export default function AdminHospedajes({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Hospedajes ({hospedajes.length})</h2>
+          <h2>Hospedajes ({visibleHospedajes.length})</h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
-            disabled={!canEdit}
+            disabled={!canCreateHospedaje}
           >
             + Nuevo Hospedaje
           </button>
@@ -221,6 +236,9 @@ export default function AdminHospedajes({
           <div className="admin-readonly-note">
             Modo visualizador: solo puedes revisar contenido.
           </div>
+        )}
+        {ownershipNote && (
+          <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
         <table>
@@ -234,7 +252,7 @@ export default function AdminHospedajes({
             </tr>
           </thead>
           <tbody>
-            {hospedajes.map((hospedaje) => (
+            {visibleHospedajes.map((hospedaje) => (
               <tr key={hospedaje.id}>
                 <td>
                   <strong>{hospedaje.nombre}</strong>
@@ -246,15 +264,19 @@ export default function AdminHospedajes({
                   <button
                     className="action-btn edit-btn"
                     onClick={() => openEdit(hospedaje)}
-                    disabled={!canEdit}
+                    disabled={
+                      !canManageContentItem(hospedaje, currentUser, canEdit)
+                    }
                   >
                     <FaEdit className="inline-icon" aria-hidden="true" />
                     Editar
                   </button>
                   <button
                     className="action-btn del-btn"
-                    onClick={() => del(hospedaje.id)}
-                    disabled={!canEdit}
+                    onClick={() => del(hospedaje)}
+                    disabled={
+                      !canManageContentItem(hospedaje, currentUser, canEdit)
+                    }
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>

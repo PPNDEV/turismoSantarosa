@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaEdit, FaPhoneAlt, FaSave, FaShip, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import {
+  canManageContentItem,
+  getEditorOwnershipNote,
+  getVisibleAdminItems,
+} from "./adminOwnership";
 
 const emptyCooperativa = {
   nombre: "",
@@ -19,6 +24,7 @@ function hasDraftChanges(a, b) {
 
 export default function AdminTransporte({
   canEdit = true,
+  currentUser = null,
   onLivePreviewChange = () => {},
   onDirtyChange = () => {},
 }) {
@@ -28,9 +34,15 @@ export default function AdminTransporte({
   const [form, setForm] = useState(emptyCooperativa);
   const [initialForm, setInitialForm] = useState(emptyCooperativa);
   const [error, setError] = useState("");
+  const visibleCooperativas = useMemo(
+    () => getVisibleAdminItems(cooperativas, currentUser, canEdit),
+    [cooperativas, currentUser, canEdit],
+  );
+  const ownershipNote = getEditorOwnershipNote(currentUser, canEdit);
+  const canCreateCooperativa = canManageContentItem(null, currentUser, canEdit);
 
   const openNew = () => {
-    if (!canEdit) return;
+    if (!canCreateCooperativa) return;
     setError("");
     const f = { ...emptyCooperativa };
     setForm(f);
@@ -40,7 +52,7 @@ export default function AdminTransporte({
   };
 
   const openEdit = (item) => {
-    if (!canEdit) return;
+    if (!canManageContentItem(item, currentUser, canEdit)) return;
     setError("");
     const f = { ...item };
     setForm(f);
@@ -52,7 +64,7 @@ export default function AdminTransporte({
   const closeModal = () => setModal(false);
 
   const save = () => {
-    if (!canEdit) return;
+    if (!canManageContentItem(editing ? initialForm : null, currentUser, canEdit)) return;
     const nombre = String(form.nombre || form.cooperativa || "").trim();
     const ruta = String(form.ruta || form.ruta_hacia_muelle || "").trim();
     const contacto = String(form.contacto || "").trim();
@@ -74,9 +86,9 @@ export default function AdminTransporte({
     closeModal();
   };
 
-  const del = (id) => {
-    if (!canEdit) return;
-    if (confirm("¿Eliminar cooperativa?")) deleteCooperativa(id);
+  const del = (item) => {
+    if (!canManageContentItem(item, currentUser, canEdit)) return;
+    if (confirm("¿Eliminar cooperativa?")) deleteCooperativa(item.id);
   };
 
   const preview = {
@@ -113,8 +125,12 @@ export default function AdminTransporte({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Transporte fluvial ({cooperativas.length})</h2>
-          <button className="btn btn-primary" onClick={openNew} disabled={!canEdit}>
+          <h2>Transporte fluvial ({visibleCooperativas.length})</h2>
+          <button
+            className="btn btn-primary"
+            onClick={openNew}
+            disabled={!canCreateCooperativa}
+          >
             + Nueva Cooperativa
           </button>
         </div>
@@ -123,6 +139,9 @@ export default function AdminTransporte({
           <div className="admin-readonly-note">
             Modo visualizador: datos de transporte fluvial en solo lectura.
           </div>
+        )}
+        {ownershipNote && (
+          <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
         <table>
@@ -136,17 +155,25 @@ export default function AdminTransporte({
             </tr>
           </thead>
           <tbody>
-            {cooperativas.map((c) => (
+            {visibleCooperativas.map((c) => (
               <tr key={c.id}>
                 <td><strong><FaShip className="inline-icon" aria-hidden="true" /> {c.nombre || c.cooperativa}</strong></td>
                 <td>{c.ruta || c.ruta_hacia_muelle || "-"}</td>
                 <td>{c.frecuencia || "-"}</td>
                 <td>{c.contacto || "-"}</td>
                 <td>
-                  <button className="action-btn edit-btn" onClick={() => openEdit(c)} disabled={!canEdit}>
+                  <button
+                    className="action-btn edit-btn"
+                    onClick={() => openEdit(c)}
+                    disabled={!canManageContentItem(c, currentUser, canEdit)}
+                  >
                     <FaEdit className="inline-icon" aria-hidden="true" /> Editar
                   </button>
-                  <button className="action-btn del-btn" onClick={() => del(c.id)} disabled={!canEdit}>
+                  <button
+                    className="action-btn del-btn"
+                    onClick={() => del(c)}
+                    disabled={!canManageContentItem(c, currentUser, canEdit)}
+                  >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>
                 </td>

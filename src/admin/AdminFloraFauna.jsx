@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaEdit, FaLeaf, FaPaw, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
+import {
+  canManageContentItem,
+  getEditorOwnershipNote,
+  getVisibleAdminItems,
+} from "./adminOwnership";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=900";
@@ -22,6 +27,7 @@ function hasDraftChanges(currentForm, initialForm) {
 
 export default function AdminFloraFauna({
   canEdit = true,
+  currentUser = null,
   onLivePreviewChange = () => {},
   onDirtyChange = () => {},
 }) {
@@ -34,9 +40,15 @@ export default function AdminFloraFauna({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const visibleFloraFauna = useMemo(
+    () => getVisibleAdminItems(floraFauna, currentUser, canEdit),
+    [floraFauna, currentUser, canEdit],
+  );
+  const ownershipNote = getEditorOwnershipNote(currentUser, canEdit);
+  const canCreateRegistro = canManageContentItem(null, currentUser, canEdit);
 
   const openNew = () => {
-    if (!canEdit) {
+    if (!canCreateRegistro) {
       return;
     }
 
@@ -51,7 +63,7 @@ export default function AdminFloraFauna({
   };
 
   const openEdit = (registro) => {
-    if (!canEdit) {
+    if (!canManageContentItem(registro, currentUser, canEdit)) {
       return;
     }
 
@@ -81,7 +93,10 @@ export default function AdminFloraFauna({
   };
 
   const save = async () => {
-    if (!canEdit || saving) {
+    if (
+      !canManageContentItem(editing ? initialForm : null, currentUser, canEdit) ||
+      saving
+    ) {
       return;
     }
 
@@ -124,13 +139,13 @@ export default function AdminFloraFauna({
     setImagePreviewUrl("");
   };
 
-  const del = (id) => {
-    if (!canEdit) {
+  const del = (registro) => {
+    if (!canManageContentItem(registro, currentUser, canEdit)) {
       return;
     }
 
     if (confirm("¿Eliminar registro de flora/fauna?")) {
-      deleteFloraFauna(id);
+      deleteFloraFauna(registro.id);
     }
   };
 
@@ -196,11 +211,11 @@ export default function AdminFloraFauna({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Flora y Fauna ({floraFauna.length})</h2>
+          <h2>Flora y Fauna ({visibleFloraFauna.length})</h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
-            disabled={!canEdit}
+            disabled={!canCreateRegistro}
           >
             + Nuevo Registro
           </button>
@@ -210,6 +225,9 @@ export default function AdminFloraFauna({
           <div className="admin-readonly-note">
             Modo visualizador: el contenido es solo de consulta.
           </div>
+        )}
+        {ownershipNote && (
+          <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
         <table>
@@ -223,7 +241,7 @@ export default function AdminFloraFauna({
             </tr>
           </thead>
           <tbody>
-            {floraFauna.map((registro) => (
+            {visibleFloraFauna.map((registro) => (
               <tr key={registro.id}>
                 <td>
                   <strong>{registro.nombre}</strong>
@@ -235,15 +253,15 @@ export default function AdminFloraFauna({
                   <button
                     className="action-btn edit-btn"
                     onClick={() => openEdit(registro)}
-                    disabled={!canEdit}
+                    disabled={!canManageContentItem(registro, currentUser, canEdit)}
                   >
                     <FaEdit className="inline-icon" aria-hidden="true" />
                     Editar
                   </button>
                   <button
                     className="action-btn del-btn"
-                    onClick={() => del(registro.id)}
-                    disabled={!canEdit}
+                    onClick={() => del(registro)}
+                    disabled={!canManageContentItem(registro, currentUser, canEdit)}
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>

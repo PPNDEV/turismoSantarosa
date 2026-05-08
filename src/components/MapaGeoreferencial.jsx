@@ -5,29 +5,18 @@ import { FaArrowRight, FaMapMarkedAlt } from "react-icons/fa";
 import "leaflet/dist/leaflet.css";
 import { useContent } from "../context/useContent";
 
-const MAP_CENTER = [-3.43, -80.12];
+const MAP_CENTER = [-3.29, -80.18];
+const MAP_BOUNDS = [
+  [-3.39, -80.46],
+  [-3.15, -80.04],
+];
+const MAP_INITIAL_ZOOM = 11;
+const MAP_MIN_ZOOM = 11;
+const MAP_MAX_ZOOM = 17;
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900";
 
 const demoContent = {
-  destinos: [
-    {
-      id: "destino-jambeli",
-      nombre: "Isla Jambeli",
-      categoria: "Playa",
-      descripcion: "Balneario insular con playa, muelle turistico y mariscos.",
-      imagen:
-        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900",
-    },
-    {
-      id: "destino-tembladera",
-      nombre: "Laguna La Tembladera",
-      categoria: "Ecoturismo",
-      descripcion: "Humedal para kayak, fotografia y observacion de aves.",
-      imagen:
-        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=900",
-    },
-  ],
   gastronomia: [
     {
       id: "restaurante-perla",
@@ -39,8 +28,8 @@ const demoContent = {
     },
     {
       id: "restaurante-puerto-jeli",
-      nombre: "Marisqueria Puerto Jeli",
-      ubicacion: "Zona gastronomica de Puerto Jeli",
+      nombre: "Marisqueria Costa Rica",
+      ubicacion: "Zona de playa de Isla Costa Rica",
       descripcion: "Especialidad en arroz marinero y pescado fresco.",
       imagen:
         "https://images.unsplash.com/photo-1559847844-5315695dadae?w=900",
@@ -58,11 +47,11 @@ const demoContent = {
   ],
   eventos: [
     {
-      id: "festival-langostino",
-      nombre: "Festival del Rey Langostino",
+      id: "festival-jambeli",
+      nombre: "Festival playero de Jambeli",
       tipo: "Festival",
-      lugar: "Malecon de Santa Rosa",
-      descripcion: "Agenda cultural y gastronomica para visitantes.",
+      lugar: "Malecon de Isla Jambeli",
+      descripcion: "Agenda cultural y gastronomica en zona insular.",
       imagen:
         "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=900",
     },
@@ -77,10 +66,10 @@ const demoContent = {
         "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=900",
     },
     {
-      id: "actividad-kayak",
-      nombre: "Kayak en La Tembladera",
+      id: "actividad-kayak-islas",
+      nombre: "Kayak entre canales insulares",
       categoria: "Naturaleza",
-      descripcion: "Actividad recreativa en el humedal continental.",
+      descripcion: "Actividad recreativa entre esteros del archipielago.",
       imagen:
         "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900",
     },
@@ -98,28 +87,15 @@ const demoContent = {
   ],
   cooperativas: [
     {
-      id: "coop-rutas-orenses",
-      nombre: "Cooperativa Rutas Orenses",
-      ruta: "Machala - Santa Rosa - Puerto Hualtaco",
-      frecuencia: "Cada 30 minutos",
+      id: "ruta-fluvial-jambeli",
+      nombre: "Ruta fluvial Jambeli",
+      ruta: "Muelle insular - recorridos internos del archipielago",
+      frecuencia: "Salidas segun disponibilidad turistica",
     },
   ],
 };
 
 const moduleConfig = {
-  destinos: {
-    label: "Destinos",
-    singular: "Destino",
-    color: "#0a7ea4",
-    path: "/destinos",
-    demo: demoContent.destinos,
-    coordinates: [
-      [-3.312, -80.083],
-      [-3.173, -80.435],
-      [-3.468, -80.052],
-      [-3.595, -79.971],
-    ],
-  },
   gastronomia: {
     label: "Gastronomia",
     singular: "Restaurante",
@@ -129,8 +105,8 @@ const moduleConfig = {
     coordinates: [
       [-3.311, -80.084],
       [-3.256, -80.118],
-      [-3.355, -80.109],
-      [-3.456, -80.054],
+      [-3.354, -80.108],
+      [-3.314, -80.079],
     ],
   },
   hospedajes: {
@@ -143,7 +119,7 @@ const moduleConfig = {
       [-3.313, -80.085],
       [-3.254, -80.116],
       [-3.356, -80.108],
-      [-3.447, -79.964],
+      [-3.318, -80.08],
     ],
   },
   eventos: {
@@ -153,10 +129,10 @@ const moduleConfig = {
     path: "/eventos",
     demo: demoContent.eventos,
     coordinates: [
-      [-3.448, -79.959],
-      [-3.456, -80.054],
-      [-3.258, -80.015],
-      [-3.446, -79.963],
+      [-3.31, -80.086],
+      [-3.257, -80.119],
+      [-3.354, -80.107],
+      [-3.174, -80.435],
     ],
   },
   actividades: {
@@ -168,7 +144,7 @@ const moduleConfig = {
     coordinates: [
       [-3.314, -80.082],
       [-3.173, -80.435],
-      [-3.595, -79.971],
+      [-3.255, -80.119],
       [-3.315, -80.08],
     ],
   },
@@ -180,9 +156,9 @@ const moduleConfig = {
     demo: demoContent.floraFauna,
     coordinates: [
       [-3.174, -80.433],
-      [-3.471, -80.051],
+      [-3.315, -80.097],
       [-3.23, -80.31],
-      [-3.59, -79.974],
+      [-3.356, -80.109],
     ],
   },
   cooperativas: {
@@ -192,13 +168,18 @@ const moduleConfig = {
     path: "/transporte",
     demo: demoContent.cooperativas,
     coordinates: [
-      [-3.258, -79.967],
-      [-3.468, -80.052],
-      [-3.458, -80.048],
-      [-3.449, -79.959],
+      [-3.309, -80.087],
+      [-3.254, -80.115],
+      [-3.354, -80.109],
+      [-3.318, -80.082],
     ],
   },
 };
+
+function isArchipelagoCoordinate(lat, lng) {
+  const [[south, west], [north, east]] = MAP_BOUNDS;
+  return lat >= south && lat <= north && lng >= west && lng <= east;
+}
 
 function getItems(items, fallbackItems) {
   return Array.isArray(items) && items.length > 0 ? items : fallbackItems;
@@ -208,7 +189,11 @@ function getCoordinate(item, config, index) {
   const lat = Number(item.lat ?? item.latitude);
   const lng = Number(item.lng ?? item.longitude);
 
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+  if (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    isArchipelagoCoordinate(lat, lng)
+  ) {
     return { lat, lng };
   }
 
@@ -283,7 +268,6 @@ export default function MapaGeoreferencial() {
   const {
     actividades,
     cooperativas,
-    destinos,
     eventos,
     floraFauna,
     gastronomia,
@@ -292,7 +276,6 @@ export default function MapaGeoreferencial() {
 
   const mapPoints = useMemo(
     () => [
-      ...buildPoints(destinos, "destinos"),
       ...buildPoints(gastronomia, "gastronomia"),
       ...buildPoints(hospedajes, "hospedajes"),
       ...buildPoints(eventos, "eventos"),
@@ -303,7 +286,6 @@ export default function MapaGeoreferencial() {
     [
       actividades,
       cooperativas,
-      destinos,
       eventos,
       floraFauna,
       gastronomia,
@@ -319,8 +301,8 @@ export default function MapaGeoreferencial() {
             Mapa <span className="accent">Georeferenciado</span>
           </h2>
           <p className="section-subtitle">
-            Atractivos, establecimientos, eventos y actividades del canton
-            Santa Rosa.
+            Atractivos, establecimientos, eventos y actividades del
+            Archipielago de Jambeli.
           </p>
         </div>
       </div>
@@ -328,7 +310,11 @@ export default function MapaGeoreferencial() {
       <div className="geo-map-fullbleed reveal">
         <MapContainer
           center={MAP_CENTER}
-          zoom={10}
+          zoom={MAP_INITIAL_ZOOM}
+          minZoom={MAP_MIN_ZOOM}
+          maxZoom={MAP_MAX_ZOOM}
+          maxBounds={MAP_BOUNDS}
+          maxBoundsViscosity={1}
           scrollWheelZoom
           className="home-tourism-map"
         >
