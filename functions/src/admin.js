@@ -15,10 +15,55 @@ const {
 const db = admin.firestore();
 const CONTENT_NODES = new Set(Object.keys(NODE_FIELDS));
 
+function getRequesterEmail(request) {
+  return String(request.auth?.token?.email || "")
+    .trim()
+    .toLowerCase();
+}
+
+function assertEditorOwnsExistingContent(role, uid, snapshot, action) {
+  if (role !== ROLE_EDITOR || !snapshot.exists()) {
+    return;
+  }
+
+  const existing = snapshot.val() || {};
+  if (existing.ownerUid !== uid) {
+    throw new HttpsError(
+      "permission-denied",
+      `Los editores solo pueden ${action} contenido creado por su propio usuario.`,
+    );
+  }
+}
+
+function applyOwnershipMetadata(payload, snapshot, request) {
+  const existing = snapshot.exists() ? snapshot.val() || {} : null;
+  const uid = request.auth?.uid;
+  const email = getRequesterEmail(request);
+
+  payload.updatedAt = admin.database.ServerValue.TIMESTAMP;
+  payload.updatedByUid = uid;
+  payload.updatedByEmail = email;
+
+  if (existing) {
+    payload.createdAt = existing.createdAt || admin.database.ServerValue.TIMESTAMP;
+    payload.ownerUid = existing.ownerUid || uid;
+    payload.ownerEmail = existing.ownerEmail || email;
+    return payload;
+  }
+
+  payload.createdAt = admin.database.ServerValue.TIMESTAMP;
+  payload.ownerUid = uid;
+  payload.ownerEmail = email;
+  return payload;
+}
+
 exports.adminUpsertContent = onCall(
   { region: "us-central1" },
   async (request) => {
-    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
+    const role = await verifyRole(db, request.auth?.uid, [
+      ROLE_ADMIN,
+      ROLE_EDITOR,
+    ]);
     const { nodeKey, itemData, id } = request.data;
     if (!nodeKey || !itemData) {
       throw new HttpsError("invalid-argument", "Faltan parámetros requeridos.");
@@ -32,8 +77,6 @@ exports.adminUpsertContent = onCall(
     }
 
     const payload = sanitizeItemData(nodeKey, itemData);
-    // Usar timestamp del servidor de RTDB
-    payload.updatedAt = admin.database.ServerValue.TIMESTAMP;
 
     const nodeRef = getRtdb(admin).ref(`content/${nodeKey}`);
     let targetRef;
@@ -45,6 +88,15 @@ exports.adminUpsertContent = onCall(
       targetRef = nodeRef.push();
       targetId = targetRef.key;
     }
+
+    const existingSnapshot = await targetRef.get();
+    assertEditorOwnsExistingContent(
+      role,
+      request.auth?.uid,
+      existingSnapshot,
+      "editar",
+    );
+    applyOwnershipMetadata(payload, existingSnapshot, request);
 
     await targetRef.set(payload);
     await logAdminAction(
@@ -63,7 +115,10 @@ exports.adminUpsertContent = onCall(
 exports.adminDeleteContent = onCall(
   { region: "us-central1" },
   async (request) => {
-    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN, ROLE_EDITOR]);
+    const role = await verifyRole(db, request.auth?.uid, [
+      ROLE_ADMIN,
+      ROLE_EDITOR,
+    ]);
     const { nodeKey, id } = request.data;
     if (!nodeKey || !id) {
       throw new HttpsError("invalid-argument", "Faltan parámetros requeridos.");
@@ -76,7 +131,16 @@ exports.adminDeleteContent = onCall(
       );
     }
 
-    await getRtdb(admin).ref(`content/${nodeKey}/${id}`).remove();
+    const targetRef = getRtdb(admin).ref(`content/${nodeKey}/${id}`);
+    const existingSnapshot = await targetRef.get();
+    assertEditorOwnsExistingContent(
+      role,
+      request.auth?.uid,
+      existingSnapshot,
+      "eliminar",
+    );
+
+    await targetRef.remove();
     await logAdminAction(
       { db, FieldValue: admin.firestore.FieldValue, logger },
       request.auth?.uid,

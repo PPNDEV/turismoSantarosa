@@ -3,6 +3,21 @@ import { Link } from "react-router-dom";
 import { useContent } from "../context/useContent";
 import { useLanguage } from "../context/useLanguage";
 
+const SLIDE_AUTO_ADVANCE_MS = 5000;
+const REMOVED_MODULE_LINKS = new Set(["/destinos", "/#como-llegar"]);
+
+function normalizeHeroCtaTo(ctaTo) {
+  return REMOVED_MODULE_LINKS.has(ctaTo) ? "/informacion" : ctaTo || "/informacion";
+}
+
+function normalizeHeroCtaLabel(cta, ctaTo) {
+  if (REMOVED_MODULE_LINKS.has(ctaTo)) {
+    return "Planificar visita";
+  }
+
+  return cta;
+}
+
 export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
   const [loadDeferredSlides, setLoadDeferredSlides] = useState(false);
@@ -39,8 +54,16 @@ export default function HeroCarousel() {
           `heroSlides.${heroSlides[activeIndex].id}.cta`,
           heroSlides[activeIndex].cta,
         ),
+        ctaTo: normalizeHeroCtaTo(heroSlides[activeIndex].ctaTo),
       }
     : null;
+
+  if (activeSlide) {
+    activeSlide.cta = normalizeHeroCtaLabel(
+      activeSlide.cta,
+      heroSlides[activeIndex]?.ctaTo,
+    );
+  }
 
   const next = useCallback(() => {
     setCurrent((c) => {
@@ -60,9 +83,9 @@ export default function HeroCarousel() {
 
   useEffect(() => {
     if (heroSlides.length <= 1) return undefined;
-    const timer = setInterval(next, 5500);
-    return () => clearInterval(timer);
-  }, [heroSlides.length, next]);
+    const timer = window.setTimeout(next, SLIDE_AUTO_ADVANCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [activeIndex, heroSlides.length, next]);
 
   useEffect(() => {
     const scheduleIdleLoad =
@@ -115,11 +138,14 @@ export default function HeroCarousel() {
         <h1 className="hero-title">{activeSlide?.title}</h1>
         <p className="hero-sub">{activeSlide?.sub}</p>
         <div className="hero-btns">
-          <Link to={activeSlide?.ctaTo || "/destinos"} className="btn btn-gold">
+          <Link
+            to={activeSlide?.ctaTo || "/informacion"}
+            className="btn btn-gold"
+          >
             {activeSlide?.cta} →
           </Link>
-          <Link to="/#como-llegar" className="btn btn-white">
-            {t("hero.howToGetButton")}
+          <Link to="/informacion" className="btn btn-white">
+            {t("footer.links.touristInfo")}
           </Link>
         </div>
       </div>

@@ -5,7 +5,6 @@ import { ref, onValue } from "firebase/database";
 import { httpsCallable } from "firebase/functions";
 // Firestore – solo para colecciones administrativas
 import { ContentContext } from "./content-context";
-import { normalizeDestinoIcon } from "../utils/destinoIcons";
 import { rtdb, functions } from "../services/firebase";
 
 const CONTACT_API_URL =
@@ -48,11 +47,8 @@ const RTDB_NODES = [
   "eventos",
   "floraFauna",
   "galeria",
-  "destinos",
   "blog",
   "heroSlides",
-  "comoLlegarIntro",
-  "comoLlegar",
   "cooperativas",
 ];
 
@@ -65,24 +61,19 @@ const ROUTE_NODES = {
     "actividadesEditorial",
     "gastronomia",
     "hospedajes",
-    "destinos",
     "eventos",
     "floraFauna",
     "cooperativas",
     "galeria",
     "blog",
-    "comoLlegarIntro",
-    "comoLlegar",
   ],
   "/actividades": ["actividades", "actividadesEditorial"],
-  "/destinos": ["destinos"],
   "/eventos": ["eventos"],
   "/hospedaje": ["hospedajes"],
   "/gastronomia": ["gastronomia"],
   "/transporte": ["cooperativas"],
   "/flora-fauna": ["floraFauna"],
   "/informacion": [
-    "destinos",
     "gastronomia",
     "hospedajes",
     "floraFauna",
@@ -134,11 +125,8 @@ export function ContentProvider({ children }) {
   const [eventos, setEventos] = useState([]);
   const [floraFauna, setFloraFauna] = useState([]);
   const [galeria, setGaleria] = useState([]);
-  const [destinos, setDestinos] = useState([]);
   const [blog, setBlog] = useState([]);
   const [heroSlides, setHeroSlidesState] = useState([]);
-  const [comoLlegarIntro, setComoLlegarIntro] = useState([]);
-  const [comoLlegar, setComoLlegar] = useState([]);
   const [cooperativas, setCooperativas] = useState([]);
   const [loadedNodes, setLoadedNodes] = useState(() => new Set());
   const requiredNodes = useMemo(
@@ -160,11 +148,8 @@ export function ContentProvider({ children }) {
       eventos: setEventos,
       floraFauna: setFloraFauna,
       galeria: setGaleria,
-      destinos: setDestinos,
       blog: setBlog,
       heroSlides: setHeroSlidesState,
-      comoLlegarIntro: setComoLlegarIntro,
-      comoLlegar: setComoLlegar,
       cooperativas: setCooperativas,
     }),
     [],
@@ -187,22 +172,11 @@ export function ContentProvider({ children }) {
         (snapshot) => {
           const items = rtdbSnapshotToArray(snapshot);
 
-          // Normalizar destinos
-          if (nodeKey === "destinos") {
-            items.forEach((item) => {
-              item.icono = normalizeDestinoIcon(item.icono);
-            });
-          }
-
           // Normalizar hero slides
           if (nodeKey === "heroSlides") {
             items.forEach((item) => {
               item.tag = cleanHeroTag(item.tag);
             });
-            items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-          }
-
-          if (nodeKey === "comoLlegar") {
             items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
           }
 
@@ -322,16 +296,6 @@ export function ContentProvider({ children }) {
     [deleteFromRTDB],
   );
 
-  // Destinos
-  const upsertDestino = useCallback(
-    (item) => upsertToRTDB("destinos", item),
-    [upsertToRTDB],
-  );
-  const deleteDestino = useCallback(
-    (id) => deleteFromRTDB("destinos", id),
-    [deleteFromRTDB],
-  );
-
   // Blog
   const upsertBlog = useCallback(
     (item) => upsertToRTDB("blog", item),
@@ -350,14 +314,6 @@ export function ContentProvider({ children }) {
   const deleteHeroSlide = useCallback(
     (id) => deleteFromRTDB("heroSlides", id),
     [deleteFromRTDB],
-  );
-  const upsertComoLlegar = useCallback(
-    (item) => upsertToRTDB("comoLlegar", item),
-    [upsertToRTDB],
-  );
-  const upsertComoLlegarIntro = useCallback(
-    (item) => upsertToRTDB("comoLlegarIntro", item),
-    [upsertToRTDB],
   );
   const setHeroSlides = useCallback(
     async (nextSlides) => {
@@ -433,11 +389,8 @@ export function ContentProvider({ children }) {
       eventos,
       floraFauna,
       galeria,
-      destinos,
       blog,
       heroSlides,
-      comoLlegarIntro,
-      comoLlegar,
       cooperativas,
       loading,
 
@@ -454,14 +407,10 @@ export function ContentProvider({ children }) {
       deleteFloraFauna,
       upsertGaleria,
       deleteGaleria,
-      upsertDestino,
-      deleteDestino,
       upsertBlog,
       deleteBlog,
       upsertHeroSlide,
       deleteHeroSlide,
-      upsertComoLlegarIntro,
-      upsertComoLlegar,
       setHeroSlides,
       moveHeroSlide,
       upsertCooperativa,
@@ -477,11 +426,8 @@ export function ContentProvider({ children }) {
       eventos,
       floraFauna,
       galeria,
-      destinos,
       blog,
       heroSlides,
-      comoLlegarIntro,
-      comoLlegar,
       cooperativas,
       loading,
       upsertActividad,
@@ -497,14 +443,10 @@ export function ContentProvider({ children }) {
       deleteFloraFauna,
       upsertGaleria,
       deleteGaleria,
-      upsertDestino,
-      deleteDestino,
       upsertBlog,
       deleteBlog,
       upsertHeroSlide,
       deleteHeroSlide,
-      upsertComoLlegarIntro,
-      upsertComoLlegar,
       setHeroSlides,
       moveHeroSlide,
       upsertCooperativa,

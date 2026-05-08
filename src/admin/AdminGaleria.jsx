@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaCamera, FaEdit, FaSave, FaTimes, FaVideo } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
+import {
+  canManageContentItem,
+  getEditorOwnershipNote,
+  getVisibleAdminItems,
+} from "./adminOwnership";
 
 const FALLBACK_GALLERY_IMAGE =
   "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=900";
@@ -13,6 +18,7 @@ function hasDraftChanges(currentForm, initialForm) {
 
 export default function AdminGaleria({
   canEdit = true,
+  currentUser = null,
   onLivePreviewChange = () => {},
   onDirtyChange = () => {},
 }) {
@@ -32,9 +38,15 @@ export default function AdminGaleria({
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
   const [deleteError, setDeleteError] = useState("");
+  const visibleGaleria = useMemo(
+    () => getVisibleAdminItems(galeria, currentUser, canEdit),
+    [galeria, currentUser, canEdit],
+  );
+  const ownershipNote = getEditorOwnershipNote(currentUser, canEdit);
+  const canCreateGaleria = canManageContentItem(null, currentUser, canEdit);
 
   const openNew = () => {
-    if (!canEdit) return;
+    if (!canCreateGaleria) return;
 
     const nextForm = { url: "", titulo: "", tipo: "foto" };
     setForm(nextForm);
@@ -47,7 +59,7 @@ export default function AdminGaleria({
   };
 
   const openEdit = (item) => {
-    if (!canEdit) return;
+    if (!canManageContentItem(item, currentUser, canEdit)) return;
 
     const nextForm = { ...item };
     setForm(nextForm);
@@ -75,7 +87,11 @@ export default function AdminGaleria({
   };
 
   const save = async () => {
-    if (!canEdit || saving) return;
+    if (
+      !canManageContentItem(editing ? initialForm : null, currentUser, canEdit) ||
+      saving
+    )
+      return;
     if (!form.url && !imageFile) {
       setError("Selecciona una imagen o escribe una URL antes de guardar.");
       return;
@@ -106,14 +122,19 @@ export default function AdminGaleria({
   };
 
   const del = (item) => {
-    if (!canEdit) return;
+    if (!canManageContentItem(item, currentUser, canEdit)) return;
 
     setDeleteError("");
     setPendingDelete(item);
   };
 
   const confirmDelete = async () => {
-    if (!pendingDelete || deletingId) return;
+    if (
+      !pendingDelete ||
+      !canManageContentItem(pendingDelete, currentUser, canEdit) ||
+      deletingId
+    )
+      return;
 
     setDeleteError("");
     setDeletingId(pendingDelete.id);
@@ -183,11 +204,11 @@ export default function AdminGaleria({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Galeria ({galeria.length})</h2>
+          <h2>Galeria ({visibleGaleria.length})</h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
-            disabled={!canEdit}
+            disabled={!canCreateGaleria}
           >
             + Agregar
           </button>
@@ -197,6 +218,9 @@ export default function AdminGaleria({
           <div className="admin-readonly-note">
             Modo visualizador: el contenido de galeria es solo de lectura.
           </div>
+        )}
+        {ownershipNote && (
+          <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
         {showForm && (
@@ -288,7 +312,7 @@ export default function AdminGaleria({
         )}
 
         <div className="admin-gallery-grid">
-          {galeria.map((item) => (
+          {visibleGaleria.map((item) => (
             <div key={item.id} className="admin-gallery-item">
               <img
                 src={item.url}
@@ -302,14 +326,14 @@ export default function AdminGaleria({
                 <button
                   className="action-btn edit-btn"
                   onClick={() => openEdit(item)}
-                  disabled={!canEdit}
+                  disabled={!canManageContentItem(item, currentUser, canEdit)}
                 >
                   <FaEdit className="inline-icon" aria-hidden="true" />
                 </button>
               </div>
               <button
                 onClick={() => del(item)}
-                disabled={!canEdit}
+                disabled={!canManageContentItem(item, currentUser, canEdit)}
                 className="admin-gallery-delete"
                 title="Eliminar imagen"
               >

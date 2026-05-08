@@ -20,11 +20,27 @@ service firebase.storage {
         );
     }
 
-    match /cms/{allPaths=**} {
+    function isAdmin() {
+      return isSignedIn()
+        && currentUserPublicDoc().data.active == true
+        && currentUserPublicDoc().data.role == "administrador";
+    }
+
+    function isValidContentImage() {
+      return request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /cms/{ownerUid}/{allPaths=**} {
       allow read: if true;
       allow write: if canEditContent()
-        && request.resource.size < 8 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && (isAdmin() || ownerUid == request.auth.uid)
+        && isValidContentImage();
+    }
+
+    match /cms/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidContentImage();
     }
 
     match /{allPaths=**} {

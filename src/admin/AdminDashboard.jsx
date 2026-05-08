@@ -10,7 +10,6 @@ import {
   FaHistory,
   FaImage,
   FaLeaf,
-  FaMapMarkerAlt,
   FaShip,
   FaUserShield,
   FaUtensils,
@@ -37,7 +36,6 @@ export default function AdminDashboard({
   const {
     heroSlides,
     eventos,
-    destinos,
     galeria,
     gastronomia,
     hospedajes,
@@ -159,13 +157,6 @@ export default function AdminDashboard({
       total: eventos.length,
     },
     {
-      key: "destinos",
-      icon: FaMapMarkerAlt,
-      title: "Destinos",
-      desc: "Administra fichas turísticas y categorías principales.",
-      total: destinos.length,
-    },
-    {
       key: "gastronomia",
       icon: FaUtensils,
       title: "Gastronomía",
@@ -259,12 +250,6 @@ export default function AdminDashboard({
       value: eventos.length,
       icon: FaCalendarAlt,
       tone: "tone-emerald",
-    },
-    {
-      label: "Destinos",
-      value: destinos.length,
-      icon: FaMapMarkerAlt,
-      tone: "tone-violet",
     },
     {
       label: "Gastronomía",

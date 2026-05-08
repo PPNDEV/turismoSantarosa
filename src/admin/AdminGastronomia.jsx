@@ -1,8 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaEdit, FaSave, FaTrash, FaUtensils } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
+import {
+  canManageContentItem,
+  getEditorOwnershipNote,
+  getVisibleAdminItems,
+} from "./adminOwnership";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900";
@@ -24,6 +29,7 @@ function hasDraftChanges(currentForm, initialForm) {
 
 export default function AdminGastronomia({
   canEdit = true,
+  currentUser = null,
   onLivePreviewChange = () => {},
   onDirtyChange = () => {},
 }) {
@@ -36,9 +42,15 @@ export default function AdminGastronomia({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const visibleGastronomia = useMemo(
+    () => getVisibleAdminItems(gastronomia, currentUser, canEdit),
+    [gastronomia, currentUser, canEdit],
+  );
+  const ownershipNote = getEditorOwnershipNote(currentUser, canEdit);
+  const canCreateRestaurante = canManageContentItem(null, currentUser, canEdit);
 
   const openNew = () => {
-    if (!canEdit) {
+    if (!canCreateRestaurante) {
       return;
     }
 
@@ -53,7 +65,7 @@ export default function AdminGastronomia({
   };
 
   const openEdit = (restaurante) => {
-    if (!canEdit) {
+    if (!canManageContentItem(restaurante, currentUser, canEdit)) {
       return;
     }
 
@@ -83,7 +95,10 @@ export default function AdminGastronomia({
   };
 
   const save = async () => {
-    if (!canEdit || saving) {
+    if (
+      !canManageContentItem(editing ? initialForm : null, currentUser, canEdit) ||
+      saving
+    ) {
       return;
     }
 
@@ -126,13 +141,13 @@ export default function AdminGastronomia({
     setImagePreviewUrl("");
   };
 
-  const del = (id) => {
-    if (!canEdit) {
+  const del = (restaurante) => {
+    if (!canManageContentItem(restaurante, currentUser, canEdit)) {
       return;
     }
 
     if (confirm("¿Eliminar restaurante?")) {
-      deleteGastronomia(id);
+      deleteGastronomia(restaurante.id);
     }
   };
 
@@ -200,11 +215,11 @@ export default function AdminGastronomia({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Restaurantes ({gastronomia.length})</h2>
+          <h2>Restaurantes ({visibleGastronomia.length})</h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
-            disabled={!canEdit}
+            disabled={!canCreateRestaurante}
           >
             + Nuevo Restaurante
           </button>
@@ -214,6 +229,9 @@ export default function AdminGastronomia({
           <div className="admin-readonly-note">
             Modo visualizador: puedes consultar datos, pero no crear ni editar.
           </div>
+        )}
+        {ownershipNote && (
+          <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
         <table>
@@ -227,7 +245,7 @@ export default function AdminGastronomia({
             </tr>
           </thead>
           <tbody>
-            {gastronomia.map((restaurante) => (
+            {visibleGastronomia.map((restaurante) => (
               <tr key={restaurante.id}>
                 <td>
                   <strong>{restaurante.nombre}</strong>
@@ -239,15 +257,19 @@ export default function AdminGastronomia({
                   <button
                     className="action-btn edit-btn"
                     onClick={() => openEdit(restaurante)}
-                    disabled={!canEdit}
+                    disabled={
+                      !canManageContentItem(restaurante, currentUser, canEdit)
+                    }
                   >
                     <FaEdit className="inline-icon" aria-hidden="true" />
                     Editar
                   </button>
                   <button
                     className="action-btn del-btn"
-                    onClick={() => del(restaurante.id)}
-                    disabled={!canEdit}
+                    onClick={() => del(restaurante)}
+                    disabled={
+                      !canManageContentItem(restaurante, currentUser, canEdit)
+                    }
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>
