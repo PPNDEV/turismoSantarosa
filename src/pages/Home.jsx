@@ -2,7 +2,7 @@ import Header from "../components/Header";
 import HeroCarousel from "../components/HeroCarousel";
 import ComoLlegar from "../components/ComoLlegar";
 import QueHacer from "../components/QueHacer";
-import Destinos from "../components/Destinos";
+import MapaGeoreferencial from "../components/MapaGeoreferencial";
 import Eventos from "../components/Eventos";
 import Generalidades from "../components/Generalidades";
 import Galeria from "../components/Galeria";
@@ -47,7 +47,7 @@ export default function Home() {
         </div>
         <ComoLlegar />
         <QueHacer />
-        <Destinos />
+        <MapaGeoreferencial />
         <Eventos />
         <Generalidades />
         <Galeria />

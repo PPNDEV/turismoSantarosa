@@ -2108,6 +2108,178 @@ section:nth-child(even) {
   font-size: 0.82rem;
 }
 
+/* ===== MAPA GEOREFERENCIADO HOME ===== */
+.geo-map-section {
+  padding: 5rem 0 0;
+  background: var(--white) !important;
+  overflow: hidden;
+}
+
+.geo-map-section .section-subtitle {
+  margin-bottom: 2.25rem;
+}
+
+.geo-map-fullbleed {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  min-height: 560px;
+  background: var(--gray-100);
+  box-shadow: 0 -1px 0 rgba(10, 126, 164, 0.08);
+}
+
+.home-tourism-map {
+  width: 100%;
+  height: 560px;
+  min-height: 560px;
+  z-index: 0;
+  font-family: var(--font-body);
+}
+
+.home-tourism-map .leaflet-control-zoom {
+  border: 0;
+  box-shadow: var(--shadow);
+}
+
+.home-tourism-map .leaflet-control-zoom a {
+  color: var(--navy);
+  border-color: var(--gray-200);
+}
+
+.home-tourism-map .leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.home-tourism-map .leaflet-popup-content {
+  margin: 0;
+  width: 250px !important;
+}
+
+.geo-popup {
+  background: var(--white);
+}
+
+.geo-popup img {
+  width: 100%;
+  height: 118px;
+  object-fit: cover;
+  background: var(--gray-100);
+}
+
+.geo-popup-body {
+  padding: 0.85rem;
+}
+
+.geo-popup-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: var(--ocean-light);
+  color: var(--ocean);
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.geo-popup h3 {
+  margin-top: 0.45rem;
+  color: var(--navy);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.geo-popup p {
+  margin-top: 0.32rem;
+  color: var(--gray-600);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.geo-popup-category {
+  color: var(--gold-dark) !important;
+  font-weight: 800;
+}
+
+.geo-popup-link {
+  margin-top: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ocean);
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.geo-popup-link:hover {
+  color: var(--ocean-dark);
+}
+
+.geo-map-legend {
+  position: absolute;
+  right: clamp(1rem, 4vw, 3rem);
+  bottom: clamp(1rem, 4vw, 2rem);
+  z-index: 500;
+  width: min(92vw, 520px);
+  padding: 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(14px);
+}
+
+.geo-map-legend-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+  color: var(--navy);
+  font-family: var(--font-heading);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.geo-map-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+  gap: 0.45rem;
+}
+
+.geo-map-legend-item {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.geo-map-legend-item span {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 3px rgba(15, 23, 42, 0.12);
+}
+
+.geo-map-legend-item p {
+  margin: 0;
+  color: var(--gray-700);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ===== FOOTER ===== */
 .footer {
   background: var(--navy);
@@ -3786,6 +3958,19 @@ tr:hover td {
   .tourism-map {
     height: 320px;
   }
+  .geo-map-fullbleed,
+  .home-tourism-map {
+    min-height: 460px;
+  }
+  .home-tourism-map {
+    height: 460px;
+  }
+  .geo-map-legend {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    width: auto;
+  }
   .info-grid,
   .cooperativas-grid {
     grid-template-columns: 1fr;
@@ -3880,6 +4065,22 @@ tr:hover td {
   }
   .tourism-map {
     height: 280px;
+  }
+  .geo-map-section {
+    padding-top: 4rem;
+  }
+  .geo-map-fullbleed,
+  .home-tourism-map {
+    min-height: 420px;
+  }
+  .home-tourism-map {
+    height: 420px;
+  }
+  .geo-map-legend-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .geo-map-legend-item p {
+    white-space: normal;
   }
   .footer-bottom {
     flex-direction: column;
