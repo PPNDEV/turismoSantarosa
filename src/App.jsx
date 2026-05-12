@@ -25,7 +25,33 @@ const TransportePage = lazy(() => import("./pages/Transporte"));
 const FloraFaunaPage = lazy(() => import("./pages/FloraFauna"));
 const EventosPage = lazy(() => import("./pages/Eventos"));
 const GaleriaPage = lazy(() => import("./pages/Galeria"));
+const ResenasPage = lazy(() => import("./pages/Resenas"));
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
+const loadingCrestSrc = `${import.meta.env.BASE_URL}escudo-vector-02-247x300.png`;
+
+function AppLoading({ label = "Preparando tu visita a Santa Rosa..." }) {
+  return (
+    <div className="app-loading-screen" role="status" aria-live="polite">
+      <div className="app-loading-card">
+        <div className="app-loading-logo">
+          <img
+            src={loadingCrestSrc}
+            alt="Escudo de Santa Rosa"
+            width="72"
+            height="88"
+          />
+        </div>
+        <div className="app-loading-copy">
+          <span>Visit Santa Rosa</span>
+          <strong>{label}</strong>
+        </div>
+        <div className="app-loading-bar" aria-hidden="true">
+          <span />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 
 // Página genérica para subpáginas
@@ -52,11 +78,7 @@ function PrivateRoute({ children }) {
   const { user, authReady } = useAuth();
 
   if (!authReady) {
-    return (
-      <div className="container page-container-lg">
-        Verificando acceso...
-      </div>
-    );
+    return <AppLoading label="Verificando acceso al panel..." />;
   }
 
   return user ? children : <Navigate to="/login" replace />;
@@ -142,11 +164,7 @@ function RevealObserver() {
 function AppRoutes() {
   return (
     <Suspense
-      fallback={
-        <div className="container page-container-lg">
-          Cargando contenido...
-        </div>
-      }
+      fallback={<AppLoading />}
     >
       <VisitTracker />
       <RevealObserver />
@@ -160,6 +178,7 @@ function AppRoutes() {
         <Route path="/eventos" element={<EventosPage />} />
         <Route path="/informacion" element={<InformacionTuristica />} />
         <Route path="/galeria" element={<GaleriaPage />} />
+        <Route path="/resenas" element={<ResenasPage />} />
         <Route path="/login" element={<Login />} />
         <Route
           path="/admin/*"

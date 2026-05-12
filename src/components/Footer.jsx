@@ -10,7 +10,6 @@ import {
   FaCheckCircle,
   FaClock,
   FaEnvelope,
-  FaHeart,
   FaMapMarkerAlt,
   FaPaperPlane,
   FaPhoneAlt,
@@ -243,11 +242,7 @@ export default function Footer() {
         <hr className="footer-divider" />
         <div className="footer-bottom">
           <span>{t("footer.bottomCopyright")}</span>
-          <span>
-            {t("footer.madeWith")}{" "}
-            <FaHeart className="inline-icon" aria-hidden="true" />{" "}
-            {t("footer.byTourismOffice")}
-          </span>
+          <span>{t("footer.developmentCredit")}</span>
         </div>
       </div>
     </footer>

@@ -18,7 +18,7 @@ export default function GastronomiaPage() {
         </div>
 
         <main className="container info-page-content">
-          <section className="info-section-card">
+          <section className="info-section-card gastronomia-section">
             <header className="info-section-header">
               <h2>Gastronomia local</h2>
               <p>

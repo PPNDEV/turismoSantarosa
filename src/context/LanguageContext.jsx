@@ -42,6 +42,7 @@ const translations = {
         activities: "Actividades",
         events: "Eventos",
         gallery: "Galería",
+        reviews: "Reseñas",
         blog: "Blog",
       },
       socialLabel: "Redes sociales",
@@ -221,6 +222,8 @@ const translations = {
         "© 2026 Santa Rosa - Municipio de Santa Rosa, El Oro, Ecuador",
       madeWith: "Hecho con",
       byTourismOffice: "por la Dirección de Turismo",
+      developmentCredit:
+        "Hecho por el grupo de desarrollo PPN DEV: Brandon Castillo, Martin Peña, Ronald Azuero",
     },
     login: {
       title: "Panel de Administración",
@@ -238,6 +241,7 @@ const translations = {
       activities: "Actividades Turísticas Editoriales",
       events: "Agenda Informativa de Eventos",
       gallery: "Galería Visual",
+      reviews: "Reseñas Turísticas",
       blog: "Blog & Noticias",
     },
     eventsPage: {
@@ -277,6 +281,7 @@ const translations = {
         activities: "Activities",
         events: "Events",
         gallery: "Gallery",
+        reviews: "Reviews",
         blog: "Blog",
       },
       socialLabel: "Social media",
@@ -456,6 +461,8 @@ const translations = {
         "© 2026 Santa Rosa - Municipality of Santa Rosa, El Oro, Ecuador",
       madeWith: "Made with",
       byTourismOffice: "by the Tourism Department",
+      developmentCredit:
+        "Developed by PPN DEV: Brandon Castillo, Martin Peña, Ronald Azuero",
     },
     login: {
       title: "Administration Panel",
@@ -590,6 +597,7 @@ const translations = {
       activities: "Editorial Tourism Activities",
       events: "Event Information Agenda",
       gallery: "Visual Gallery",
+      reviews: "Tourism Reviews",
       blog: "Blog & News",
     },
     eventsPage: {
@@ -630,6 +638,7 @@ const translations = {
         activities: "Atividades",
         events: "Eventos",
         gallery: "Galeria",
+        reviews: "Avaliações",
         blog: "Blog",
       },
       socialLabel: "Redes sociais",
@@ -809,6 +818,8 @@ const translations = {
         "© 2026 Santa Rosa - Município de Santa Rosa, El Oro, Equador",
       madeWith: "Feito com",
       byTourismOffice: "pela Direção de Turismo",
+      developmentCredit:
+        "Desenvolvido pelo grupo PPN DEV: Brandon Castillo, Martin Peña, Ronald Azuero",
     },
     login: {
       title: "Painel de Administração",
@@ -943,6 +954,7 @@ const translations = {
       activities: "Atividades Turísticas Editoriais",
       events: "Agenda Informativa de Eventos",
       gallery: "Galeria Visual",
+      reviews: "Avaliações Turísticas",
       blog: "Blog e Notícias",
     },
     eventsPage: {

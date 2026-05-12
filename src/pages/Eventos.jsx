@@ -1,4 +1,5 @@
-import { FaCalendarAlt, FaClock, FaMapMarkerAlt } from "react-icons/fa";
+import { useMemo, useState } from "react";
+import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaSearch } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
@@ -45,9 +46,73 @@ export default function EventosPage() {
   const { eventos } = useContent();
   const { locale, t } = useLanguage();
   const eventosActivos = getVisibleEvents(eventos);
-  const eventosConHorario = eventosActivos.filter(
-    (evento) => evento.hora,
-  ).length;
+  const [filters, setFilters] = useState({
+    search: "",
+    tipo: "todos",
+    lugar: "todos",
+    fecha: "todos",
+  });
+
+  const filterOptions = useMemo(() => {
+    const tipos = [
+      ...new Set(
+        eventosActivos
+          .map((evento) => evento.tipo)
+          .filter(Boolean)
+          .map((tipo) => tipo.trim()),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+    const lugares = [
+      ...new Set(
+        eventosActivos
+          .map((evento) => evento.lugar)
+          .filter(Boolean)
+          .map((lugar) => lugar.trim()),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+
+    return { tipos, lugares };
+  }, [eventosActivos]);
+
+  const eventosFiltrados = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const search = filters.search.trim().toLowerCase();
+
+    return eventosActivos.filter((evento) => {
+      const matchesSearch =
+        !search ||
+        [evento.nombre, evento.descripcion, evento.tipo, evento.lugar]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(search);
+      const matchesTipo =
+        filters.tipo === "todos" || evento.tipo === filters.tipo;
+      const matchesLugar =
+        filters.lugar === "todos" || evento.lugar === filters.lugar;
+      const timestamp = getEventTimestamp(evento.fecha);
+      const matchesFecha =
+        filters.fecha === "todos" ||
+        (filters.fecha === "proximos" && timestamp >= today.getTime()) ||
+        (filters.fecha === "pasados" && timestamp < today.getTime());
+
+      return matchesSearch && matchesTipo && matchesLugar && matchesFecha;
+    });
+  }, [eventosActivos, filters]);
+
+  const updateFilter = (key, value) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      search: "",
+      tipo: "todos",
+      lugar: "todos",
+      fecha: "todos",
+    });
+  };
 
   return (
     <>
@@ -61,32 +126,98 @@ export default function EventosPage() {
         </div>
 
         <main className="container page-container">
-          <div className="eventos-info-intro">
-            <h2>{t("eventsPage.planningTitle")}</h2>
-            <p>{t("eventsPage.planningDescription")}</p>
-            <div className="eventos-info-pills">
-              <div className="eventos-info-pill">
-                <strong>{eventosActivos.length}</strong>
-                <span>{t("eventsPage.publishedEvents")}</span>
+          <section className="eventos-filter-panel" aria-label="Filtrar eventos">
+            <div className="eventos-filter-header">
+              <div>
+                <h2>Filtrar eventos</h2>
+                <p>Encuentra actividades por nombre, tipo, lugar o fecha.</p>
               </div>
-              <div className="eventos-info-pill">
-                <strong>{eventosConHorario}</strong>
-                <span>{t("eventsPage.withConfirmedTime")}</span>
-              </div>
-              <div className="eventos-info-pill">
-                <strong>
-                  {new Set(eventosActivos.map((evento) => evento.lugar)).size}
-                </strong>
-                <span>{t("eventsPage.registeredPlaces")}</span>
-              </div>
+              <button
+                type="button"
+                className="eventos-filter-clear"
+                onClick={clearFilters}
+              >
+                Limpiar
+              </button>
             </div>
-          </div>
+
+            <div className="eventos-filter-grid">
+              <label className="eventos-filter-field eventos-filter-search">
+                <span>Buscar</span>
+                <div className="eventos-search-box">
+                  <FaSearch className="inline-icon" aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={filters.search}
+                    onChange={(event) =>
+                      updateFilter("search", event.target.value)
+                    }
+                    placeholder="Nombre, descripcion o lugar"
+                  />
+                </div>
+              </label>
+
+              <label className="eventos-filter-field">
+                <span>Tipo</span>
+                <select
+                  value={filters.tipo}
+                  onChange={(event) => updateFilter("tipo", event.target.value)}
+                >
+                  <option value="todos">Todos</option>
+                  {filterOptions.tipos.map((tipo) => (
+                    <option key={tipo} value={tipo}>
+                      {tipo}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="eventos-filter-field">
+                <span>Lugar</span>
+                <select
+                  value={filters.lugar}
+                  onChange={(event) =>
+                    updateFilter("lugar", event.target.value)
+                  }
+                >
+                  <option value="todos">Todos</option>
+                  {filterOptions.lugares.map((lugar) => (
+                    <option key={lugar} value={lugar}>
+                      {lugar}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="eventos-filter-field">
+                <span>Fecha</span>
+                <select
+                  value={filters.fecha}
+                  onChange={(event) =>
+                    updateFilter("fecha", event.target.value)
+                  }
+                >
+                  <option value="todos">Todas</option>
+                  <option value="proximos">Proximos</option>
+                  <option value="pasados">Pasados</option>
+                </select>
+              </label>
+            </div>
+
+            <p className="eventos-filter-count">
+              {eventosFiltrados.length} de {eventosActivos.length} eventos
+            </p>
+          </section>
 
           {eventosActivos.length === 0 ? (
             <div className="eventos-empty">{t("eventsPage.emptyState")}</div>
+          ) : eventosFiltrados.length === 0 ? (
+            <div className="eventos-empty">
+              No hay eventos que coincidan con los filtros seleccionados.
+            </div>
           ) : (
             <div className="eventos-grid eventos-grid-page">
-              {eventosActivos.map((ev) => {
+              {eventosFiltrados.map((ev) => {
                 const translatedType = getLocalizedValue(
                   t,
                   `content.events.${ev.id}.type`,
