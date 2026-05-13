@@ -94,6 +94,43 @@ service cloud.firestore {
         );
     }
 
+    function hasValidReview(data) {
+      return data.keys().hasOnly([
+          "nombre",
+          "cedula",
+          "tipoObjetivo",
+          "objetivoId",
+          "objetivoNombre",
+          "isla",
+          "calificacion",
+          "opinion",
+          "estado",
+          "fecha"
+        ])
+        && data.nombre is string
+        && data.nombre.size() > 0
+        && data.nombre.size() <= 80
+        && data.cedula is string
+        && data.cedula.matches('^[0-9]{10}$')
+        && data.tipoObjetivo in ["isla", "establecimiento", "atractivo"]
+        && data.objetivoId is string
+        && data.objetivoId.size() > 0
+        && data.objetivoId.size() <= 140
+        && data.objetivoNombre is string
+        && data.objetivoNombre.size() > 0
+        && data.objetivoNombre.size() <= 120
+        && data.isla is string
+        && data.isla.size() > 0
+        && data.isla.size() <= 80
+        && data.calificacion is int
+        && data.calificacion >= 1
+        && data.calificacion <= 5
+        && data.opinion is string
+        && data.opinion.size() >= 10
+        && data.opinion.size() <= 600
+        && data.estado == "pendiente"
+        && data.fecha == request.time;
+    }
 
     // =========================================================================
     // 1. COLECCIONES PRINCIPALES (Núcleo turístico)
@@ -172,6 +209,16 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if false;
       allow update, delete: if isAdmin();
+    }
+
+    // Reseñas turisticas (RF18): visitantes crean, administrador modera.
+    match /resenas_turisticas/{docId} {
+      allow get, list: if isSignedIn() || resource.data.estado == "aprobada";
+      allow create: if hasValidReview(request.resource.data);
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(["estado"])
+        && request.resource.data.estado in ["pendiente", "aprobada", "rechazada"];
+      allow delete: if isAdmin();
     }
 
     // Bandeja de entrada para solicitudes de negocios nuevos
@@ -278,7 +325,7 @@ service cloud.firestore {
 
     // Documento agregado de visitas. Solo lectura para usuarios autenticados.
     match /analytics/{docId} {
-      allow read: if isSignedIn();
+      allow read: if docId == "traffic" || isSignedIn();
       allow write: if false;
     }
 

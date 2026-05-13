@@ -313,30 +313,41 @@ function normalizeMetrics(rawData) {
 
 export function subscribeVisitMetrics(onChange, onError) {
   let active = true;
+  let intervalId;
 
-  void getDoc(analyticsRef)
-    .then((snapshot) => {
-      if (!active) {
-        return;
-      }
+  const loadMetrics = () => {
+    void getDoc(analyticsRef)
+      .then((snapshot) => {
+        if (!active) {
+          return;
+        }
 
-      const normalized = snapshot.exists()
-        ? normalizeMetrics(snapshot.data())
-        : normalizeMetrics({});
+        const normalized =
+          snapshot.exists() ? normalizeMetrics(snapshot.data()) : normalizeMetrics({});
 
-      onChange(normalized);
-    })
-    .catch((error) => {
-      if (!active) {
-        return;
-      }
+        onChange(normalized);
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
 
-      if (typeof onError === "function") {
-        onError(error);
-      }
-    });
+        if (typeof onError === "function") {
+          onError(error);
+        }
+      });
+  };
+
+  loadMetrics();
+
+  if (typeof window !== "undefined") {
+    intervalId = window.setInterval(loadMetrics, 30000);
+  }
 
   return () => {
     active = false;
+    if (intervalId) {
+      window.clearInterval(intervalId);
+    }
   };
 }

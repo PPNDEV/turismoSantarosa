@@ -25,6 +25,25 @@ function createVisitsHandler({
       return;
     }
 
+    const trafficRef = db.collection("analytics").doc("traffic");
+
+    if (request.method === "GET") {
+      try {
+        const snapshot = await trafficRef.get();
+        const data = snapshot.exists ? snapshot.data() : {};
+        response.set("Cache-Control", "public, max-age=30");
+        response.status(200).json({
+          ok: true,
+          totalPageViews: Number(data?.totalPageViews || 0),
+          totalSessions: Number(data?.totalSessions || 0),
+        });
+      } catch (error) {
+        logger.error("countVisit metrics error", { error });
+        response.status(500).json({ ok: false, error: "internal" });
+      }
+      return;
+    }
+
     if (request.method !== "POST") {
       response.status(405).json({ ok: false, error: "method-not-allowed" });
       return;
@@ -86,8 +105,6 @@ function createVisitsHandler({
       response.status(400).json({ ok: false, error: "invalid-session" });
       return;
     }
-
-    const trafficRef = db.collection("analytics").doc("traffic");
 
     try {
       const updates = {

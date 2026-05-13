@@ -7,6 +7,7 @@ import {
   FaCamera,
   FaChartBar,
   FaChartPie,
+  FaCommentDots,
   FaEnvelope,
   FaGlobe,
   FaHiking,
@@ -31,6 +32,7 @@ const AdminActividades = lazy(() => import("../admin/AdminActividades"));
 const AdminTransporte = lazy(() => import("../admin/AdminTransporte"));
 const AdminMensajes = lazy(() => import("../admin/AdminMensajes"));
 const AdminEncuestas = lazy(() => import("../admin/AdminEncuestas"));
+const AdminResenas = lazy(() => import("../admin/AdminResenas"));
 const AdminSolicitudes = lazy(() => import("../admin/AdminSolicitudes"));
 
 const RECENT_SIDEBAR_SECTIONS_KEY = "adminRecentSidebarSections";
@@ -128,6 +130,15 @@ const menuItems = [
     title: "Encuestas de Satisfacción",
     previewPath: "/admin",
     description: "Visualiza puntuaciones y comentarios de los visitantes.",
+  },
+  {
+    key: "resenas",
+    icon: FaCommentDots,
+    label: "Reseñas",
+    title: "Moderacion de Reseñas",
+    previewPath: "/resenas",
+    description:
+      "Aprueba o rechaza opiniones publicas de islas, establecimientos y atractivos.",
   },
   {
     key: "usuarios",
@@ -291,6 +302,7 @@ export default function AdminLayout() {
       galeria: (isDirty) => handleDirtySectionChange("galeria", isDirty),
       mensajes: (isDirty) => handleDirtySectionChange("mensajes", isDirty),
       encuestas: (isDirty) => handleDirtySectionChange("encuestas", isDirty),
+      resenas: (isDirty) => handleDirtySectionChange("resenas", isDirty),
       usuarios: (isDirty) => handleDirtySectionChange("usuarios", isDirty),
       solicitudes: (isDirty) => handleDirtySectionChange("solicitudes", isDirty),
     }),
@@ -404,6 +416,13 @@ export default function AdminLayout() {
           <AdminEncuestas
             onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.encuestas}
+          />
+        );
+      case "resenas":
+        return (
+          <AdminResenas
+            onLivePreviewChange={handleLivePreviewChange}
+            onDirtyChange={dirtyChangeHandlers.resenas}
           />
         );
       case "usuarios":

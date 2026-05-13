@@ -14,6 +14,7 @@ const navLinks = [
   { key: "floraFauna", to: "/flora-fauna" },
   { key: "activities", to: "/actividades" },
   { key: "gallery", to: "/galeria" },
+  { key: "reviews", to: "/resenas" },
 ];
 
 const crestSrc = `${import.meta.env.BASE_URL}escudo-vector-02-247x300.png`;
