@@ -99,6 +99,16 @@ function VisitTracker() {
   return null;
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
+
+  return null;
+}
+
 function RevealObserver() {
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") {
@@ -165,6 +175,7 @@ function AppRoutes() {
     <Suspense
       fallback={<AppLoading />}
     >
+      <ScrollToTop />
       <VisitTracker />
       <RevealObserver />
       <Routes>

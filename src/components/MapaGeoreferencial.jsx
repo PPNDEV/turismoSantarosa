@@ -1,18 +1,24 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
-import { FaArrowRight, FaMapMarkedAlt } from "react-icons/fa";
+import {
+  CircleMarker,
+  MapContainer,
+  Popup,
+  TileLayer,
+  Tooltip,
+} from "react-leaflet";
+import { FaArrowRight, FaSearch } from "react-icons/fa";
 import "leaflet/dist/leaflet.css";
 import { useContent } from "../context/useContent";
 
-const MAP_CENTER = [-3.29, -80.18];
+const MAP_CENTER = [-3.255, -80.118];
 const MAP_BOUNDS = [
-  [-3.39, -80.46],
-  [-3.15, -80.04],
+  [-3.46, -80.56],
+  [-3.08, -79.98],
 ];
-const MAP_INITIAL_ZOOM = 11;
-const MAP_MIN_ZOOM = 11;
-const MAP_MAX_ZOOM = 17;
+const MAP_INITIAL_ZOOM = 13;
+const MAP_MIN_ZOOM = 10;
+const MAP_MAX_ZOOM = 18;
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900";
 
@@ -258,13 +264,23 @@ function buildPoints(sourceItems, configKey) {
         label: config.label,
         path: config.path,
         color: config.color,
+        typeKey: configKey,
         lat: coordinates.lat,
         lng: coordinates.lng,
       };
     });
 }
 
+function getPopupOffset(point) {
+  const isRightSide = point.lng > MAP_CENTER[1];
+  return isRightSide ? [-150, 115] : [150, 115];
+}
+
 export default function MapaGeoreferencial() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTypes, setActiveTypes] = useState(() =>
+    Object.keys(moduleConfig),
+  );
   const {
     actividades,
     cooperativas,
@@ -292,6 +308,39 @@ export default function MapaGeoreferencial() {
       hospedajes,
     ],
   );
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredMapPoints = useMemo(
+    () =>
+      mapPoints.filter((point) => {
+        const matchesType = activeTypes.includes(point.typeKey);
+        const searchableText = [
+          point.title,
+          point.category,
+          point.detail,
+          point.label,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return (
+          matchesType &&
+          (!normalizedSearch || searchableText.includes(normalizedSearch))
+        );
+      }),
+    [activeTypes, mapPoints, normalizedSearch],
+  );
+
+  const toggleType = (typeKey) => {
+    setActiveTypes((currentTypes) => {
+      if (currentTypes.includes(typeKey)) {
+        return currentTypes.length === 1
+          ? currentTypes
+          : currentTypes.filter((key) => key !== typeKey);
+      }
+
+      return [...currentTypes, typeKey];
+    });
+  };
 
   return (
     <section className="geo-map-section" id="mapa-georeferencial">
@@ -307,6 +356,35 @@ export default function MapaGeoreferencial() {
         </div>
       </div>
 
+      <div className="container">
+        <div className="geo-map-filters" aria-label="Filtros del mapa">
+          <label className="geo-map-search">
+            <FaSearch className="inline-icon" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Buscar por nombre, categoria o ubicacion"
+              aria-label="Buscar en el mapa"
+            />
+          </label>
+          <div className="geo-map-filter-chips" aria-label="Categorias">
+            {Object.entries(moduleConfig).map(([key, config]) => (
+              <button
+                type="button"
+                key={key}
+                className={activeTypes.includes(key) ? "is-active" : ""}
+                onClick={() => toggleType(key)}
+                aria-pressed={activeTypes.includes(key)}
+              >
+                <span style={{ background: config.color }} />
+                {config.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="geo-map-fullbleed reveal">
         <MapContainer
           center={MAP_CENTER}
@@ -314,7 +392,7 @@ export default function MapaGeoreferencial() {
           minZoom={MAP_MIN_ZOOM}
           maxZoom={MAP_MAX_ZOOM}
           maxBounds={MAP_BOUNDS}
-          maxBoundsViscosity={1}
+          maxBoundsViscosity={0.55}
           scrollWheelZoom
           className="home-tourism-map"
         >
@@ -323,11 +401,11 @@ export default function MapaGeoreferencial() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {mapPoints.map((point) => (
+          {filteredMapPoints.map((point) => (
             <CircleMarker
               key={point.id}
               center={[point.lat, point.lng]}
-              radius={9}
+              radius={7}
               pathOptions={{
                 color: "#ffffff",
                 fillColor: point.color,
@@ -336,7 +414,22 @@ export default function MapaGeoreferencial() {
                 weight: 2,
               }}
             >
-              <Popup minWidth={240} maxWidth={270}>
+              <Tooltip
+                permanent
+                direction="top"
+                offset={[0, -10]}
+                className="geo-map-name-bubble"
+              >
+                {point.title}
+              </Tooltip>
+              <Popup
+                minWidth={240}
+                maxWidth={270}
+                offset={getPopupOffset(point)}
+                autoPan
+                keepInView
+                autoPanPadding={[36, 36]}
+              >
                 <article className="geo-popup">
                   <img
                     src={point.image}
@@ -365,21 +458,6 @@ export default function MapaGeoreferencial() {
             </CircleMarker>
           ))}
         </MapContainer>
-
-        <div className="geo-map-legend" aria-label="Categorias del mapa">
-          <div className="geo-map-legend-title">
-            <FaMapMarkedAlt className="inline-icon" aria-hidden="true" />
-            Capas
-          </div>
-          <div className="geo-map-legend-grid">
-            {Object.entries(moduleConfig).map(([key, config]) => (
-              <div className="geo-map-legend-item" key={key}>
-                <span style={{ background: config.color }} />
-                <p>{config.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

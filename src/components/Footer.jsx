@@ -53,6 +53,11 @@ export default function Footer() {
   const [sending, setSending] = useState(false);
   const { t } = useLanguage();
   const { enviarMensajeContacto } = useContent();
+  const currentYear = new Date().getFullYear();
+  const eventsLabel = t("footer.links.events").replace(
+    /\b\d{4}\b/,
+    currentYear,
+  );
 
   const normalizeText = (value) =>
     String(value || "")
@@ -144,7 +149,7 @@ export default function Footer() {
             <h4>{t("footer.discoverTitle")}</h4>
             <ul className="footer-links">
               <li>
-                <Link to="/eventos">{t("footer.links.events")}</Link>
+                <Link to="/eventos">{eventsLabel}</Link>
               </li>
               <li>
                 <Link to="/informacion">{t("footer.links.touristInfo")}</Link>
