@@ -1,0 +1,25 @@
+{
+  "tourist": {
+    "explore": "Explorar",
+    "scan_qr": "Escanear QR",
+    "favorites": "Favoritos",
+    "catalog": "Catálogo",
+    "reviews": "Avaliações",
+    "add_review": "Adicionar Avaliação",
+    "submit": "Enviar",
+    "rating": "Classificação",
+    "comment": "Comentário",
+    "no_favorites": "Você não tem favoritos salvos.",
+    "no_reviews": "Ainda não há avaliações para este lugar."
+  },
+  "admin": {
+    "validate_accounts": "Validar Contas",
+    "approve": "Aprovar",
+    "reject": "Rejeitar"
+  },
+  "common": {
+    "logout": "Sair",
+    "loading": "Carregando...",
+    "error": "Ocorreu um erro."
+  }
+}

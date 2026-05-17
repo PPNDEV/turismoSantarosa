@@ -1,5 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import { initializeApp, getApps, getApp } from "firebase/app";
+// @ts-ignore - Este es un falso positivo conocido en TypeScript con Firebase SDK
+import { initializeAuth, getReactNativePersistence, getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -15,14 +16,31 @@ const firebaseConfig = {
   measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+console.log("Firebase API Key cargada:", firebaseConfig.apiKey ? "SI" : "NO");
 
-// Inicializar Auth con persistencia en dispositivo
-export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
-});
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
+let auth: any;
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+} catch (error: any) {
+  // Ignorar el error de hot reload
+  if (error.code === 'auth/already-initialized') {
+    auth = getAuth(app);
+  } else {
+    throw error;
+  }
+}
+
+import { getDatabase } from "firebase/database";
+import { getFunctions } from "firebase/functions";
+
+export { auth };
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export const rtdb = getDatabase(app);
+export const functions = getFunctions(app);
 
 export default app;

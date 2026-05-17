@@ -1,0 +1,25 @@
+{
+  "tourist": {
+    "explore": "Explore",
+    "scan_qr": "Scan QR",
+    "favorites": "Favorites",
+    "catalog": "Catalog",
+    "reviews": "Reviews",
+    "add_review": "Add Review",
+    "submit": "Submit",
+    "rating": "Rating",
+    "comment": "Comment",
+    "no_favorites": "You have no saved favorites.",
+    "no_reviews": "No reviews yet for this place."
+  },
+  "admin": {
+    "validate_accounts": "Validate Accounts",
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "common": {
+    "logout": "Logout",
+    "loading": "Loading...",
+    "error": "An error occurred."
+  }
+}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
 export default function LoginScreen() {
@@ -15,9 +15,31 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Verificación de seguridad requerida en la auditoría
+      if (!userCredential.user.emailVerified) {
+        await signOut(auth); // Deslogueamos inmediatamente
+        Alert.alert(
+          'Correo no verificado',
+          'Debes verificar tu correo electrónico antes de ingresar a PROMOWEAPP.',
+          [
+            { text: 'Cerrar', style: 'cancel' },
+            { 
+              text: 'Reenviar Enlace', 
+              onPress: async () => {
+                await sendEmailVerification(userCredential.user);
+                Alert.alert('Enviado', 'Se ha reenviado el enlace a tu correo.');
+              } 
+            }
+          ]
+        );
+        return;
+      }
+
     } catch (error: any) {
-      Alert.alert('Error de autenticación', error.message);
+      console.error(error);
+      Alert.alert('Error de Autenticación', error.message);
     } finally {
       setLoading(false);
     }
