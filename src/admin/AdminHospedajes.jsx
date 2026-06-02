@@ -222,7 +222,10 @@ export default function AdminHospedajes({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Hospedajes ({visibleHospedajes.length})</h2>
+          <h2>
+            <FaBed className="inline-icon" aria-hidden="true" />
+            Hospedajes ({visibleHospedajes.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}

@@ -1,16 +1,34 @@
 /**
  * Firestore Seed Script
  *
- * Run from the project root:
- *   node functions/seed-firestore.js
+ * Ejecutar desde la carpeta functions/:
+ *   cd functions
+ *   node seed-firestore.cjs
  *
- * This populates all Firestore collections with the demo data.
- * Requires the Firebase Admin SDK (already in functions/node_modules).
+ * Puebla las colecciones de Firestore con datos de demostración, incluyendo
+ * reseñas, encuestas de satisfacción, mensajes de contacto y solicitudes de
+ * negocios (para que los paneles del admin muestren ejemplos reales).
+ *
+ * Credenciales: coloca el archivo "serviceAccountKey.json" en esta carpeta
+ * (Consola Firebase -> Ajustes del proyecto -> Cuentas de servicio ->
+ * Generar nueva clave privada). El Admin SDK ignora las reglas de seguridad.
  */
 
 const admin = require("firebase-admin");
 
-admin.initializeApp();
+// Inicializa el Admin SDK con la clave de servicio si existe; de lo contrario
+// recurre a las credenciales por defecto (GOOGLE_APPLICATION_CREDENTIALS / emulador).
+try {
+  const serviceAccount = require("./serviceAccountKey.json");
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+} catch {
+  console.log(
+    "No se encontró serviceAccountKey.json. Usando credenciales por defecto del entorno...",
+  );
+  admin.initializeApp();
+}
 
 const db = admin.firestore();
 const { FieldValue } = admin.firestore;
@@ -178,6 +196,175 @@ const demoGaleria = [
 ];
 
 // ---------------------------------------------------------------------------
+// Reseñas turísticas (colección: resenas_turisticas)
+// Mezcla de estados para demostrar la moderación: aprobada / pendiente / rechazada.
+// ---------------------------------------------------------------------------
+
+const demoResenas = [
+  {
+    id: "rev-demo-1",
+    nombre: "María Fernanda Loayza",
+    cedula: "0703456781",
+    tipoObjetivo: "isla",
+    objetivoId: "isla-jambeli",
+    objetivoNombre: "Jambelí",
+    isla: "Jambelí",
+    calificacion: 5,
+    opinion:
+      "Las playas de Jambelí son hermosas y tranquilas. El paseo en lancha por los manglares fue lo mejor de mi visita.",
+    estado: "aprobada",
+    fecha: new Date("2026-05-12T16:20:00"),
+  },
+  {
+    id: "rev-demo-2",
+    nombre: "Jorge Patiño",
+    cedula: "0701122334",
+    tipoObjetivo: "establecimiento",
+    objetivoId: "g-1",
+    objetivoNombre: "Comedor La Perla del Mar",
+    isla: "Jambelí",
+    calificacion: 4,
+    opinion:
+      "El ceviche mixto estaba delicioso y la atención muy amable. Volvería sin dudarlo.",
+    estado: "aprobada",
+    fecha: new Date("2026-05-08T13:05:00"),
+  },
+  {
+    id: "rev-demo-3",
+    nombre: "Andrea Saldaña",
+    cedula: "0702233445",
+    tipoObjetivo: "atractivo",
+    objetivoId: "act-2",
+    objetivoNombre: "Avistamiento de ballenas jorobadas",
+    isla: "Costa Rica",
+    calificacion: 5,
+    opinion:
+      "Una experiencia inolvidable ver a las ballenas tan de cerca. El guía conocía muchísimo del ecosistema marino.",
+    estado: "pendiente",
+    fecha: new Date("2026-05-20T09:40:00"),
+  },
+  {
+    id: "rev-demo-4",
+    nombre: "Visitante de prueba",
+    cedula: "0700000001",
+    tipoObjetivo: "isla",
+    objetivoId: "isla-santa-clara",
+    objetivoNombre: "Isla Santa Clara",
+    isla: "Santa Clara",
+    calificacion: 1,
+    opinion:
+      "Reseña de ejemplo rechazada durante la moderación por no cumplir las normas de publicación.",
+    estado: "rechazada",
+    fecha: new Date("2026-05-02T11:00:00"),
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Encuestas de satisfacción (colección: encuestas_satisfaccion)
+// ---------------------------------------------------------------------------
+
+const demoEncuestas = [
+  {
+    id: "enc-demo-1",
+    puntuacion: 5,
+    comentarios:
+      "Excelente sitio web, encontré toda la información que necesitaba para planear mi viaje.",
+    fecha: new Date("2026-05-21T10:15:00"),
+  },
+  {
+    id: "enc-demo-2",
+    puntuacion: 4,
+    comentarios: "Muy útil, aunque me gustaría ver más fotos de los hospedajes.",
+    fecha: new Date("2026-05-18T18:42:00"),
+  },
+  {
+    id: "enc-demo-3",
+    puntuacion: 5,
+    comentarios: "",
+    fecha: new Date("2026-05-15T08:30:00"),
+  },
+  {
+    id: "enc-demo-4",
+    puntuacion: 3,
+    comentarios: "La sección de transporte podría tener horarios más detallados.",
+    fecha: new Date("2026-05-11T14:05:00"),
+  },
+  {
+    id: "enc-demo-5",
+    puntuacion: 5,
+    comentarios: "Me encantó el mapa interactivo del archipiélago.",
+    fecha: new Date("2026-05-05T20:10:00"),
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Mensajes de contacto (colección: mensajes_contacto)
+// ---------------------------------------------------------------------------
+
+const demoMensajes = [
+  {
+    id: "msg-demo-1",
+    remitente: "Carlos Andrade",
+    correo: "carlos.andrade@example.com",
+    consulta_sugerencia:
+      "Buenas tardes, ¿cuál es el horario de salida de las lanchas hacia Jambelí los fines de semana?",
+    fecha: new Date("2026-05-22T09:12:00"),
+  },
+  {
+    id: "msg-demo-2",
+    remitente: "Lucía Méndez",
+    correo: "lucia.mendez@example.com",
+    consulta_sugerencia:
+      "Quisiera saber si hay hospedajes que admitan mascotas en la isla. ¡Gracias!",
+    fecha: new Date("2026-05-19T17:33:00"),
+  },
+  {
+    id: "msg-demo-3",
+    remitente: "Agencia Sol Tours",
+    correo: "reservas@soltours.example.com",
+    consulta_sugerencia:
+      "Somos una agencia y nos interesa coordinar tours grupales. ¿Con quién podemos hablar?",
+    fecha: new Date("2026-05-16T11:48:00"),
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Solicitudes de negocios (colección: solicitudes_negocios)
+// La "categoria" debe ser un nodo de contenido válido para poder aprobarse.
+// ---------------------------------------------------------------------------
+
+const demoSolicitudes = [
+  {
+    id: "sol-demo-1",
+    categoria: "gastronomia",
+    nombre: "Cevichería El Manglar",
+    isla: "Jambelí",
+    descripcion: "Mariscos frescos del día con vista al mar.",
+    platoTipico: "Ceviche de camarón",
+    ubicacion: "Malecón de Jambelí",
+    contacto: "+593 99 888 1212",
+  },
+  {
+    id: "sol-demo-2",
+    categoria: "hospedajes",
+    nombre: "Hostal Brisa Marina",
+    isla: "Costa Rica",
+    ubicacion: "Frente a la playa principal",
+    servicios: "Wifi, Desayuno, Aire acondicionado",
+    contacto: "+593 98 444 7788",
+  },
+  {
+    id: "sol-demo-3",
+    categoria: "actividades",
+    nombre: "Tour fotográfico de aves",
+    isla: "San Gregorio",
+    descripcion:
+      "Recorrido guiado para fotografiar aves migratorias en el humedal La Tembladera.",
+    contacto: "+593 96 222 3344",
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -220,6 +407,12 @@ async function main() {
   await seedCollection("flora_fauna", demoFloraFauna);
   await seedCollection("transporte", demoTransporte);
   await seedCollection("galeria", demoGaleria);
+
+  // Interacción de visitantes (paneles de moderación del admin)
+  await seedCollection("resenas_turisticas", demoResenas);
+  await seedCollection("encuestas_satisfaccion", demoEncuestas);
+  await seedCollection("mensajes_contacto", demoMensajes);
+  await seedCollection("solicitudes_negocios", demoSolicitudes);
 
   // Metricas del sitio – documento único
   console.log("  Seeding metricas_sitio...");

@@ -476,7 +476,10 @@ export default function AdminActividades({
 
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Actividades ({visibleActividades.length})</h2>
+          <h2>
+            <FaHiking className="inline-icon" aria-hidden="true" />
+            Actividades ({visibleActividades.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}

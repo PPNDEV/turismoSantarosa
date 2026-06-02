@@ -266,7 +266,10 @@ export default function AdminEventos({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Eventos ({visibleEventos.length})</h2>
+          <h2>
+            <FaCalendarAlt className="inline-icon" aria-hidden="true" />
+            Eventos ({visibleEventos.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}

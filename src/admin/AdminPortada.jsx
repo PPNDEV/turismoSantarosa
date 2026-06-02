@@ -278,7 +278,10 @@ export default function AdminPortada({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Portada ({visibleHeroSlides.length})</h2>
+          <h2>
+            <FaImage className="inline-icon" aria-hidden="true" />
+            Portada ({visibleHeroSlides.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}

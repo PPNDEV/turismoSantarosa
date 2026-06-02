@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FaExclamationTriangle,
-  FaUserShield,
-  FaLock,
+  FaArrowLeft,
   FaEnvelope,
-  FaCheckCircle,
+  FaExclamationTriangle,
+  FaLock,
 } from "react-icons/fa";
 import { useAuth } from "../context/useAuth";
 import { useLanguage } from "../context/useLanguage";
@@ -36,11 +35,17 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-container">
+        <button
+          type="button"
+          className="login-back-button"
+          onClick={() => navigate("/")}
+          aria-label="Regresar a la pagina principal"
+        >
+          <FaArrowLeft aria-hidden="true" />
+        </button>
         <div className="login-card">
+          <span className="login-brand">PROMOWEAPP</span>
           <div className="login-header">
-            <div className="login-logo-icon">
-              <FaUserShield aria-hidden="true" />
-            </div>
             <h1>{t("login.title")}</h1>
             <p className="login-subtitle">{t("login.subtitle")}</p>
           </div>
@@ -81,7 +86,7 @@ export default function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="********"
                   required
                   disabled={loading}
                 />
@@ -103,32 +108,6 @@ export default function Login() {
               )}
             </button>
           </form>
-
-          <p className="login-info">
-            💡 <strong>Nota:</strong> El acceso del panel funciona únicamente
-            con Firebase Auth y usuarios registrados en tu proyecto Firebase.
-          </p>
-        </div>
-
-        <div className="login-info-panel">
-          <h3>🔐 Centro de Administración</h3>
-          <ul>
-            <li>
-              <FaCheckCircle /> Gestión de contenidos CMS
-            </li>
-            <li>
-              <FaCheckCircle /> Usuarios y roles
-            </li>
-            <li>
-              <FaCheckCircle /> Analytics y visitantes
-            </li>
-            <li>
-              <FaCheckCircle /> Autenticación segura con Firebase
-            </li>
-            <li>
-              <FaCheckCircle /> Datos sincronizados en Firestore
-            </li>
-          </ul>
         </div>
       </div>
     </div>

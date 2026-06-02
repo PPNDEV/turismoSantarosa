@@ -53,7 +53,6 @@ function AppLoading({ label = "Preparando tu visita a Santa Rosa..." }) {
   );
 }
 
-
 // Página genérica para subpáginas
 function PageWrapper({ title, children }) {
   return (
@@ -96,6 +95,16 @@ function VisitTracker() {
       // Si falla el contador, no bloqueamos la navegación.
     });
   }, [location.pathname]);
+
+  return null;
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
 
   return null;
 }
@@ -166,6 +175,7 @@ function AppRoutes() {
     <Suspense
       fallback={<AppLoading />}
     >
+      <ScrollToTop />
       <VisitTracker />
       <RevealObserver />
       <Routes>

@@ -215,7 +215,10 @@ export default function AdminGastronomia({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Restaurantes ({visibleGastronomia.length})</h2>
+          <h2>
+            <FaUtensils className="inline-icon" aria-hidden="true" />
+            Restaurantes ({visibleGastronomia.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}

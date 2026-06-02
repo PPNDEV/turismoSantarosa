@@ -15,7 +15,6 @@ import {
   FaInbox,
   FaLeaf,
   FaShip,
-  FaUser,
   FaUserShield,
   FaUtensils,
 } from "react-icons/fa";
@@ -37,6 +36,7 @@ const AdminSolicitudes = lazy(() => import("../admin/AdminSolicitudes"));
 
 const RECENT_SIDEBAR_SECTIONS_KEY = "adminRecentSidebarSections";
 const MAX_RECENT_SIDEBAR_SECTIONS = 5;
+const adminCrestSrc = `${import.meta.env.BASE_URL}escudo-santa-rosa.png`;
 
 const menuItems = [
   {
@@ -456,8 +456,15 @@ export default function AdminLayout() {
       {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">
-          <h2>PROMOWEAPP</h2>
-          <p>Panel de Administración</p>
+          <div className="sidebar-brand">
+            <span className="sidebar-crest">
+              <img src={adminCrestSrc} alt="Escudo de Santa Rosa" />
+            </span>
+            <div className="sidebar-brand-text">
+              <h2>Visit Santa Rosa</h2>
+              <p>Panel de Administración</p>
+            </div>
+          </div>
         </div>
         <nav className="sidebar-nav">
           {menuItems.map((item) => {
@@ -490,9 +497,16 @@ export default function AdminLayout() {
           })}
         </nav>
         <div className="sidebar-footer">
-          <div className="admin-user-meta">
-            <FaUser className="inline-icon" aria-hidden="true" />
-            {user?.displayName || user?.email}
+          <div className="admin-user-card">
+            <span className="admin-user-avatar">
+              {(user?.displayName || user?.email || "?")
+                .charAt(0)
+                .toUpperCase()}
+            </span>
+            <div className="admin-user-card-info">
+              <strong>{user?.displayName || user?.email}</strong>
+              <span>{getRoleLabel(user?.role)}</span>
+            </div>
           </div>
           <button
             onClick={handleLogout}
@@ -513,7 +527,11 @@ export default function AdminLayout() {
       {/* Main */}
       <div className="admin-main">
         <div className="admin-topbar">
-          <div>
+          <div className="admin-topbar-heading">
+            <span className="admin-topbar-icon" aria-hidden="true">
+              <activeItem.icon />
+            </span>
+            <div className="admin-topbar-heading-text">
             <h1>{activeItem.title}</h1>
             {!canEditContent && (
               <p className="admin-topbar-subtext">
@@ -531,6 +549,7 @@ export default function AdminLayout() {
                 ? `Cambios sin guardar en: ${dirtyModules.map((item) => item.label).join(", ")}.`
                 : "No hay cambios sin guardar."}
             </p>
+            </div>
           </div>
 
           <div className="admin-topbar-actions">

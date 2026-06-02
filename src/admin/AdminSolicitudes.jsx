@@ -53,6 +53,15 @@ export default function AdminSolicitudes({ onLivePreviewChange = () => {} }) {
     });
   }, [solicitudes.length, onLivePreviewChange]);
 
+  useEffect(() => {
+    if (!success && !error) return undefined;
+    const timer = setTimeout(() => {
+      setSuccess("");
+      setError("");
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [success, error]);
+
   const handleApprove = async (solicitud) => {
     setError("");
     setSuccess("");
@@ -119,10 +128,17 @@ export default function AdminSolicitudes({ onLivePreviewChange = () => {} }) {
         )}
 
         {loading ? (
-          <div className="admin-loading">Cargando solicitudes...</div>
+          <div className="admin-loading-state">Cargando solicitudes...</div>
         ) : solicitudes.length === 0 ? (
-          <div className="admin-readonly-note">
-            No hay solicitudes pendientes en este momento.
+          <div className="admin-empty-state">
+            <span className="admin-empty-icon">
+              <FaInbox aria-hidden="true" />
+            </span>
+            <h3>Bandeja al día</h3>
+            <p>
+              No hay solicitudes de negocios pendientes por revisar. Cuando
+              llegue una nueva, aparecerá aquí para que la apruebes o rechaces.
+            </p>
           </div>
         ) : (
           <table>

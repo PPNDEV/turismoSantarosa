@@ -211,7 +211,10 @@ export default function AdminFloraFauna({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Flora y Fauna ({visibleFloraFauna.length})</h2>
+          <h2>
+            <FaLeaf className="inline-icon" aria-hidden="true" />
+            Flora y Fauna ({visibleFloraFauna.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { FaEnvelope, FaSyncAlt, FaTrash } from "react-icons/fa";
+import { FaEnvelope, FaReply, FaSyncAlt, FaTrash } from "react-icons/fa";
 import {
   collection,
   deleteDoc,
@@ -161,15 +161,30 @@ export default function AdminMensajes({
                     {m.consulta_sugerencia}
                   </td>
                   <td>
-                    <button
-                      className="action-btn del-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        del(m.id);
-                      }}
-                    >
-                      <FaTrash className="inline-icon" aria-hidden="true" />
-                    </button>
+                    <div className="admin-actions-inline">
+                      {m.correo && m.correo !== "-" && (
+                        <a
+                          className="action-btn edit-btn"
+                          href={`mailto:${m.correo}?subject=${encodeURIComponent(
+                            "Respuesta a tu mensaje - Visit Santa Rosa",
+                          )}`}
+                          onClick={(e) => e.stopPropagation()}
+                          title={`Responder a ${m.correo}`}
+                        >
+                          <FaReply className="inline-icon" aria-hidden="true" />
+                        </a>
+                      )}
+                      <button
+                        className="action-btn del-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          del(m.id);
+                        }}
+                        title="Eliminar mensaje"
+                      >
+                        <FaTrash className="inline-icon" aria-hidden="true" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

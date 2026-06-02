@@ -204,7 +204,10 @@ export default function AdminGaleria({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Galeria ({visibleGaleria.length})</h2>
+          <h2>
+            <FaCamera className="inline-icon" aria-hidden="true" />
+            Galeria ({visibleGaleria.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}

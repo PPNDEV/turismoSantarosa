@@ -125,7 +125,10 @@ export default function AdminTransporte({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Transporte fluvial ({visibleCooperativas.length})</h2>
+          <h2>
+            <FaShip className="inline-icon" aria-hidden="true" />
+            Transporte fluvial ({visibleCooperativas.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
