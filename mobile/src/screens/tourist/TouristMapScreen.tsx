@@ -1,122 +1,199 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Callout, Marker, PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../services/firebase';
+import { Ionicons } from '@expo/vector-icons';
+import { useTourismContent } from '../../context/TourismContentContext';
+import { MAP_CENTER, moduleConfigs, moduleOrder, TourismModuleKey } from '../../services/tourismContent';
 
 export default function TouristMapScreen({ navigation }: any) {
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { items, loading } = useTourismContent();
+  const [region, setRegion] = useState<Region>(MAP_CENTER);
+  const [locationStatus, setLocationStatus] = useState<'loading' | 'ready' | 'denied' | 'error'>('loading');
+  const [activeTypes, setActiveTypes] = useState<TourismModuleKey[]>(moduleOrder);
 
   useEffect(() => {
+    let mounted = true;
+
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (!mounted) return;
+
       if (status !== 'granted') {
-        setErrorMsg('Permiso de ubicación denegado.');
+        setLocationStatus('denied');
         return;
       }
 
       try {
-        let loc = await Location.getCurrentPositionAsync({});
-        setLocation(loc);
-      } catch (e) {
-        setErrorMsg('No se pudo obtener la ubicación actual.');
+        const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (!mounted) return;
+        setRegion({
+          latitude: current.coords.latitude,
+          longitude: current.coords.longitude,
+          latitudeDelta: 0.08,
+          longitudeDelta: 0.08,
+        });
+        setLocationStatus('ready');
+      } catch {
+        setLocationStatus('error');
       }
     })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Error cerrando sesión:', error);
-    }
+  const filteredItems = useMemo(
+    () => items.filter((item) => activeTypes.includes(item.type)),
+    [activeTypes, items],
+  );
+
+  const toggleType = (type: TourismModuleKey) => {
+    setActiveTypes((current) => {
+      if (current.includes(type)) {
+        return current.length === 1 ? current : current.filter((item) => item !== type);
+      }
+
+      return [...current, type];
+    });
   };
 
   return (
-    <View style={styles.container}>
-      {location ? (
-        <MapView 
-          style={styles.map} 
-          provider={PROVIDER_DEFAULT}
-          initialRegion={{
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          }}
-          showsUserLocation={true}
-        >
-          {/* Ejemplo de marcador en Santa Rosa / Jambelí */}
-          <Marker 
-            coordinate={{ latitude: -3.450, longitude: -79.966 }}
-            title="Santuario Turístico"
-            description="Lugar destacado de Santa Rosa"
-          />
-        </MapView>
-      ) : (
-        <View style={styles.loadingContainer}>
-          {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : <ActivityIndicator size="large" color="#007bff" />}
+    <View style={styles.screen}>
+      <MapView
+        provider={PROVIDER_DEFAULT}
+        style={styles.map}
+        initialRegion={MAP_CENTER}
+        region={region}
+        onRegionChangeComplete={setRegion}
+        showsUserLocation={locationStatus === 'ready'}
+        showsMyLocationButton
+      >
+        {filteredItems.map((item) => {
+          const config = moduleConfigs[item.type];
+
+          return (
+            <Marker
+              key={`${item.type}-${item.id}`}
+              coordinate={{ latitude: item.latitude, longitude: item.longitude }}
+              pinColor={config.color}
+              title={item.title}
+              description={item.subtitle}
+            >
+              <Callout onPress={() => navigation.navigate('PlaceDetailsScreen', { type: item.type, id: item.id })}>
+                <View style={styles.callout}>
+                  <Text style={styles.calloutType}>{config.label}</Text>
+                  <Text style={styles.calloutTitle}>{item.title}</Text>
+                  <Text style={styles.calloutText}>{item.subtitle || item.description}</Text>
+                  <Text style={styles.calloutLink}>Ver ficha</Text>
+                </View>
+              </Callout>
+            </Marker>
+          );
+        })}
+      </MapView>
+
+      <View style={styles.topPanel}>
+        <View>
+          <Text style={styles.title}>Mapa turístico</Text>
+          <Text style={styles.subtitle}>{filteredItems.length} marcadores visibles</Text>
         </View>
-      )}
+        {(loading || locationStatus === 'loading') && <ActivityIndicator color="#0891b2" />}
+      </View>
 
-      {/* Botón de Cerrar Sesión (Arriba a la derecha) */}
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Salir</Text>
-      </TouchableOpacity>
+      {locationStatus === 'denied' || locationStatus === 'error' ? (
+        <View style={styles.locationNotice}>
+          <Ionicons name="navigate-outline" size={18} color="#92400e" />
+          <Text style={styles.locationNoticeText}>
+            {locationStatus === 'denied'
+              ? 'Permiso GPS denegado. El mapa sigue disponible con marcadores turísticos.'
+              : 'No se pudo obtener tu ubicación. Usamos el centro del archipiélago.'}
+          </Text>
+        </View>
+      ) : null}
 
-      <View style={styles.overlayMenu}>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('QRScannerScreen')}>
-          <Text style={styles.buttonText}>📷 Escanear QR</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.favButton]} onPress={() => navigation.navigate('TouristFavoritesScreen')}>
-          <Text style={styles.buttonText}>⭐ Favoritos</Text>
-        </TouchableOpacity>
+      <View style={styles.filters}>
+        {moduleOrder.map((type) => {
+          const config = moduleConfigs[type];
+          const active = activeTypes.includes(type);
+
+          return (
+            <TouchableOpacity
+              key={type}
+              style={[styles.filterButton, active && { backgroundColor: config.color, borderColor: config.color }]}
+              onPress={() => toggleType(type)}
+            >
+              <Ionicons name={config.icon as any} size={16} color={active ? '#ffffff' : config.color} />
+              <Text style={[styles.filterText, active && styles.filterTextActive]}>{config.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { width: '100%', height: '100%' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { color: 'red', textAlign: 'center', padding: 20 },
-  overlayMenu: {
+  screen: { flex: 1, backgroundColor: '#e2e8f0' },
+  map: { ...StyleSheet.absoluteFillObject },
+  topPanel: {
     position: 'absolute',
-    bottom: 30,
-    left: 0,
-    right: 0,
+    top: 16,
+    left: 16,
+    right: 16,
+    borderRadius: 18,
+    padding: 14,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  button: {
-    backgroundColor: '#343a40',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-  favButton: { backgroundColor: '#ffc107' },
-  buttonText: { color: '#fff', fontWeight: 'bold' },
-  logoutButton: {
+  title: { color: '#0f172a', fontSize: 20, fontWeight: '900' },
+  subtitle: { color: '#64748b', fontWeight: '700', marginTop: 2 },
+  locationNotice: {
     position: 'absolute',
-    top: 10,
-    right: 15,
-    backgroundColor: '#dc3545',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    top: 90,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    backgroundColor: '#fef3c7',
+    borderColor: '#fde68a',
+    borderWidth: 1,
+    padding: 11,
+    borderRadius: 14,
   },
-  logoutButtonText: { color: '#fff', fontWeight: 'bold' }
+  locationNoticeText: { flex: 1, color: '#92400e', fontWeight: '700', fontSize: 12, lineHeight: 17 },
+  filters: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#ffffff',
+    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 18,
+  },
+  filterText: { color: '#334155', fontSize: 12, fontWeight: '900' },
+  filterTextActive: { color: '#ffffff' },
+  callout: { width: 220, padding: 4 },
+  calloutType: { color: '#0891b2', fontWeight: '900', fontSize: 12, marginBottom: 3 },
+  calloutTitle: { color: '#0f172a', fontSize: 16, fontWeight: '900', marginBottom: 4 },
+  calloutText: { color: '#475569', lineHeight: 18 },
+  calloutLink: { color: '#0891b2', fontWeight: '900', marginTop: 8 },
 });

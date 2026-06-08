@@ -1,9 +1,9 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { usePreferences } from '../context/PreferencesContext';
 
-import AuthNavigator from './AuthNavigator';
 import EditorNavigator from './EditorNavigator';
 import TouristNavigator from './TouristNavigator';
 import AdminNavigator from './AdminNavigator';
@@ -12,6 +12,7 @@ import UnverifiedScreen from '../screens/UnverifiedScreen';
 
 export default function AppNavigator() {
   const { user, loading } = useAuth();
+  const { darkMode } = usePreferences();
 
   if (loading) {
     return (
@@ -22,9 +23,9 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={darkMode ? DarkTheme : DefaultTheme}>
       {!user ? (
-        <AuthNavigator />
+        <TouristNavigator />
       ) : user.role === 'unverified' ? (
         <UnverifiedScreen />
       ) : user.role === 'administrador' ? (
