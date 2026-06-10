@@ -84,7 +84,6 @@ function isValidCedula(value) {
 
 export default function ResenasPage() {
   const {
-    destinos = [],
     gastronomia = [],
     hospedajes = [],
     actividades = [],
@@ -108,7 +107,6 @@ export default function ResenasPage() {
       ...new Set(
         [
           ...DEFAULT_ISLANDS,
-          ...(Array.isArray(destinos) ? destinos.map((item) => item.isla) : []),
           ...(Array.isArray(gastronomia)
             ? gastronomia.map((item) => item.isla)
             : []),
@@ -131,7 +129,6 @@ export default function ResenasPage() {
 
     const safeGastronomia = Array.isArray(gastronomia) ? gastronomia : [];
     const safeHospedajes = Array.isArray(hospedajes) ? hospedajes : [];
-    const safeDestinos = Array.isArray(destinos) ? destinos : [];
     const safeActividades = Array.isArray(actividades) ? actividades : [];
 
     const establecimientos = [...safeGastronomia, ...safeHospedajes].map((item) => ({
@@ -141,7 +138,7 @@ export default function ResenasPage() {
       tipoObjetivo: "establecimiento",
     }));
 
-    const atractivos = [...safeDestinos, ...safeActividades].map((item) => ({
+    const atractivos = [...safeActividades].map((item) => ({
       id: item.id,
       nombre: item.nombre,
       isla: item.isla || "Santa Rosa",
@@ -151,7 +148,7 @@ export default function ResenasPage() {
     return [...islands, ...establecimientos, ...atractivos].filter(
       (item) => item.id && item.nombre,
     );
-  }, [actividades, destinos, gastronomia, hospedajes]);
+  }, [actividades, gastronomia, hospedajes]);
 
   const targetOptions = targets.filter(
     (target) => target.tipoObjetivo === form.tipoObjetivo,

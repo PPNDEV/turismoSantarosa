@@ -13,6 +13,7 @@ import { LanguageProvider } from "./context/LanguageContext";
 import { recordVisit } from "./services/visitCounter";
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
+const RegistroEditor = lazy(() => import("./pages/RegistroEditor"));
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 
@@ -190,6 +191,7 @@ function AppRoutes() {
         <Route path="/galeria" element={<GaleriaPage />} />
         <Route path="/resenas" element={<ResenasPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/registro-editor" element={<RegistroEditor />} />
         <Route
           path="/admin/*"
           element={

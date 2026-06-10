@@ -17,13 +17,25 @@ const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200";
 
 const DEFAULT_EDITORIAL = {
-  eyebrow: "Editorial turistico",
-  title: "Actividades que se viven, se cuentan y se recuerdan",
+  eyebrow: "Bienvenidos a Santa Rosa",
+  title: "¡Santa Rosa, te enamora!",
   subtitle:
-    "Una lectura mas pausada del territorio, con experiencias que puedes editar y publicar desde el panel.",
-  intro:
-    "Desde la costa hasta el humedal, Santa Rosa se recorre con calma. Esta pagina reune experiencias turisticas para descubrir, promover y actualizar sin tocar el codigo.",
+    "Santa Rosa, ciudad Benemérita del Ecuador, perteneciente a la provincia de El Oro, es reconocida a nivel nacional e internacional por ser pionera en el cultivo del camarón en cautiverio.",
+  intro: `Tierra de encantos naturales y culturales que invita a propios y extraños a adentrarse en un sinfín de emociones: descubrir la calidad y calidez de su gente, perdiéndose entre ríos, cascadas, playas, mares y atardeceres deslumbrantes.
+
+Puerto Jelí, parroquia urbana y emblema turístico del cantón, cosecha y prepara el marisco más fresco y delicioso —del mar a su mesa—, lo que le ha valido el reconocimiento como Destino Gastronómico del Sur del Ecuador.
+
+Nuestras parroquias rurales, como La Avanzada, tierra productiva poseedora de un mágico encanto, bordeada de ríos y cascadas, invitan a deleitarse con la más exquisita comida criolla; mientras las islas del Archipiélago de Jambelí, rinconcitos mágicos, reciben a sus visitantes con turismo de sol y playa, ecoturismo, aventura, turismo comunitario, gastronómico y cultural.
+
+Porque donde llueve turismo, llueven oportunidades, te invitamos a descubrir Santa Rosa.`,
 };
+
+function getIntroParagraphs(intro) {
+  return String(intro || "")
+    .split(/\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
 
 function buildFallbackActivities(t) {
   return [
@@ -163,7 +175,11 @@ export default function QueHacer({ mode = "teaser" }) {
         )}
 
         {!isPage && (
-          <p className="activities-teaser-intro reveal">{editorial.intro}</p>
+          <div className="activities-teaser-intro reveal">
+            {getIntroParagraphs(editorial.intro).map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+          </div>
         )}
 
         <div

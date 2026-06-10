@@ -103,8 +103,15 @@ exports.submitSurvey = onRequest(
 const adminFunctions = require("./admin");
 exports.adminUpsertContent = adminFunctions.adminUpsertContent;
 exports.adminDeleteContent = adminFunctions.adminDeleteContent;
+exports.aprobarPublicacion = adminFunctions.aprobarPublicacion;
+exports.rechazarPublicacion = adminFunctions.rechazarPublicacion;
 exports.adminCreateUser = adminFunctions.adminCreateUser;
 exports.adminListUsers = adminFunctions.adminListUsers;
 exports.adminUpdateUserRole = adminFunctions.adminUpdateUserRole;
 exports.adminDeleteUser = adminFunctions.adminDeleteUser;
 exports.asignarRol = adminFunctions.asignarRol;
+
+const editorRequests = require("./handlers/editorRequests");
+exports.solicitarCuentaEditor = editorRequests.solicitarCuentaEditor;
+exports.aprobarSolicitudEditor = editorRequests.aprobarSolicitudEditor;
+exports.rechazarSolicitudEditor = editorRequests.rechazarSolicitudEditor;

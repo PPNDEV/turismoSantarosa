@@ -43,7 +43,6 @@ const translations = {
         events: "Eventos",
         gallery: "Galería",
         reviews: "Reseñas",
-        blog: "Blog",
       },
       socialLabel: "Redes sociales",
       logoAlt: "Escudo del GAD Municipal de Santa Rosa",
@@ -182,13 +181,6 @@ const translations = {
       videos: "Videos",
       emptyVideos: "Próximamente videos de Santa Rosa",
     },
-    blogSection: {
-      titleStart: "Blog &",
-      titleAccent: "Noticias",
-      subtitle: "Artículos, guías y noticias turísticas de Santa Rosa.",
-      readMore: "Leer más",
-      viewAll: "Ver Todos los Artículos",
-    },
     footer: {
       brandDescription:
         "Santa Rosa, La Benemérita, es un paraíso costero en la provincia de El Oro. Archipiélagos, gastronomía del mar y cultura única te esperan.",
@@ -199,7 +191,6 @@ const translations = {
         touristInfo: "Información Turística",
         activities: "Actividades",
         gallery: "Galería",
-        blog: "Blog Turístico",
         howToGet: "Cómo Llegar",
         whatToDo: "Qué Hacer",
       },
@@ -228,6 +219,11 @@ const translations = {
     login: {
       title: "Panel de Administración",
       subtitle: "Santa Rosa — El Oro, Ecuador",
+      eyebrow: "Acceso administrativo",
+      welcome: "Bienvenido de nuevo",
+      brandTagline:
+        "Plataforma oficial para gestionar la experiencia turística de Santa Rosa.",
+      secureNote: "Acceso restringido a personal autorizado",
       emailLabel: "Correo electrónico",
       passwordLabel: "Contraseña",
       loading: "Ingresando...",
@@ -242,7 +238,6 @@ const translations = {
       events: "Agenda Informativa de Eventos",
       gallery: "Galería Visual",
       reviews: "Reseñas Turísticas",
-      blog: "Blog & Noticias",
     },
     eventsPage: {
       planningTitle: "Planifica tu visita a Santa Rosa",
@@ -282,7 +277,6 @@ const translations = {
         events: "Events",
         gallery: "Gallery",
         reviews: "Reviews",
-        blog: "Blog",
       },
       socialLabel: "Social media",
       logoAlt: "Santa Rosa Municipal Crest",
@@ -421,13 +415,6 @@ const translations = {
       videos: "Videos",
       emptyVideos: "Santa Rosa videos coming soon",
     },
-    blogSection: {
-      titleStart: "Blog &",
-      titleAccent: "News",
-      subtitle: "Articles, guides, and tourism news from Santa Rosa.",
-      readMore: "Read more",
-      viewAll: "View All Articles",
-    },
     footer: {
       brandDescription:
         "Santa Rosa, La Benemérita, is a coastal paradise in El Oro province. Archipelagos, seafood cuisine, and unique culture await you.",
@@ -438,7 +425,6 @@ const translations = {
         touristInfo: "Tourist Information",
         activities: "Activities",
         gallery: "Gallery",
-        blog: "Tourism Blog",
         howToGet: "How to Get There",
         whatToDo: "What to Do",
       },
@@ -467,6 +453,11 @@ const translations = {
     login: {
       title: "Administration Panel",
       subtitle: "Santa Rosa — El Oro, Ecuador",
+      eyebrow: "Administrative access",
+      welcome: "Welcome back",
+      brandTagline:
+        "Official platform to manage Santa Rosa's tourism experience.",
+      secureNote: "Restricted access for authorized staff",
       emailLabel: "Email",
       passwordLabel: "Password",
       loading: "Signing in...",
@@ -535,50 +526,6 @@ const translations = {
           organizer: "House of Culture, El Oro Chapter",
         },
       },
-      blog: {
-        1: {
-          title: "5 reasons to visit the Jambeli Archipelago",
-          summary:
-            "Virgin beaches, mangroves, and unique wildlife await you in this coastal paradise in southern Ecuador.",
-          category: "Destinations",
-          author: "Santa Rosa Tourism",
-        },
-        2: {
-          title: "Santa Rosa gastronomy: Flavors from the sea",
-          summary:
-            "From traditional seafood soup to shellfish ceviches, discover why Santa Rosa is El Oro's food destination.",
-          category: "Gastronomy",
-          author: "Santa Rosa Tourism",
-        },
-        3: {
-          title: "Santa Clara Island: Marine life sanctuary",
-          summary:
-            "Discover the protected area where sea lions, blue-footed boobies, and humpback whales coexist.",
-          category: "Nature",
-          author: "Santa Rosa Tourism",
-        },
-        4: {
-          title: "Complete guide to get to Santa Rosa",
-          summary:
-            "From Guayaquil, Cuenca, or Loja: all the routes to reach La Benemerita of Ecuador.",
-          category: "Travel",
-          author: "Editorial Team",
-        },
-        5: {
-          title: "La Tembladera Lagoon: A wetland to discover",
-          summary:
-            "Birdwatching, kayaking, and pure nature in this natural water laboratory of Santa Rosa.",
-          category: "Ecotourism",
-          author: "Santa Rosa Tourism",
-        },
-        6: {
-          title: "Puerto Jeli: The seafood gastronomy corner",
-          summary:
-            "A tour of the best seafood restaurants and fishing culture in Puerto Jeli.",
-          category: "Gastronomy",
-          author: "Editorial Team",
-        },
-      },
       gallery: {
         1: { title: "Beaches of the Jambeli Archipelago" },
         2: { title: "Fresh seafood from Puerto Jeli" },
@@ -598,7 +545,6 @@ const translations = {
       events: "Event Information Agenda",
       gallery: "Visual Gallery",
       reviews: "Tourism Reviews",
-      blog: "Blog & News",
     },
     eventsPage: {
       planningTitle: "Plan your visit to Santa Rosa",
@@ -639,7 +585,6 @@ const translations = {
         events: "Eventos",
         gallery: "Galeria",
         reviews: "Avaliações",
-        blog: "Blog",
       },
       socialLabel: "Redes sociais",
       logoAlt: "Escudo Municipal de Santa Rosa",
@@ -778,13 +723,6 @@ const translations = {
       videos: "Vídeos",
       emptyVideos: "Em breve vídeos de Santa Rosa",
     },
-    blogSection: {
-      titleStart: "Blog &",
-      titleAccent: "Notícias",
-      subtitle: "Artigos, guias e notícias turísticas de Santa Rosa.",
-      readMore: "Ler mais",
-      viewAll: "Ver Todos os Artigos",
-    },
     footer: {
       brandDescription:
         "Santa Rosa, La Benemérita, é um paraíso costeiro na província de El Oro. Arquipélagos, gastronomia do mar e cultura única esperam por você.",
@@ -795,7 +733,6 @@ const translations = {
         touristInfo: "Informação Turística",
         activities: "Atividades",
         gallery: "Galeria",
-        blog: "Blog Turístico",
         howToGet: "Como Chegar",
         whatToDo: "O que Fazer",
       },
@@ -824,6 +761,11 @@ const translations = {
     login: {
       title: "Painel de Administração",
       subtitle: "Santa Rosa — El Oro, Equador",
+      eyebrow: "Acesso administrativo",
+      welcome: "Bem-vindo de volta",
+      brandTagline:
+        "Plataforma oficial para gerir a experiência turística de Santa Rosa.",
+      secureNote: "Acesso restrito a pessoal autorizado",
       emailLabel: "E-mail",
       passwordLabel: "Senha",
       loading: "Entrando...",
@@ -892,50 +834,6 @@ const translations = {
           organizer: "Casa da Cultura Núcleo de El Oro",
         },
       },
-      blog: {
-        1: {
-          title: "5 razões para visitar o Arquipélago de Jambeli",
-          summary:
-            "Praias virgens, manguezais e fauna única esperam por você neste paraíso costeiro do sul do Equador.",
-          category: "Destinos",
-          author: "Turismo Santa Rosa",
-        },
-        2: {
-          title: "Gastronomia de Santa Rosa: Sabores do mar",
-          summary:
-            "Da sopa de frutos do mar aos ceviches de concha, descubra por que Santa Rosa é o destino gastronômico de El Oro.",
-          category: "Gastronomia",
-          author: "Turismo Santa Rosa",
-        },
-        3: {
-          title: "Ilha Santa Clara: O santuário da vida marinha",
-          summary:
-            "Conheça a área protegida onde convivem leões-marinhos, atobás-de-patas-azuis e baleias-jubarte.",
-          category: "Natureza",
-          author: "Turismo Santa Rosa",
-        },
-        4: {
-          title: "Guia completo para chegar a Santa Rosa",
-          summary:
-            "De Guayaquil, Cuenca ou Loja: todas as rotas para chegar à La Benemerita do Equador.",
-          category: "Viagem",
-          author: "Redação",
-        },
-        5: {
-          title: "Lagoa La Tembladera: Um pântano por descobrir",
-          summary:
-            "Observação de aves, caiaque e natureza pura neste laboratório natural de água de Santa Rosa.",
-          category: "Ecoturismo",
-          author: "Turismo Santa Rosa",
-        },
-        6: {
-          title: "Puerto Jeli: O recanto gastronômico dos mariscos",
-          summary:
-            "Um passeio pelos melhores restaurantes de frutos do mar e pela cultura pesqueira de Puerto Jeli.",
-          category: "Gastronomia",
-          author: "Redação",
-        },
-      },
       gallery: {
         1: { title: "Praias do Arquipélago de Jambeli" },
         2: { title: "Frutos do mar frescos de Puerto Jeli" },
@@ -955,7 +853,6 @@ const translations = {
       events: "Agenda Informativa de Eventos",
       gallery: "Galeria Visual",
       reviews: "Avaliações Turísticas",
-      blog: "Blog e Notícias",
     },
     eventsPage: {
       planningTitle: "Planeje sua visita a Santa Rosa",

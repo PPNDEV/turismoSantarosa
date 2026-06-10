@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FaEdit, FaPhoneAlt, FaSave, FaShip, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminCoordinatesField from "./AdminCoordinatesField";
 import {
   canManageContentItem,
   getEditorOwnershipNote,
@@ -216,6 +217,12 @@ export default function AdminTransporte({
                     <input type="text" value={form[f] || ""} onChange={(e) => setForm({ ...form, [f]: e.target.value })} />
                   </div>
                 ))}
+
+                <AdminCoordinatesField
+                  lat={form.lat}
+                  lng={form.lng}
+                  onChange={(lat, lng) => setForm({ ...form, lat, lng })}
+                />
 
                 <div className="modal-actions">
                   <button className="btn btn-outline" onClick={closeModal}>Cancelar</button>

@@ -1,18 +1,13 @@
 import { useMemo, useState } from "react";
 import {
   FaCheckCircle,
-  FaEnvelope,
   FaExclamationCircle,
   FaLock,
-  FaMobileAlt,
   FaPaperPlane,
   FaRedo,
   FaStar,
 } from "react-icons/fa";
-import {
-  sendSurveyOtp,
-  verifySurveyOtp,
-} from "../services/satisfactionSurvey";
+import { submitSurveyDirect } from "../services/satisfactionSurvey";
 
 const initialForm = {
   country: "",
@@ -41,10 +36,8 @@ const foundOptions = [
 
 const errorMessages = {
   "invalid-survey": "Revisa los campos obligatorios de la encuesta.",
-  "invalid-contact": "Ingresa un correo o telefono valido para recibir el codigo.",
+  "invalid-contact": "Ingresa un correo o telefono valido para registrar tu respuesta.",
   "duplicate-response": "Ya existe una respuesta registrada con ese contacto.",
-  "otp-invalid": "El codigo ingresado no coincide. Intentalo nuevamente.",
-  "otp-expired": "El codigo expiro. Solicita uno nuevo para continuar.",
   "rate-limited": "Hemos recibido muchos intentos. Espera unos minutos.",
   internal: "No pudimos procesar la encuesta. Intenta nuevamente.",
 };
@@ -86,13 +79,10 @@ function StatusMessage({ type, children }) {
 
 export default function SatisfactionSurvey() {
   const [form, setForm] = useState(initialForm);
-  const [otp, setOtp] = useState("");
-  const [challengeId, setChallengeId] = useState("");
   const [step, setStep] = useState("form");
   const [message, setMessage] = useState("");
-  const [debugOtp, setDebugOtp] = useState("");
 
-  const isBusy = step === "sending" || step === "verifying";
+  const isBusy = step === "sending";
   const contactLabel =
     form.verification_method === "email"
       ? "Correo electronico"
@@ -124,63 +114,32 @@ export default function SatisfactionSurvey() {
       return;
     }
 
+    setStep("form");
     setMessage(errorMessages[code] || "Ocurrio un error. Intenta nuevamente.");
   };
 
-  const handleSendCode = async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!isFormComplete) {
-      setMessage("Completa los campos obligatorios antes de enviar el codigo.");
+      setMessage("Completa los campos obligatorios antes de enviar tu respuesta.");
       return;
     }
 
     setStep("sending");
     setMessage("");
-    setDebugOtp("");
 
     try {
-      const data = await sendSurveyOtp(form);
-      setChallengeId(data.challengeId);
-      setDebugOtp(data.debugOtp || "");
-      setStep("code_sent");
-      setMessage("Codigo enviado. Revisalo e ingresalo para registrar tu respuesta.");
-    } catch (error) {
-      setStep("form");
-      showError(error);
-    }
-  };
-
-  const handleVerify = async (event) => {
-    event.preventDefault();
-
-    if (!/^\d{6}$/.test(otp)) {
-      setMessage("Ingresa el codigo de 6 digitos.");
-      return;
-    }
-
-    setStep("verifying");
-    setMessage("");
-
-    try {
-      await verifySurveyOtp({ challengeId, otp });
+      await submitSurveyDirect(form);
       setStep("registered");
       setMessage("Gracias. Tu respuesta fue registrada correctamente.");
     } catch (error) {
-      if (error?.data?.state === "duplicada") {
-        showError(error);
-        return;
-      }
-      setStep("code_sent");
       showError(error);
     }
   };
 
   const resetForm = () => {
     setForm(initialForm);
-    setOtp("");
-    setChallengeId("");
-    setDebugOtp("");
     setStep("form");
     setMessage("");
   };
@@ -210,7 +169,7 @@ export default function SatisfactionSurvey() {
             </div>
           </div>
 
-          <form className="survey-form" onSubmit={handleSendCode}>
+          <form className="survey-form" onSubmit={handleSubmit}>
             <div className="survey-form-grid">
               <label>
                 <span>Pais de residencia</span>
@@ -308,7 +267,7 @@ export default function SatisfactionSurvey() {
 
             <div className="survey-form-grid">
               <label>
-                <span>Metodo de verificacion</span>
+                <span>Metodo de contacto</span>
                 <select
                   value={form.verification_method}
                   onChange={(event) =>
@@ -338,47 +297,10 @@ export default function SatisfactionSurvey() {
               </label>
             </div>
 
-            {step === "code_sent" || step === "verifying" ? (
-              <div className="survey-otp-box">
-                <label>
-                  <span>Codigo OTP</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength="6"
-                    value={otp}
-                    onChange={(event) =>
-                      setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))
-                    }
-                    placeholder="000000"
-                    disabled={step === "verifying"}
-                  />
-                </label>
-                {debugOtp && (
-                  <p className="survey-debug-code">
-                    Codigo de prueba: <strong>{debugOtp}</strong>
-                  </p>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleVerify}
-                  disabled={step === "verifying"}
-                >
-                  <FaCheckCircle className="inline-icon" aria-hidden="true" />
-                  {step === "verifying" ? "Verificando..." : "Verificar codigo"}
-                </button>
-              </div>
-            ) : null}
-
             {step === "registered" ? (
               <StatusMessage type="success">{message}</StatusMessage>
-            ) : step === "duplicate" ? (
-              <StatusMessage type="error">{message}</StatusMessage>
             ) : (
-              <StatusMessage type={message.includes("Codigo enviado") ? "success" : "error"}>
-                {message}
-              </StatusMessage>
+              <StatusMessage type="error">{message}</StatusMessage>
             )}
 
             <div className="survey-actions">
@@ -388,12 +310,8 @@ export default function SatisfactionSurvey() {
                   className="btn btn-gold"
                   disabled={isBusy || !isFormComplete}
                 >
-                  {form.verification_method === "email" ? (
-                    <FaEnvelope className="inline-icon" aria-hidden="true" />
-                  ) : (
-                    <FaMobileAlt className="inline-icon" aria-hidden="true" />
-                  )}
-                  {step === "sending" ? "Enviando..." : "Enviar codigo"}
+                  <FaPaperPlane className="inline-icon" aria-hidden="true" />
+                  {step === "sending" ? "Enviando..." : "Enviar respuesta"}
                 </button>
               ) : null}
 
@@ -405,17 +323,6 @@ export default function SatisfactionSurvey() {
                 >
                   <FaRedo className="inline-icon" aria-hidden="true" />
                   Nueva encuesta
-                </button>
-              ) : null}
-
-              {step === "code_sent" ? (
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={handleSendCode}
-                >
-                  <FaPaperPlane className="inline-icon" aria-hidden="true" />
-                  Reenviar codigo
                 </button>
               ) : null}
             </div>

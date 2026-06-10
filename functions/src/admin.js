@@ -57,6 +57,56 @@ function applyOwnershipMetadata(payload, snapshot, request) {
   return payload;
 }
 
+/**
+ * RF-EDI-03/04: las publicaciones de un editor no se publican directamente.
+ * Se guardan en `contentPending` con estado "pendiente" hasta que el admin las
+ * apruebe. Al editar una publicación aprobada, la original permanece pública.
+ */
+async function submitEditorPendingContent({ request, nodeKey, id, payload }) {
+  const uid = request.auth?.uid;
+  const email = getRequesterEmail(request);
+  const contentNodeRef = getRtdb(admin).ref(`content/${nodeKey}`);
+
+  let targetId = id;
+  let isEdit = false;
+
+  if (targetId) {
+    const existingSnapshot = await contentNodeRef.child(targetId).get();
+    if (existingSnapshot.exists()) {
+      assertEditorOwnsExistingContent(
+        ROLE_EDITOR,
+        uid,
+        existingSnapshot,
+        "editar",
+      );
+      isEdit = true;
+    }
+  } else {
+    targetId = contentNodeRef.push().key;
+  }
+
+  const pendingRef = getRtdb(admin).ref("contentPending").push();
+  await pendingRef.set({
+    nodeKey,
+    targetId,
+    isEdit,
+    estado: "pendiente",
+    data: payload,
+    ownerUid: uid,
+    ownerEmail: email,
+    createdAt: admin.database.ServerValue.TIMESTAMP,
+  });
+
+  await logAdminAction(
+    { db, FieldValue: admin.firestore.FieldValue, logger },
+    uid,
+    "content.submit",
+    { nodeKey, targetId, pendingId: pendingRef.key },
+  );
+
+  return { success: true, pending: true, id: targetId };
+}
+
 exports.adminUpsertContent = onCall(
   { region: "us-central1" },
   async (request) => {
@@ -77,6 +127,10 @@ exports.adminUpsertContent = onCall(
     }
 
     const payload = sanitizeItemData(nodeKey, itemData);
+
+    if (role === ROLE_EDITOR) {
+      return submitEditorPendingContent({ request, nodeKey, id, payload });
+    }
 
     const nodeRef = getRtdb(admin).ref(`content/${nodeKey}`);
     let targetRef;
@@ -150,6 +204,97 @@ exports.adminDeleteContent = onCall(
         id,
       },
     );
+    return { success: true };
+  },
+);
+
+/**
+ * RF-ADM-01: el administrador aprueba una publicación pendiente de un editor.
+ * Mueve el contenido de `contentPending` al nodo público `content`.
+ */
+exports.aprobarPublicacion = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
+    const pendingId = String(request.data?.pendingId || "").trim();
+    if (!pendingId) {
+      throw new HttpsError("invalid-argument", "Falta el ID de la publicación.");
+    }
+
+    const pendingRef = getRtdb(admin).ref(`contentPending/${pendingId}`);
+    const pendingSnapshot = await pendingRef.get();
+    if (!pendingSnapshot.exists()) {
+      throw new HttpsError("not-found", "La publicación pendiente no existe.");
+    }
+
+    const pending = pendingSnapshot.val() || {};
+    const { nodeKey, targetId, data, ownerUid, ownerEmail } = pending;
+    if (!CONTENT_NODES.has(nodeKey) || !targetId || !data) {
+      throw new HttpsError(
+        "failed-precondition",
+        "La publicación pendiente está incompleta.",
+      );
+    }
+
+    const targetRef = getRtdb(admin).ref(`content/${nodeKey}/${targetId}`);
+    const existingSnapshot = await targetRef.get();
+    const payload = { ...data };
+
+    payload.updatedAt = admin.database.ServerValue.TIMESTAMP;
+    payload.updatedByUid = request.auth.uid;
+    payload.updatedByEmail = getRequesterEmail(request);
+
+    if (existingSnapshot.exists()) {
+      const existing = existingSnapshot.val() || {};
+      payload.createdAt = existing.createdAt || admin.database.ServerValue.TIMESTAMP;
+      payload.ownerUid = existing.ownerUid || ownerUid;
+      payload.ownerEmail = existing.ownerEmail || ownerEmail;
+    } else {
+      payload.createdAt = admin.database.ServerValue.TIMESTAMP;
+      payload.ownerUid = ownerUid;
+      payload.ownerEmail = ownerEmail;
+    }
+
+    await targetRef.set(payload);
+    await pendingRef.remove();
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth.uid,
+      "content.approve",
+      { nodeKey, targetId, pendingId },
+    );
+
+    return { success: true };
+  },
+);
+
+/**
+ * RF-ADM-01: el administrador rechaza (descarta) una publicación pendiente.
+ * La publicación original aprobada, si existía, permanece intacta.
+ */
+exports.rechazarPublicacion = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
+    const pendingId = String(request.data?.pendingId || "").trim();
+    if (!pendingId) {
+      throw new HttpsError("invalid-argument", "Falta el ID de la publicación.");
+    }
+
+    const pendingRef = getRtdb(admin).ref(`contentPending/${pendingId}`);
+    const pendingSnapshot = await pendingRef.get();
+    if (!pendingSnapshot.exists()) {
+      throw new HttpsError("not-found", "La publicación pendiente no existe.");
+    }
+
+    await pendingRef.remove();
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth.uid,
+      "content.reject",
+      { pendingId },
+    );
+
     return { success: true };
   },
 );

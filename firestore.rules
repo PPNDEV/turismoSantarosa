@@ -227,6 +227,13 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
 
+    // Solicitudes de registro de editores (RF-EDI-01). Se crean y moderan
+    // exclusivamente desde Cloud Functions (Admin SDK); el panel solo lee.
+    match /solicitudes_editores/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
 
     // =========================================================================
     // 3. COLECCIONES ADMINISTRATIVAS
@@ -242,14 +249,6 @@ service cloud.firestore {
     match /metricas_sitio/{docId} {
       allow read: if isSignedIn();
       allow write: if false;
-    }
-
-    // Blog / noticias
-    match /blog/{docId} {
-      allow read: if true;
-      allow create: if canCreateOwnedContent();
-      allow update: if canUpdateOwnedContent();
-      allow delete: if canDeleteOwnedContent();
     }
 
     // Hero slides de portada

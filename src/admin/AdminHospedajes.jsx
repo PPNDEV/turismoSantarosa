@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FaBed, FaEdit, FaMapMarkerAlt, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
+import AdminCoordinatesField from "./AdminCoordinatesField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
 import {
   canManageContentItem,
@@ -350,6 +351,12 @@ export default function AdminHospedajes({
                     <option value="San Gregorio">San Gregorio</option>
                   </select>
                 </div>
+
+                <AdminCoordinatesField
+                  lat={form.lat}
+                  lng={form.lng}
+                  onChange={(lat, lng) => setForm({ ...form, lat, lng })}
+                />
 
                 <div className="modal-actions">
                   <button

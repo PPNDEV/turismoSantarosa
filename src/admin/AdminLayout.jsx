@@ -7,6 +7,7 @@ import {
   FaCamera,
   FaChartBar,
   FaChartPie,
+  FaClipboardCheck,
   FaCommentDots,
   FaEnvelope,
   FaGlobe,
@@ -15,6 +16,7 @@ import {
   FaInbox,
   FaLeaf,
   FaShip,
+  FaStore,
   FaUserShield,
   FaUtensils,
 } from "react-icons/fa";
@@ -33,6 +35,8 @@ const AdminMensajes = lazy(() => import("../admin/AdminMensajes"));
 const AdminEncuestas = lazy(() => import("../admin/AdminEncuestas"));
 const AdminResenas = lazy(() => import("../admin/AdminResenas"));
 const AdminSolicitudes = lazy(() => import("../admin/AdminSolicitudes"));
+const AdminEditores = lazy(() => import("../admin/AdminEditores"));
+const AdminModeracion = lazy(() => import("../admin/AdminModeracion"));
 
 const RECENT_SIDEBAR_SECTIONS_KEY = "adminRecentSidebarSections";
 const MAX_RECENT_SIDEBAR_SECTIONS = 5;
@@ -141,6 +145,16 @@ const menuItems = [
       "Aprueba o rechaza opiniones publicas de islas, establecimientos y atractivos.",
   },
   {
+    key: "moderacion",
+    icon: FaClipboardCheck,
+    label: "Moderación",
+    title: "Moderación de Publicaciones",
+    previewPath: "/admin",
+    description:
+      "Aprueba o rechaza las publicaciones enviadas por los editores.",
+    requiresEditor: true,
+  },
+  {
     key: "usuarios",
     icon: FaUserShield,
     label: "Usuarios",
@@ -158,6 +172,16 @@ const menuItems = [
     previewPath: "/admin",
     description:
       "Modera y aprueba las solicitudes de nuevos negocios turísticos.",
+    requiresAdmin: true,
+  },
+  {
+    key: "editores",
+    icon: FaStore,
+    label: "Editores",
+    title: "Solicitudes de Editor",
+    previewPath: "/admin",
+    description:
+      "Valida el RUC de comerciantes y activa sus cuentas de editor.",
     requiresAdmin: true,
   },
 ];
@@ -246,6 +270,9 @@ export default function AdminLayout() {
   const handleSelectSection = (nextSection, options = {}) => {
     const nextItem = menuItems.find((item) => item.key === nextSection);
     if (nextItem?.requiresAdmin && !canManageUsers) {
+      return;
+    }
+    if (nextItem?.requiresEditor && !canEditContent) {
       return;
     }
 
@@ -438,6 +465,17 @@ export default function AdminLayout() {
             onLivePreviewChange={handleLivePreviewChange}
           />
         );
+      case "editores":
+        return (
+          <AdminEditores onLivePreviewChange={handleLivePreviewChange} />
+        );
+      case "moderacion":
+        return (
+          <AdminModeracion
+            currentUser={user}
+            onLivePreviewChange={handleLivePreviewChange}
+          />
+        );
       default:
         return (
           <AdminDashboard
@@ -468,7 +506,9 @@ export default function AdminLayout() {
         </div>
         <nav className="sidebar-nav">
           {menuItems.map((item) => {
-            const isLocked = item.requiresAdmin && !canManageUsers;
+            const isLocked =
+              (item.requiresAdmin && !canManageUsers) ||
+              (item.requiresEditor && !canEditContent);
 
             return (
               <button

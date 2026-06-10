@@ -47,7 +47,6 @@ const RTDB_NODES = [
   "eventos",
   "floraFauna",
   "galeria",
-  "blog",
   "heroSlides",
   "cooperativas",
 ];
@@ -65,7 +64,6 @@ const ROUTE_NODES = {
     "floraFauna",
     "cooperativas",
     "galeria",
-    "blog",
   ],
   "/actividades": ["actividades", "actividadesEditorial"],
   "/eventos": ["eventos"],
@@ -80,7 +78,6 @@ const ROUTE_NODES = {
     "cooperativas",
   ],
   "/galeria": ["galeria"],
-  "/blog": ["blog"],
 };
 
 // ---------------------------------------------------------------------------
@@ -125,7 +122,6 @@ export function ContentProvider({ children }) {
   const [eventos, setEventos] = useState([]);
   const [floraFauna, setFloraFauna] = useState([]);
   const [galeria, setGaleria] = useState([]);
-  const [blog, setBlog] = useState([]);
   const [heroSlides, setHeroSlidesState] = useState([]);
   const [cooperativas, setCooperativas] = useState([]);
   const [loadedNodes, setLoadedNodes] = useState(() => new Set());
@@ -148,7 +144,6 @@ export function ContentProvider({ children }) {
       eventos: setEventos,
       floraFauna: setFloraFauna,
       galeria: setGaleria,
-      blog: setBlog,
       heroSlides: setHeroSlidesState,
       cooperativas: setCooperativas,
     }),
@@ -296,16 +291,6 @@ export function ContentProvider({ children }) {
     [deleteFromRTDB],
   );
 
-  // Blog
-  const upsertBlog = useCallback(
-    (item) => upsertToRTDB("blog", item),
-    [upsertToRTDB],
-  );
-  const deleteBlog = useCallback(
-    (id) => deleteFromRTDB("blog", id),
-    [deleteFromRTDB],
-  );
-
   // Hero Slides
   const upsertHeroSlide = useCallback(
     (item) => upsertToRTDB("heroSlides", item),
@@ -389,7 +374,6 @@ export function ContentProvider({ children }) {
       eventos,
       floraFauna,
       galeria,
-      blog,
       heroSlides,
       cooperativas,
       loading,
@@ -407,8 +391,6 @@ export function ContentProvider({ children }) {
       deleteFloraFauna,
       upsertGaleria,
       deleteGaleria,
-      upsertBlog,
-      deleteBlog,
       upsertHeroSlide,
       deleteHeroSlide,
       setHeroSlides,
@@ -426,7 +408,6 @@ export function ContentProvider({ children }) {
       eventos,
       floraFauna,
       galeria,
-      blog,
       heroSlides,
       cooperativas,
       loading,
@@ -443,8 +424,6 @@ export function ContentProvider({ children }) {
       deleteFloraFauna,
       upsertGaleria,
       deleteGaleria,
-      upsertBlog,
-      deleteBlog,
       upsertHeroSlide,
       deleteHeroSlide,
       setHeroSlides,
