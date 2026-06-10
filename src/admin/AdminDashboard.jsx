@@ -9,6 +9,7 @@ import {
   FaHiking,
   FaHistory,
   FaImage,
+  FaLayerGroup,
   FaLeaf,
   FaShip,
   FaUserShield,
@@ -26,6 +27,18 @@ function getEventTimestamp(fecha) {
   const timestamp = parsedDate.getTime();
   return Number.isNaN(timestamp) ? Number.MAX_SAFE_INTEGER : timestamp;
 }
+
+// Colores sólidos para el gráfico de dona (no se puede usar var(--tone) dentro de conic-gradient inline).
+const TONE_HEX = {
+  "tone-ocean": "#0a7ea4",
+  "tone-orange": "#f97316",
+  "tone-emerald": "#10b981",
+  "tone-orange-dark": "#ea580c",
+  "tone-green": "#059669",
+  "tone-lime": "#65a30d",
+  "tone-purple": "#7c3aed",
+  "tone-blue": "#2563eb",
+};
 
 export default function AdminDashboard({
   onNavigateSection = () => {},
@@ -134,6 +147,88 @@ export default function AdminDashboard({
     };
   }, []);
 
+  const totalContenido =
+    heroSlides.length +
+    actividades.length +
+    eventos.length +
+    gastronomia.length +
+    hospedajes.length +
+    floraFauna.length +
+    cooperativas.length +
+    galeria.length;
+
+  // Tarjetas KPI destacadas (estilo dashboard premium)
+  const kpis = [
+    {
+      label: "Vistas totales",
+      hint: "Tráfico",
+      value: visitMetrics.totalPageViews,
+      icon: FaFileAlt,
+      grad: "kpi-teal",
+    },
+    {
+      label: "Sesiones",
+      hint: "Visitantes",
+      value: visitMetrics.totalSessions,
+      icon: FaUserShield,
+      grad: "kpi-blue",
+    },
+    {
+      label: "Contenido publicado",
+      hint: "Total ítems",
+      value: totalContenido,
+      icon: FaLayerGroup,
+      grad: "kpi-violet",
+    },
+    {
+      label: "Solicitudes",
+      hint: "Por revisar",
+      value: pendingRequestsCount,
+      icon: FaInbox,
+      grad: "kpi-gold",
+    },
+  ];
+
+  // Distribución de contenido por sección (barras + dona)
+  const distribucion = [
+    { label: "Portada", value: heroSlides.length, tone: "tone-ocean" },
+    { label: "Actividades", value: actividades.length, tone: "tone-orange" },
+    { label: "Eventos", value: eventos.length, tone: "tone-emerald" },
+    { label: "Gastronomía", value: gastronomia.length, tone: "tone-orange-dark" },
+    { label: "Hospedajes", value: hospedajes.length, tone: "tone-green" },
+    { label: "Flora y Fauna", value: floraFauna.length, tone: "tone-lime" },
+    { label: "Transporte", value: cooperativas.length, tone: "tone-purple" },
+    { label: "Galería", value: galeria.length, tone: "tone-blue" },
+  ];
+  const maxDist = Math.max(1, ...distribucion.map((d) => d.value));
+  const totalDist = distribucion.reduce((sum, d) => sum + d.value, 0);
+
+  let donutCursor = 0;
+  const donutSegments = distribucion
+    .filter((d) => d.value > 0)
+    .map((d) => {
+      const color = TONE_HEX[d.tone] || "#0a7ea4";
+      const start = (donutCursor / totalDist) * 100;
+      donutCursor += d.value;
+      const end = (donutCursor / totalDist) * 100;
+      return { ...d, color, start, end };
+    });
+  const donutBackground =
+    donutSegments.length > 0
+      ? `conic-gradient(${donutSegments
+          .map((s) => `${s.color} ${s.start}% ${s.end}%`)
+          .join(", ")})`
+      : "conic-gradient(#e2e8f0 0% 100%)";
+
+  const proximosEventos = useMemo(
+    () =>
+      [...eventos]
+        .filter((evento) => evento.activo !== false)
+        .sort((a, b) => getEventTimestamp(a.fecha) - getEventTimestamp(b.fecha))
+        .slice(0, 5),
+    [eventos],
+  );
+
   const sectionCards = [
     {
       key: "portada",
@@ -223,84 +318,6 @@ export default function AdminDashboard({
     },
   ];
 
-  const proximosEventos = useMemo(
-    () =>
-      [...eventos]
-        .filter((evento) => evento.activo !== false)
-        .sort((a, b) => getEventTimestamp(a.fecha) - getEventTimestamp(b.fecha))
-        .slice(0, 5),
-    [eventos],
-  );
-
-  const stats = [
-    {
-      label: "Slides",
-      value: heroSlides.length,
-      icon: FaImage,
-      tone: "tone-ocean",
-    },
-    {
-      label: "Actividades",
-      value: actividades.length,
-      icon: FaHiking,
-      tone: "tone-orange",
-    },
-    {
-      label: "Eventos",
-      value: eventos.length,
-      icon: FaCalendarAlt,
-      tone: "tone-emerald",
-    },
-    {
-      label: "Gastronomía",
-      value: gastronomia.length,
-      icon: FaUtensils,
-      tone: "tone-orange-dark",
-    },
-    {
-      label: "Hospedajes",
-      value: hospedajes.length,
-      icon: FaBed,
-      tone: "tone-green",
-    },
-    {
-      label: "Flora/Fauna",
-      value: floraFauna.length,
-      icon: FaLeaf,
-      tone: "tone-lime",
-    },
-    {
-      label: "Transporte fluvial",
-      value: cooperativas.length,
-      icon: FaShip,
-      tone: "tone-purple",
-    },
-    {
-      label: "Fotos",
-      value: galeria.length,
-      icon: FaCamera,
-      tone: "tone-blue",
-    },
-    {
-      label: "Solicitudes",
-      value: pendingRequestsCount,
-      icon: FaInbox,
-      tone: "tone-rose",
-    },
-    {
-      label: "Sesiones",
-      value: visitMetrics.totalSessions,
-      icon: FaUserShield,
-      tone: "tone-teal",
-    },
-    {
-      label: "Vistas",
-      value: visitMetrics.totalPageViews,
-      icon: FaFileAlt,
-      tone: "tone-amber",
-    },
-  ];
-
   const availableSectionCards = sectionCards.filter(
     (section) => !section.adminOnly || canManageUsers,
   );
@@ -311,74 +328,184 @@ export default function AdminDashboard({
     .filter(Boolean);
 
   return (
-    <div>
-      <div className="admin-dashboard-actions admin-table-card">
-        {toastMessage && (
-          <div
-            className={`admin-alert ${
-              toastMessage.type === "error"
-                ? "admin-alert-error"
-                : "admin-alert-success"
-            }`}
-          >
-            {toastMessage.message}
-          </div>
-        )}
-        <div className="admin-table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <h2>
-            <FaHistory className="inline-icon" aria-hidden="true" />
-            Visitados recientemente
-          </h2>
-          {canEditContent && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(0,0,0,0.03)', padding: '0.5rem 1rem', borderRadius: '50px' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--gray-600)' }}>
-                Animaciones (Mascotas)
-              </span>
-              <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}>
-                <input 
-                  type="checkbox" 
-                  checked={siteConfig.mascotasEnabled} 
-                  onChange={handleToggleMascotas}
-                  disabled={isToggling}
-                  style={{ opacity: 0, position: 'absolute', width: 0, height: 0 }}
-                />
-                <div style={{
-                  width: '46px',
-                  height: '24px',
-                  background: siteConfig.mascotasEnabled ? 'var(--ocean)' : 'var(--gray-400)',
-                  borderRadius: '24px',
-                  transition: 'background-color 0.3s',
-                  position: 'relative'
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: '2px',
-                    left: siteConfig.mascotasEnabled ? '24px' : '2px',
-                    width: '20px',
-                    height: '20px',
-                    background: 'white',
-                    borderRadius: '50%',
-                    transition: 'left 0.3s',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                  }} />
-                </div>
-              </label>
-            </div>
-          )}
+    <div className="admin-dashboard">
+      {toastMessage && (
+        <div
+          className={`admin-alert ${
+            toastMessage.type === "error"
+              ? "admin-alert-error"
+              : "admin-alert-success"
+          }`}
+        >
+          {toastMessage.message}
         </div>
-        {!canEditContent && (
-          <div className="admin-readonly-note">
-            Tu rol actual es visualizador: puedes consultar, pero no editar.
+      )}
+
+      {/* KPIs destacados */}
+      <div className="admin-kpi-grid">
+        {kpis.map((kpi) => (
+          <div key={kpi.label} className={`admin-kpi-card ${kpi.grad}`}>
+            <div className="admin-kpi-top">
+              <span className="admin-kpi-icon">
+                <kpi.icon aria-hidden="true" />
+              </span>
+              <span className="admin-kpi-hint">{kpi.hint}</span>
+            </div>
+            <div className="admin-kpi-value">{kpi.value}</div>
+            <div className="admin-kpi-label">{kpi.label}</div>
           </div>
-        )}
-        <div className="admin-module-grid">
-          {recentSectionCards.length === 0 && (
-            <div className="admin-module-empty">
-              Aun no hay secciones visitadas recientemente desde el sidebar.
+        ))}
+      </div>
+
+      {/* Gráficas: barras + dona */}
+      <div className="admin-dash-grid">
+        <div className="admin-table-card">
+          <div className="admin-table-header">
+            <h2>
+              <FaLayerGroup className="inline-icon" aria-hidden="true" />
+              Contenido por sección
+            </h2>
+            <span className="admin-chip-soft">{totalContenido} ítems</span>
+          </div>
+          <div className="admin-bars">
+            {distribucion.map((item) => (
+              <div key={item.label} className={`admin-bar-row ${item.tone}`}>
+                <span className="admin-bar-label">{item.label}</span>
+                <span className="admin-bar-track">
+                  <span
+                    className="admin-bar-fill"
+                    style={{ width: `${(item.value / maxDist) * 100}%` }}
+                  />
+                </span>
+                <span className="admin-bar-value">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="admin-table-card">
+          <div className="admin-table-header">
+            <h2>
+              <FaChartPie className="inline-icon" aria-hidden="true" />
+              Composición
+            </h2>
+          </div>
+          <div className="admin-donut-wrap">
+            <div
+              className="admin-donut"
+              style={{ background: donutBackground }}
+              role="img"
+              aria-label={`Composición del contenido: ${totalDist} ítems en total`}
+            >
+              <div className="admin-donut-hole">
+                <strong>{totalDist}</strong>
+                <span>ítems</span>
+              </div>
+            </div>
+            <ul className="admin-donut-legend">
+              {donutSegments.length === 0 && (
+                <li className="admin-donut-empty">Aún no hay contenido.</li>
+              )}
+              {donutSegments.map((segment) => (
+                <li key={segment.label}>
+                  <span
+                    className="admin-donut-dot"
+                    style={{ background: segment.color }}
+                  />
+                  {segment.label}
+                  <strong>{segment.value}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Próximos eventos + accesos rápidos */}
+      <div className="admin-dash-grid">
+        <div className="admin-table-card admin-events-overview-card">
+          <div className="admin-table-header">
+            <h2>
+              <FaCalendarAlt className="inline-icon" aria-hidden="true" />
+              Próximos Eventos Publicados
+            </h2>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Fecha</th>
+                <th>Lugar</th>
+                <th>Tipo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {proximosEventos.length === 0 && (
+                <tr>
+                  <td colSpan={4}>No hay eventos publicados para mostrar.</td>
+                </tr>
+              )}
+              {proximosEventos.map((ev) => (
+                <tr key={ev.id}>
+                  <td>
+                    <strong>{ev.nombre}</strong>
+                  </td>
+                  <td>
+                    {new Date(ev.fecha + "T12:00:00").toLocaleDateString("es-EC")}
+                  </td>
+                  <td>{ev.lugar}</td>
+                  <td>{ev.tipo || "General"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="admin-table-card">
+          <div
+            className="admin-table-header"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "1rem",
+            }}
+          >
+            <h2>
+              <FaHistory className="inline-icon" aria-hidden="true" />
+              Accesos rápidos
+            </h2>
+            {canEditContent && (
+              <div className="admin-toggle-pill">
+                <span>Mascotas</span>
+                <label className="admin-switch">
+                  <input
+                    type="checkbox"
+                    checked={siteConfig.mascotasEnabled}
+                    onChange={handleToggleMascotas}
+                    disabled={isToggling}
+                  />
+                  <span className="admin-switch-track" aria-hidden="true">
+                    <span className="admin-switch-thumb" />
+                  </span>
+                </label>
+              </div>
+            )}
+          </div>
+          {!canEditContent && (
+            <div className="admin-readonly-note">
+              Tu rol actual es visualizador: puedes consultar, pero no editar.
             </div>
           )}
-          {recentSectionCards.map((section) => {
-            return (
+          <div className="admin-module-grid">
+            {recentSectionCards.length === 0 && (
+              <div className="admin-module-empty">
+                Aún no hay secciones visitadas recientemente. Abre cualquier
+                módulo del menú para verlo aquí.
+              </div>
+            )}
+            {recentSectionCards.map((section) => (
               <article
                 key={section.key}
                 className="admin-module-card"
@@ -404,64 +531,8 @@ export default function AdminDashboard({
                   <div className="admin-module-total">{section.total} items</div>
                 )}
               </article>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="admin-dashboard-overview">
-        <div className="admin-stats-grid">
-        {stats.map((s, i) => (
-          <div key={i} className="admin-stat-card">
-            <div>
-              <h3>{s.label}</h3>
-              <div className={`big ${s.tone}`}>
-                {s.value}
-              </div>
-            </div>
-            <div className="admin-stat-icon">
-              <s.icon aria-hidden="true" />
-            </div>
-          </div>
-        ))}
-      </div>
-
-        <div className="admin-table-card admin-events-overview-card">
-        <div className="admin-table-header">
-          <h2>
-            <FaCalendarAlt className="inline-icon" aria-hidden="true" />
-            Próximos Eventos Publicados
-          </h2>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Evento</th>
-              <th>Fecha</th>
-              <th>Lugar</th>
-              <th>Tipo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {proximosEventos.length === 0 && (
-              <tr>
-                <td colSpan={4}>No hay eventos publicados para mostrar.</td>
-              </tr>
-            )}
-            {proximosEventos.map((ev) => (
-              <tr key={ev.id}>
-                <td>
-                  <strong>{ev.nombre}</strong>
-                </td>
-                <td>
-                  {new Date(ev.fecha + "T12:00:00").toLocaleDateString("es-EC")}
-                </td>
-                <td>{ev.lugar}</td>
-                <td>{ev.tipo || "General"}</td>
-              </tr>
             ))}
-          </tbody>
-        </table>
+          </div>
         </div>
       </div>
     </div>

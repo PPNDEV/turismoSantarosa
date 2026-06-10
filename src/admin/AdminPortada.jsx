@@ -16,9 +16,6 @@ import {
   isAdminUser,
 } from "./adminOwnership";
 
-const FALLBACK_HERO_IMAGE =
-  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600";
-
 const CTA_OPTIONS = [
   {
     id: "eventos",
@@ -80,6 +77,29 @@ function getCtaOptionId(slide) {
   );
 }
 
+function SlideThumb({ slide }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!slide.bg || failed) {
+    return (
+      <span className="admin-slide-thumb admin-slide-thumb-empty">
+        <FaImage aria-hidden="true" />
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={slide.bg}
+      alt={`Imagen de ${slide.title || "slide"}`}
+      className="admin-slide-thumb"
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 
 export default function AdminPortada({
   canEdit = true,
@@ -95,6 +115,7 @@ export default function AdminPortada({
   const [initialForm, setInitialForm] = useState(emptySlide);
   const [selectedFile, setSelectedFile] = useState(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState("");
+  const [previewError, setPreviewError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -108,7 +129,7 @@ export default function AdminPortada({
   const canReorderSlides = canEdit && isAdminUser(currentUser);
 
   const previewSlide = {
-    bg: localPreviewUrl || form.bg || FALLBACK_HERO_IMAGE,
+    bg: localPreviewUrl || form.bg || "",
     tag: form.tag || "Etiqueta destacada",
     title: form.title || "Titulo principal de la portada",
     sub:
@@ -126,6 +147,7 @@ export default function AdminPortada({
     setInitialForm(nextForm);
     setSelectedFile(null);
     setLocalPreviewUrl("");
+    setPreviewError(false);
     setError("");
     setEditing(null);
     setModal(true);
@@ -139,6 +161,7 @@ export default function AdminPortada({
     setInitialForm(nextForm);
     setSelectedFile(null);
     setLocalPreviewUrl("");
+    setPreviewError(false);
     setError("");
     setEditing(slide.id);
     setModal(true);
@@ -171,6 +194,7 @@ export default function AdminPortada({
 
     setSelectedFile(file);
     setLocalPreviewUrl(URL.createObjectURL(file));
+    setPreviewError(false);
   };
 
   const save = async () => {
@@ -278,7 +302,10 @@ export default function AdminPortada({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Portada ({visibleHeroSlides.length})</h2>
+          <h2>
+            <FaImage className="inline-icon" aria-hidden="true" />
+            Portada ({visibleHeroSlides.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
@@ -301,6 +328,7 @@ export default function AdminPortada({
           <thead>
             <tr>
               <th>Orden</th>
+              <th>Imagen</th>
               <th>Codigo</th>
               <th>Titulo</th>
               <th>CTA</th>
@@ -311,6 +339,9 @@ export default function AdminPortada({
             {visibleHeroSlides.map((slide, index) => (
               <tr key={slide.id}>
                 <td>{index + 1}</td>
+                <td>
+                  <SlideThumb slide={slide} />
+                </td>
                 <td>
                   <code className="admin-id-code">{slide.id}</code>
                 </td>
@@ -388,7 +419,7 @@ export default function AdminPortada({
                   <div className="admin-upload-row">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp,image/*"
                       onChange={(e) => handleImageSelect(e.target.files?.[0])}
                     />
                     <span>
@@ -400,12 +431,6 @@ export default function AdminPortada({
                           : "Selecciona una imagen"}
                     </span>
                   </div>
-                  <input
-                    type="url"
-                    value={form.bg || ""}
-                    onChange={(e) => setForm({ ...form, bg: e.target.value })}
-                    placeholder="URL alternativa de imagen"
-                  />
                 </div>
 
                 <div className="modal-field">
@@ -515,22 +540,39 @@ export default function AdminPortada({
                   Vista previa de la portada
                 </h3>
                 <article className="admin-slide-preview">
-                  <img
-                    src={previewSlide.bg}
-                    alt=""
-                    aria-hidden="true"
-                    className="admin-slide-preview-bg"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="admin-slide-overlay">
-                    <span className="admin-slide-tag">{previewSlide.tag}</span>
-                    <h3 className="admin-slide-title">{previewSlide.title}</h3>
-                    <p className="admin-slide-sub">{previewSlide.sub}</p>
-                    <span className="btn btn-gold admin-slide-cta">
-                      {previewSlide.cta}
-                    </span>
-                  </div>
+                  {previewSlide.bg && !previewError ? (
+                    <>
+                      <img
+                        key={previewSlide.bg}
+                        src={previewSlide.bg}
+                        alt="Vista previa de la imagen de portada"
+                        className="admin-slide-preview-bg"
+                        decoding="async"
+                        onError={() => setPreviewError(true)}
+                      />
+                      <div className="admin-slide-overlay">
+                        <span className="admin-slide-tag">
+                          {previewSlide.tag}
+                        </span>
+                        <h3 className="admin-slide-title">
+                          {previewSlide.title}
+                        </h3>
+                        <p className="admin-slide-sub">{previewSlide.sub}</p>
+                        <span className="btn btn-gold admin-slide-cta">
+                          {previewSlide.cta}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="admin-slide-preview-empty">
+                      <FaImage aria-hidden="true" />
+                      <span>
+                        {previewError
+                          ? "No se pudo mostrar la imagen. Usa un archivo JPG, PNG o WebP."
+                          : "Selecciona una imagen para ver la portada."}
+                      </span>
+                    </div>
+                  )}
                 </article>
                 <div className="admin-preview-path">
                   Enlace del boton: <strong>{previewSlide.ctaTo}</strong>

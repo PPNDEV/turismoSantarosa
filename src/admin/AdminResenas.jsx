@@ -52,6 +52,7 @@ export default function AdminResenas({
 }) {
   const [resenas, setResenas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filtro, setFiltro] = useState("todas");
 
   const fetchResenas = useCallback(async () => {
     const q = query(
@@ -118,12 +119,26 @@ export default function AdminResenas({
     setResenas((current) => current.filter((resena) => resena.id !== id));
   };
 
+  const estadoDe = (resena) => resena.estado || "pendiente";
+
   const totals = {
-    total: resenas.length,
-    pendientes: resenas.filter((resena) => resena.estado === "pendiente")
-      .length,
-    aprobadas: resenas.filter((resena) => resena.estado === "aprobada").length,
+    todas: resenas.length,
+    pendiente: resenas.filter((r) => estadoDe(r) === "pendiente").length,
+    aprobada: resenas.filter((r) => estadoDe(r) === "aprobada").length,
+    rechazada: resenas.filter((r) => estadoDe(r) === "rechazada").length,
   };
+
+  const filtros = [
+    { key: "todas", label: "Todas", count: totals.todas },
+    { key: "pendiente", label: "Pendientes", count: totals.pendiente },
+    { key: "aprobada", label: "Aprobadas", count: totals.aprobada },
+    { key: "rechazada", label: "Rechazadas", count: totals.rechazada },
+  ];
+
+  const resenasVisibles =
+    filtro === "todas"
+      ? resenas
+      : resenas.filter((resena) => estadoDe(resena) === filtro);
 
   return (
     <div>
@@ -131,7 +146,7 @@ export default function AdminResenas({
         <div className="admin-table-header">
           <h2>
             <FaCommentDots className="inline-icon" aria-hidden="true" />
-            Reseñas turisticas ({totals.total})
+            Reseñas turisticas ({totals.todas})
           </h2>
           <button
             type="button"
@@ -144,19 +159,18 @@ export default function AdminResenas({
           </button>
         </div>
 
-        <div className="admin-survey-summary">
-          <div className="admin-survey-metric">
-            <div className="admin-survey-value admin-survey-value-ocean">
-              {totals.pendientes}
-            </div>
-            <div className="admin-survey-label">Pendientes</div>
-          </div>
-          <div className="admin-survey-metric">
-            <div className="admin-survey-value admin-survey-value-gold">
-              {totals.aprobadas}
-            </div>
-            <div className="admin-survey-label">Aprobadas</div>
-          </div>
+        <div className="admin-filter-bar">
+          {filtros.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`admin-filter-chip ${filtro === item.key ? "is-active" : ""}`}
+              onClick={() => setFiltro(item.key)}
+            >
+              {item.label}
+              <span className="admin-filter-count">{item.count}</span>
+            </button>
+          ))}
         </div>
 
         {loading ? (
@@ -164,6 +178,10 @@ export default function AdminResenas({
         ) : resenas.length === 0 ? (
           <div className="admin-loading-state">
             No hay reseñas registradas.
+          </div>
+        ) : resenasVisibles.length === 0 ? (
+          <div className="admin-loading-state">
+            No hay reseñas con el estado seleccionado.
           </div>
         ) : (
           <table>
@@ -180,11 +198,11 @@ export default function AdminResenas({
               </tr>
             </thead>
             <tbody>
-              {resenas.map((resena) => (
+              {resenasVisibles.map((resena) => (
                 <tr key={resena.id}>
                   <td>
-                    <span className={`admin-status-pill ${resena.estado}`}>
-                      {resena.estado || "pendiente"}
+                    <span className={`admin-status-pill ${estadoDe(resena)}`}>
+                      {estadoDe(resena)}
                     </span>
                   </td>
                   <td>
@@ -210,7 +228,7 @@ export default function AdminResenas({
                         <FaCheck className="inline-icon" aria-hidden="true" />
                       </button>
                       <button
-                        className="action-btn del-btn"
+                        className="action-btn reject-btn"
                         onClick={() => updateEstado(resena.id, "rechazada")}
                         title="Rechazar"
                       >

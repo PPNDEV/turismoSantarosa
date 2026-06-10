@@ -36,18 +36,10 @@ async function postSurvey(payload) {
   return data;
 }
 
-export function sendSurveyOtp(formData) {
+export function submitSurveyDirect(formData) {
   return postSurvey({
-    action: "send_otp",
+    action: "submit",
     session_id: getSurveySessionId(),
     ...formData,
-  });
-}
-
-export function verifySurveyOtp({ challengeId, otp }) {
-  return postSurvey({
-    action: "verify_otp",
-    challenge_id: challengeId,
-    otp,
   });
 }

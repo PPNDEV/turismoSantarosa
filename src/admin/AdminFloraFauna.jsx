@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FaEdit, FaLeaf, FaPaw, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
+import AdminCoordinatesField from "./AdminCoordinatesField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
 import {
   canManageContentItem,
@@ -211,7 +212,10 @@ export default function AdminFloraFauna({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Flora y Fauna ({visibleFloraFauna.length})</h2>
+          <h2>
+            <FaLeaf className="inline-icon" aria-hidden="true" />
+            Flora y Fauna ({visibleFloraFauna.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
@@ -330,6 +334,12 @@ export default function AdminFloraFauna({
                     <option value="Fauna">Fauna</option>
                   </select>
                 </div>
+
+                <AdminCoordinatesField
+                  lat={form.lat}
+                  lng={form.lng}
+                  onChange={(lat, lng) => setForm({ ...form, lat, lng })}
+                />
 
                 <div className="modal-field">
                   <label>Descripción</label>

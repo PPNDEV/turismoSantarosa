@@ -7,6 +7,7 @@ import {
   FaCamera,
   FaChartBar,
   FaChartPie,
+  FaClipboardCheck,
   FaCommentDots,
   FaEnvelope,
   FaGlobe,
@@ -15,7 +16,7 @@ import {
   FaInbox,
   FaLeaf,
   FaShip,
-  FaUser,
+  FaStore,
   FaUserShield,
   FaUtensils,
 } from "react-icons/fa";
@@ -34,9 +35,12 @@ const AdminMensajes = lazy(() => import("../admin/AdminMensajes"));
 const AdminEncuestas = lazy(() => import("../admin/AdminEncuestas"));
 const AdminResenas = lazy(() => import("../admin/AdminResenas"));
 const AdminSolicitudes = lazy(() => import("../admin/AdminSolicitudes"));
+const AdminEditores = lazy(() => import("../admin/AdminEditores"));
+const AdminModeracion = lazy(() => import("../admin/AdminModeracion"));
 
 const RECENT_SIDEBAR_SECTIONS_KEY = "adminRecentSidebarSections";
 const MAX_RECENT_SIDEBAR_SECTIONS = 5;
+const adminCrestSrc = `${import.meta.env.BASE_URL}escudo-santa-rosa.png`;
 
 const menuItems = [
   {
@@ -141,6 +145,16 @@ const menuItems = [
       "Aprueba o rechaza opiniones publicas de islas, establecimientos y atractivos.",
   },
   {
+    key: "moderacion",
+    icon: FaClipboardCheck,
+    label: "Moderación",
+    title: "Moderación de Publicaciones",
+    previewPath: "/admin",
+    description:
+      "Aprueba o rechaza las publicaciones enviadas por los editores.",
+    requiresEditor: true,
+  },
+  {
     key: "usuarios",
     icon: FaUserShield,
     label: "Usuarios",
@@ -158,6 +172,16 @@ const menuItems = [
     previewPath: "/admin",
     description:
       "Modera y aprueba las solicitudes de nuevos negocios turísticos.",
+    requiresAdmin: true,
+  },
+  {
+    key: "editores",
+    icon: FaStore,
+    label: "Editores",
+    title: "Solicitudes de Editor",
+    previewPath: "/admin",
+    description:
+      "Valida el RUC de comerciantes y activa sus cuentas de editor.",
     requiresAdmin: true,
   },
 ];
@@ -246,6 +270,9 @@ export default function AdminLayout() {
   const handleSelectSection = (nextSection, options = {}) => {
     const nextItem = menuItems.find((item) => item.key === nextSection);
     if (nextItem?.requiresAdmin && !canManageUsers) {
+      return;
+    }
+    if (nextItem?.requiresEditor && !canEditContent) {
       return;
     }
 
@@ -438,6 +465,17 @@ export default function AdminLayout() {
             onLivePreviewChange={handleLivePreviewChange}
           />
         );
+      case "editores":
+        return (
+          <AdminEditores onLivePreviewChange={handleLivePreviewChange} />
+        );
+      case "moderacion":
+        return (
+          <AdminModeracion
+            currentUser={user}
+            onLivePreviewChange={handleLivePreviewChange}
+          />
+        );
       default:
         return (
           <AdminDashboard
@@ -456,12 +494,21 @@ export default function AdminLayout() {
       {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">
-          <h2>PROMOWEAPP</h2>
-          <p>Panel de Administración</p>
+          <div className="sidebar-brand">
+            <span className="sidebar-crest">
+              <img src={adminCrestSrc} alt="Escudo de Santa Rosa" />
+            </span>
+            <div className="sidebar-brand-text">
+              <h2>Visit Santa Rosa</h2>
+              <p>Panel de Administración</p>
+            </div>
+          </div>
         </div>
         <nav className="sidebar-nav">
           {menuItems.map((item) => {
-            const isLocked = item.requiresAdmin && !canManageUsers;
+            const isLocked =
+              (item.requiresAdmin && !canManageUsers) ||
+              (item.requiresEditor && !canEditContent);
 
             return (
               <button
@@ -490,9 +537,16 @@ export default function AdminLayout() {
           })}
         </nav>
         <div className="sidebar-footer">
-          <div className="admin-user-meta">
-            <FaUser className="inline-icon" aria-hidden="true" />
-            {user?.displayName || user?.email}
+          <div className="admin-user-card">
+            <span className="admin-user-avatar">
+              {(user?.displayName || user?.email || "?")
+                .charAt(0)
+                .toUpperCase()}
+            </span>
+            <div className="admin-user-card-info">
+              <strong>{user?.displayName || user?.email}</strong>
+              <span>{getRoleLabel(user?.role)}</span>
+            </div>
           </div>
           <button
             onClick={handleLogout}
@@ -513,7 +567,11 @@ export default function AdminLayout() {
       {/* Main */}
       <div className="admin-main">
         <div className="admin-topbar">
-          <div>
+          <div className="admin-topbar-heading">
+            <span className="admin-topbar-icon" aria-hidden="true">
+              <activeItem.icon />
+            </span>
+            <div className="admin-topbar-heading-text">
             <h1>{activeItem.title}</h1>
             {!canEditContent && (
               <p className="admin-topbar-subtext">
@@ -531,6 +589,7 @@ export default function AdminLayout() {
                 ? `Cambios sin guardar en: ${dirtyModules.map((item) => item.label).join(", ")}.`
                 : "No hay cambios sin guardar."}
             </p>
+            </div>
           </div>
 
           <div className="admin-topbar-actions">

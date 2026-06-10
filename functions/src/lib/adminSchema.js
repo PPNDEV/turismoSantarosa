@@ -1,7 +1,7 @@
 const { HttpsError } = require("firebase-functions/v2/https");
 
 const NODE_FIELDS = {
-  actividades: ["nombre", "isla", "descripcion", "imagen"],
+  actividades: ["nombre", "isla", "descripcion", "imagen", "lat", "lng"],
   actividadesEditorial: [
     "eyebrow",
     "title",
@@ -21,6 +21,8 @@ const NODE_FIELDS = {
     "ubicacion",
     "contacto",
     "imagen",
+    "lat",
+    "lng",
   ],
   hospedajes: [
     "nombre",
@@ -29,6 +31,8 @@ const NODE_FIELDS = {
     "servicios",
     "contacto",
     "imagen",
+    "lat",
+    "lng",
   ],
   eventos: [
     "nombre",
@@ -41,19 +45,20 @@ const NODE_FIELDS = {
     "contacto",
     "imagen",
     "activo",
+    "lat",
+    "lng",
   ],
-  floraFauna: ["nombre", "tipo", "descripcion", "zona", "estado", "imagen"],
-  galeria: ["titulo", "tipo", "url"],
-  blog: [
-    "titulo",
-    "resumen",
-    "contenido",
-    "categoria",
-    "autor",
-    "fecha",
+  floraFauna: [
+    "nombre",
+    "tipo",
+    "descripcion",
+    "zona",
+    "estado",
     "imagen",
-    "publicado",
+    "lat",
+    "lng",
   ],
+  galeria: ["titulo", "tipo", "url"],
   heroSlides: ["tag", "title", "sub", "cta", "ctaTo", "bg", "order"],
   cooperativas: [
     "nombre",
@@ -63,6 +68,8 @@ const NODE_FIELDS = {
     "puntoSalida",
     "puntoLlegada",
     "contacto",
+    "lat",
+    "lng",
   ],
 };
 
@@ -73,7 +80,6 @@ const REQUIRED_FIELDS = {
   eventos: ["nombre"],
   floraFauna: ["nombre"],
   galeria: ["url"],
-  blog: ["titulo"],
   heroSlides: ["title"],
   cooperativas: ["nombre"],
 };

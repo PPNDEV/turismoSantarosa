@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
+import AdminCoordinatesField from "./AdminCoordinatesField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
 import {
   canManageContentItem,
@@ -266,7 +267,10 @@ export default function AdminEventos({
     <div>
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Eventos ({visibleEventos.length})</h2>
+          <h2>
+            <FaCalendarAlt className="inline-icon" aria-hidden="true" />
+            Eventos ({visibleEventos.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
@@ -416,6 +420,12 @@ export default function AdminEventos({
                     <option value="Comunitario">Comunitario</option>
                   </select>
                 </div>
+
+                <AdminCoordinatesField
+                  lat={form.lat}
+                  lng={form.lng}
+                  onChange={(lat, lng) => setForm({ ...form, lat, lng })}
+                />
 
                 <div className="modal-field">
                   <label>Descripción</label>

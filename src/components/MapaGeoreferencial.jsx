@@ -7,7 +7,7 @@ import {
   TileLayer,
   Tooltip,
 } from "react-leaflet";
-import { FaArrowRight, FaSearch } from "react-icons/fa";
+import { FaArrowRight, FaMapMarkedAlt, FaSearch } from "react-icons/fa";
 import "leaflet/dist/leaflet.css";
 import { useContent } from "../context/useContent";
 
@@ -22,163 +22,44 @@ const MAP_MAX_ZOOM = 18;
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900";
 
-const demoContent = {
-  gastronomia: [
-    {
-      id: "restaurante-perla",
-      nombre: "Comedor La Perla del Mar",
-      ubicacion: "Malecon principal de Isla Jambeli",
-      descripcion: "Ceviches, parihuela y platos tradicionales de mariscos.",
-      imagen:
-        "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900",
-    },
-    {
-      id: "restaurante-puerto-jeli",
-      nombre: "Marisqueria Costa Rica",
-      ubicacion: "Zona de playa de Isla Costa Rica",
-      descripcion: "Especialidad en arroz marinero y pescado fresco.",
-      imagen:
-        "https://images.unsplash.com/photo-1559847844-5315695dadae?w=900",
-    },
-  ],
-  hospedajes: [
-    {
-      id: "hosteria-jambeli",
-      nombre: "Hosteria Brisa Jambeli",
-      ubicacion: "Frente al malecon de Isla Jambeli",
-      servicios: "Wifi, restaurante, tours y habitaciones familiares",
-      imagen:
-        "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900",
-    },
-  ],
-  eventos: [
-    {
-      id: "festival-jambeli",
-      nombre: "Festival playero de Jambeli",
-      tipo: "Festival",
-      lugar: "Malecon de Isla Jambeli",
-      descripcion: "Agenda cultural y gastronomica en zona insular.",
-      imagen:
-        "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=900",
-    },
-  ],
-  actividades: [
-    {
-      id: "actividad-manglar",
-      nombre: "Paseo en lancha por manglares",
-      categoria: "Aventura",
-      descripcion: "Ruta guiada por canales naturales del archipielago.",
-      imagen:
-        "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=900",
-    },
-    {
-      id: "actividad-kayak-islas",
-      nombre: "Kayak entre canales insulares",
-      categoria: "Naturaleza",
-      descripcion: "Actividad recreativa entre esteros del archipielago.",
-      imagen:
-        "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900",
-    },
-  ],
-  floraFauna: [
-    {
-      id: "fauna-piqueros",
-      nombre: "Piqueros de patas azules",
-      tipo: "Fauna",
-      zona: "Isla Santa Clara y areas marinas cercanas",
-      descripcion: "Especie representativa de los recorridos de naturaleza.",
-      imagen:
-        "https://images.unsplash.com/photo-1546026423-cc4642628d2b?w=900",
-    },
-  ],
-  cooperativas: [
-    {
-      id: "ruta-fluvial-jambeli",
-      nombre: "Ruta fluvial Jambeli",
-      ruta: "Muelle insular - recorridos internos del archipielago",
-      frecuencia: "Salidas segun disponibilidad turistica",
-    },
-  ],
-};
-
+// Solo metadatos de presentación por módulo. Las coordenadas provienen de los
+// datos reales de cada ítem (campos lat/lng cargados desde el panel admin).
 const moduleConfig = {
   gastronomia: {
     label: "Gastronomia",
     singular: "Restaurante",
     color: "#e8a733",
     path: "/gastronomia",
-    demo: demoContent.gastronomia,
-    coordinates: [
-      [-3.311, -80.084],
-      [-3.256, -80.118],
-      [-3.354, -80.108],
-      [-3.314, -80.079],
-    ],
   },
   hospedajes: {
     label: "Hospedaje",
     singular: "Hospedaje",
     color: "#16a34a",
     path: "/hospedaje",
-    demo: demoContent.hospedajes,
-    coordinates: [
-      [-3.313, -80.085],
-      [-3.254, -80.116],
-      [-3.356, -80.108],
-      [-3.318, -80.08],
-    ],
   },
   eventos: {
     label: "Eventos",
     singular: "Evento",
     color: "#dc2626",
     path: "/eventos",
-    demo: demoContent.eventos,
-    coordinates: [
-      [-3.31, -80.086],
-      [-3.257, -80.119],
-      [-3.354, -80.107],
-      [-3.174, -80.435],
-    ],
   },
   actividades: {
     label: "Actividades",
     singular: "Actividad",
     color: "#0891b2",
     path: "/actividades",
-    demo: demoContent.actividades,
-    coordinates: [
-      [-3.314, -80.082],
-      [-3.173, -80.435],
-      [-3.255, -80.119],
-      [-3.315, -80.08],
-    ],
   },
   floraFauna: {
     label: "Naturaleza",
     singular: "Registro natural",
     color: "#65a30d",
     path: "/flora-fauna",
-    demo: demoContent.floraFauna,
-    coordinates: [
-      [-3.174, -80.433],
-      [-3.315, -80.097],
-      [-3.23, -80.31],
-      [-3.356, -80.109],
-    ],
   },
   cooperativas: {
     label: "Transporte",
     singular: "Cooperativa",
     color: "#6d28d9",
     path: "/transporte",
-    demo: demoContent.cooperativas,
-    coordinates: [
-      [-3.309, -80.087],
-      [-3.254, -80.115],
-      [-3.354, -80.109],
-      [-3.318, -80.082],
-    ],
   },
 };
 
@@ -187,11 +68,8 @@ function isArchipelagoCoordinate(lat, lng) {
   return lat >= south && lat <= north && lng >= west && lng <= east;
 }
 
-function getItems(items, fallbackItems) {
-  return Array.isArray(items) && items.length > 0 ? items : fallbackItems;
-}
-
-function getCoordinate(item, config, index) {
+/** Devuelve coordenadas reales válidas del ítem o null si no las tiene. */
+function getCoordinate(item) {
   const lat = Number(item.lat ?? item.latitude);
   const lng = Number(item.lng ?? item.longitude);
 
@@ -203,11 +81,7 @@ function getCoordinate(item, config, index) {
     return { lat, lng };
   }
 
-  const fallback =
-    config.coordinates[index % config.coordinates.length] ||
-    config.coordinates[0];
-
-  return { lat: fallback[0], lng: fallback[1] };
+  return null;
 }
 
 function getImage(item) {
@@ -250,10 +124,17 @@ function getDetail(item, config) {
 
 function buildPoints(sourceItems, configKey) {
   const config = moduleConfig[configKey];
-  return getItems(sourceItems, config.demo)
+  if (!Array.isArray(sourceItems)) {
+    return [];
+  }
+
+  return sourceItems
     .filter((item) => item && item.activo !== false)
     .map((item, index) => {
-      const coordinates = getCoordinate(item, config, index);
+      const coordinates = getCoordinate(item);
+      if (!coordinates) {
+        return null;
+      }
 
       return {
         id: `${configKey}-${item.id || index}`,
@@ -268,7 +149,8 @@ function buildPoints(sourceItems, configKey) {
         lat: coordinates.lat,
         lng: coordinates.lng,
       };
-    });
+    })
+    .filter(Boolean);
 }
 
 function getPopupOffset(point) {
@@ -386,6 +268,16 @@ export default function MapaGeoreferencial() {
       </div>
 
       <div className="geo-map-fullbleed reveal">
+        {mapPoints.length === 0 && (
+          <div className="geo-map-empty" role="status">
+            <FaMapMarkedAlt aria-hidden="true" />
+            <p>
+              Aun no hay lugares georreferenciados. Agrega las coordenadas
+              (latitud y longitud) de cada lugar desde el panel de
+              administracion para que aparezcan en el mapa.
+            </p>
+          </div>
+        )}
         <MapContainer
           center={MAP_CENTER}
           zoom={MAP_INITIAL_ZOOM}

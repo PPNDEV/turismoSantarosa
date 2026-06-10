@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
+import AdminCoordinatesField from "./AdminCoordinatesField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
 import {
   canManageContentItem,
@@ -28,14 +29,14 @@ const emptyActividad = {
 
 const emptyEditorial = {
   id: "main",
-  eyebrow: "Editorial turístico",
-  title: "Actividades que se viven, se cuentan y se recuerdan",
+  eyebrow: "Bienvenidos a Santa Rosa",
+  title: "¡Santa Rosa, te enamora!",
   subtitle:
-    "Una lectura más pausada del territorio, con experiencias que puedes editar y publicar desde el panel.",
+    "Santa Rosa, ciudad Benemérita del Ecuador, perteneciente a la provincia de El Oro, es reconocida a nivel nacional e internacional por ser pionera en el cultivo del camarón en cautiverio.",
   intro:
-    "Desde la costa hasta el humedal, Santa Rosa se recorre con calma. Esta página reúne experiencias turísticas para descubrir, promover y actualizar sin tocar el código.",
-  quote: "Cada actividad suma una historia distinta al viaje.",
-  quoteAuthor: "Dirección de Turismo",
+    "Tierra de encantos naturales y culturales que invita a propios y extraños a adentrarse en un sinfín de emociones: descubrir la calidad y calidez de su gente, perdiéndose entre ríos, cascadas, playas, mares y atardeceres deslumbrantes. Puerto Jelí, parroquia urbana y emblema turístico del cantón, cosecha y prepara el marisco más fresco y delicioso —del mar a su mesa—, lo que le ha valido el reconocimiento como Destino Gastronómico del Sur del Ecuador. Porque donde llueve turismo, llueven oportunidades, te invitamos a descubrir Santa Rosa.",
+  quote: "El mundo es un libro y aquellos que no viajan solo leen una página.",
+  quoteAuthor: "Unidad de Turismo de Santa Rosa",
   heroImage: "",
   ctaLabel: "Explorar actividades",
   ctaTo: "/actividades",
@@ -476,7 +477,10 @@ export default function AdminActividades({
 
       <div className="admin-table-card">
         <div className="admin-table-header">
-          <h2>Actividades ({visibleActividades.length})</h2>
+          <h2>
+            <FaHiking className="inline-icon" aria-hidden="true" />
+            Actividades ({visibleActividades.length})
+          </h2>
           <button
             className="btn btn-primary"
             onClick={openNew}
@@ -594,6 +598,12 @@ export default function AdminActividades({
                     <option value="San Gregorio">San Gregorio</option>
                   </select>
                 </div>
+
+                <AdminCoordinatesField
+                  lat={form.lat}
+                  lng={form.lng}
+                  onChange={(lat, lng) => setForm({ ...form, lat, lng })}
+                />
 
                 <div className="modal-field">
                   <label>Descripción</label>

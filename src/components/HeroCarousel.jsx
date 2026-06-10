@@ -131,7 +131,6 @@ export default function HeroCarousel() {
           )}
         </div>
       ))}
-      <div className="hero-overlay" />
 
       <div className="hero-content">
         <p className="hero-tag">{activeSlide?.tag}</p>

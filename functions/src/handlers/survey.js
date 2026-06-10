@@ -350,6 +350,100 @@ function createSurveyHandler({
     }
   }
 
+  async function handleDirectSubmit({ request, response, requestId }) {
+    const payload = normalizeSurveyPayload(request.body);
+    if (!payload.ok) {
+      response.status(400).json({ ok: false, error: payload.error });
+      return;
+    }
+
+    const contactHash = buildHash(
+      `${payload.survey.verification_method}:${payload.contact}`,
+      ipHashSecret,
+    );
+
+    if (!contactHash.hash) {
+      response.status(500).json({ ok: false, error: "hash-unavailable" });
+      return;
+    }
+
+    const contactRef = db.collection(CONTACT_COLLECTION).doc(contactHash.hash);
+
+    try {
+      const result = await db.runTransaction(async (transaction) => {
+        const contactSnapshot = await transaction.get(contactRef);
+        if (
+          contactSnapshot.exists &&
+          contactSnapshot.data()?.status === "verificada"
+        ) {
+          return {
+            status: 409,
+            body: {
+              ok: false,
+              status: "duplicada",
+              state: "duplicada",
+              error: "duplicate-response",
+            },
+          };
+        }
+
+        const responseRef = db.collection(SURVEY_COLLECTION).doc();
+        const surveyResponse = {
+          session_id: payload.survey.session_id || "",
+          country: payload.survey.country,
+          city: payload.survey.city,
+          visitor_type: payload.survey.visitor_type,
+          usability_rating: payload.survey.usability_rating,
+          design_rating: payload.survey.design_rating,
+          information_rating: payload.survey.information_rating,
+          found_information: payload.survey.found_information,
+          comment: payload.survey.comment || "",
+          verification_method: payload.survey.verification_method,
+          contact_hash: contactHash.hash,
+          contact_hash_algo: contactHash.algo,
+          otp_verified: false,
+          status: "verificada",
+          created_at: FieldValue.serverTimestamp(),
+          fecha: FieldValue.serverTimestamp(),
+          requestId,
+          puntuacion: Math.round(
+            (Number(payload.survey.usability_rating) +
+              Number(payload.survey.design_rating) +
+              Number(payload.survey.information_rating)) /
+              3,
+          ),
+          comentarios: payload.survey.comment || "",
+        };
+
+        transaction.set(responseRef, surveyResponse);
+        transaction.set(
+          contactRef,
+          {
+            contact_hash: contactHash.hash,
+            contact_hash_algo: contactHash.algo,
+            verification_method: payload.survey.verification_method,
+            status: "verificada",
+            response_id: responseRef.id,
+            verified_at: FieldValue.serverTimestamp(),
+            updated_at: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+
+        return {
+          status: 200,
+          body: { ok: true, status: "verificada", state: "registrada" },
+        };
+      });
+
+      logger.info("survey stored direct", { requestId });
+      response.status(result.status).json(result.body);
+    } catch (error) {
+      logger.error("submitSurveyDirect error", { error, requestId });
+      response.status(500).json({ ok: false, error: "internal" });
+    }
+  }
+
   return async (request, response) => {
     if (request.method === "OPTIONS") {
       response.status(204).send("");
@@ -427,6 +521,11 @@ function createSurveyHandler({
           return;
         }
       }
+    }
+
+    if (action === "submit") {
+      await handleDirectSubmit({ request, response, requestId });
+      return;
     }
 
     if (action === "send_otp") {
