@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { FaChartPie, FaStar, FaSyncAlt, FaTrash } from "react-icons/fa";
+import {
+  FaChartPie,
+  FaFilePdf,
+  FaStar,
+  FaSyncAlt,
+  FaTrash,
+} from "react-icons/fa";
 import {
   collection,
   deleteDoc,
@@ -13,6 +19,18 @@ import { db } from "../services/firebase";
 
 const PAGE_LIMIT = 50;
 
+const visitorTypeLabels = {
+  local: "Local",
+  nacional: "Nacional",
+  extranjero: "Extranjero",
+};
+
+const foundLabels = {
+  si: "Si",
+  parcialmente: "Parcialmente",
+  no: "No",
+};
+
 function StarRating({ value }) {
   return (
     <span className="star-rating">
@@ -25,6 +43,102 @@ function StarRating({ value }) {
       ))}
     </span>
   );
+}
+
+function formatDate(date) {
+  if (!date) return "-";
+  return date.toLocaleDateString("es-EC", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+async function exportEncuestaPdf(encuesta) {
+  const { jsPDF } = await import("jspdf");
+  const pdf = new jsPDF();
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const marginX = 18;
+  let y = 22;
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(16);
+  pdf.text("Visit Santa Rosa", marginX, y);
+  pdf.setFontSize(12);
+  y += 7;
+  pdf.text("Encuesta de Satisfaccion", marginX, y);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  pdf.text(
+    `Generado: ${new Date().toLocaleString("es-EC")}`,
+    pageWidth - marginX,
+    y,
+    { align: "right" },
+  );
+  y += 4;
+  pdf.setDrawColor(180);
+  pdf.line(marginX, y, pageWidth - marginX, y);
+  y += 9;
+
+  const writeField = (label, value) => {
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10);
+    pdf.text(`${label}:`, marginX, y);
+    pdf.setFont("helvetica", "normal");
+    const lines = pdf.splitTextToSize(
+      String(value || "-"),
+      pageWidth - marginX * 2 - 52,
+    );
+    pdf.text(lines, marginX + 52, y);
+    y += lines.length * 5.4 + 2.6;
+  };
+
+  writeField("Nombre", encuesta.nombre);
+  writeField("Cedula / documento", encuesta.cedula);
+  writeField(
+    "Tipo de visitante",
+    visitorTypeLabels[encuesta.visitorType] || encuesta.visitorType,
+  );
+  writeField("Pais de residencia", encuesta.country);
+  writeField("Estado / provincia", encuesta.province);
+  writeField("Celular", encuesta.phone);
+  writeField("Correo electronico", encuesta.email);
+  writeField("Fecha de registro", formatDate(encuesta.fecha));
+
+  y += 3;
+  pdf.setDrawColor(180);
+  pdf.line(marginX, y, pageWidth - marginX, y);
+  y += 9;
+
+  writeField(
+    "Facilidad de uso",
+    encuesta.usabilityRating ? `${encuesta.usabilityRating} / 5` : "-",
+  );
+  writeField(
+    "Diseno visual",
+    encuesta.designRating ? `${encuesta.designRating} / 5` : "-",
+  );
+  writeField(
+    "Informacion turistica",
+    encuesta.informationRating ? `${encuesta.informationRating} / 5` : "-",
+  );
+  writeField(
+    "Puntuacion general",
+    encuesta.puntuacion ? `${encuesta.puntuacion} / 5` : "-",
+  );
+  writeField(
+    "Encontro la informacion",
+    foundLabels[encuesta.foundInformation] || encuesta.foundInformation,
+  );
+  writeField("Comentario", encuesta.comentarios || "Sin comentarios");
+
+  pdf.setFontSize(8);
+  pdf.setTextColor(120);
+  pdf.text(`ID de encuesta: ${encuesta.id}`, marginX, 287);
+
+  pdf.save(`encuesta-${encuesta.id}.pdf`);
 }
 
 export default function AdminEncuestas({
@@ -45,8 +159,19 @@ export default function AdminEncuestas({
       const data = d.data();
       return {
         id: d.id,
+        nombre: data.nombre || "",
+        cedula: data.cedula || "",
+        visitorType: data.visitor_type || "",
+        country: data.country || "",
+        province: data.province || data.city || "",
+        phone: data.phone || "",
+        email: data.email || "",
+        usabilityRating: data.usability_rating || 0,
+        designRating: data.design_rating || 0,
+        informationRating: data.information_rating || 0,
+        foundInformation: data.found_information || "",
         puntuacion: data.puntuacion || 0,
-        comentarios: data.comentarios || "",
+        comentarios: data.comentarios || data.comment || "",
         fecha: data.fecha?.toDate?.() || null,
       };
     });
@@ -96,17 +221,6 @@ export default function AdminEncuestas({
         current.filter((encuesta) => encuesta.id !== id),
       );
     }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return "-";
-    return date.toLocaleDateString("es-EC", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   const total = encuestas.length;
@@ -194,6 +308,8 @@ export default function AdminEncuestas({
           <table>
             <thead>
               <tr>
+                <th>Visitante</th>
+                <th>Origen</th>
                 <th>Puntuacion</th>
                 <th>Comentarios</th>
                 <th>Fecha</th>
@@ -203,6 +319,19 @@ export default function AdminEncuestas({
             <tbody>
               {encuestas.map((e) => (
                 <tr key={e.id}>
+                  <td>
+                    <div>{e.nombre || <em>Sin nombre</em>}</div>
+                    <small>{e.cedula || "Sin cedula"}</small>
+                  </td>
+                  <td>
+                    <div>
+                      {visitorTypeLabels[e.visitorType] || e.visitorType || "-"}
+                    </div>
+                    <small>
+                      {[e.country, e.province].filter(Boolean).join(", ") ||
+                        "-"}
+                    </small>
+                  </td>
                   <td>
                     <StarRating value={e.puntuacion} />
                   </td>
@@ -216,7 +345,15 @@ export default function AdminEncuestas({
                   <td>{formatDate(e.fecha)}</td>
                   <td>
                     <button
+                      className="action-btn"
+                      title="Exportar PDF"
+                      onClick={() => exportEncuestaPdf(e)}
+                    >
+                      <FaFilePdf className="inline-icon" aria-hidden="true" />
+                    </button>
+                    <button
                       className="action-btn del-btn"
+                      title="Eliminar"
                       onClick={() => del(e.id)}
                     >
                       <FaTrash className="inline-icon" aria-hidden="true" />

@@ -5,22 +5,38 @@ const SURVEY_COLLECTION = "encuestas_satisfaccion";
 const CONTACT_COLLECTION = "surveyContacts";
 const OTP_COLLECTION = "surveyOtpChallenges";
 const OTP_TTL_MS = 10 * 60 * 1000;
-const VALID_METHODS = new Set(["email", "phone"]);
-const VALID_VISITOR_TYPES = new Set(["local", "nacional", "extranjero"]);
+const VALID_VISITOR_TYPES = new Set(["nacional", "extranjero"]);
 const VALID_FOUND_INFORMATION = new Set(["si", "parcialmente", "no"]);
+const VALID_ACTIONS = new Set([
+  "legacy_submit",
+  "submit",
+  "send_otp",
+  "verify_otp",
+]);
 
-function normalizeContact(method, value) {
-  const rawValue = String(value || "").trim();
-
-  if (method === "email") {
-    return rawValue.toLowerCase();
-  }
-
-  return rawValue.replace(/[^\d+]/g, "").replace(/(?!^)\+/g, "");
+function normalizePhone(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[^\d+]/g, "")
+    .replace(/(?!^)\+/g, "");
 }
 
 function isValidPhone(value) {
   return /^\+?\d{7,15}$/.test(value);
+}
+
+function normalizeCedula(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s.-]/g, "");
+}
+
+function isValidCedula(cedula, visitorType) {
+  if (visitorType === "nacional") {
+    return /^\d{10}$/.test(cedula);
+  }
+  return /^[A-Z0-9]{5,20}$/.test(cedula);
 }
 
 function buildHash(value, secret) {
@@ -78,19 +94,18 @@ function createSurveyHandler({
   } = httpUtils;
 
   function normalizeSurveyPayload(body = {}) {
+    const cedula = normalizeCedula(normalizeText(body.cedula, 30));
+    const nombre = normalizeText(body.nombre, 120);
     const country = normalizeText(body.country, 80);
-    const city = normalizeText(body.city, 80);
+    const province = normalizeText(body.province || body.city, 80);
     const visitorType = normalizeText(body.visitor_type, 20);
     const usabilityRating = Number(body.usability_rating);
     const designRating = Number(body.design_rating);
     const informationRating = Number(body.information_rating);
     const foundInformation = normalizeText(body.found_information, 20);
     const comment = normalizeText(body.comment, 700);
-    const verificationMethod = normalizeText(body.verification_method, 20);
-    const contact = normalizeContact(
-      verificationMethod,
-      normalizeText(body.contact, 160),
-    );
+    const email = normalizeText(body.email, 160).toLowerCase();
+    const phone = normalizePhone(normalizeText(body.phone, 40));
     const sessionId = normalizeText(body.session_id, 80);
 
     const ratings = [usabilityRating, designRating, informationRating];
@@ -99,19 +114,23 @@ function createSurveyHandler({
     );
 
     if (
+      !nombre ||
       !country ||
-      !city ||
+      !province ||
       !VALID_VISITOR_TYPES.has(visitorType) ||
       hasInvalidRating ||
-      !VALID_FOUND_INFORMATION.has(foundInformation) ||
-      !VALID_METHODS.has(verificationMethod)
+      !VALID_FOUND_INFORMATION.has(foundInformation)
     ) {
       return { ok: false, error: "invalid-survey" };
     }
 
+    if (!isValidCedula(cedula, visitorType)) {
+      return { ok: false, error: "invalid-cedula" };
+    }
+
     if (
-      (verificationMethod === "email" && !isValidEmail(contact)) ||
-      (verificationMethod === "phone" && !isValidPhone(contact))
+      (email && !isValidEmail(email)) ||
+      (phone && !isValidPhone(phone))
     ) {
       return { ok: false, error: "invalid-contact" };
     }
@@ -120,17 +139,20 @@ function createSurveyHandler({
       ok: true,
       survey: {
         session_id: sessionId,
+        nombre,
+        cedula,
         country,
-        city,
+        province,
         visitor_type: visitorType,
         usability_rating: usabilityRating,
         design_rating: designRating,
         information_rating: informationRating,
         found_information: foundInformation,
         comment,
-        verification_method: verificationMethod,
+        email,
+        phone,
       },
-      contact,
+      cedula,
     };
   }
 
@@ -141,10 +163,7 @@ function createSurveyHandler({
       return;
     }
 
-    const contactHash = buildHash(
-      `${payload.survey.verification_method}:${payload.contact}`,
-      ipHashSecret,
-    );
+    const contactHash = buildHash(`cedula:${payload.cedula}`, ipHashSecret);
 
     if (!contactHash.hash) {
       response.status(500).json({ ok: false, error: "hash-unavailable" });
@@ -184,7 +203,7 @@ function createSurveyHandler({
       {
         contact_hash: contactHash.hash,
         contact_hash_algo: contactHash.algo,
-        verification_method: payload.survey.verification_method,
+        verification_method: "cedula",
         status: "pendiente",
         updated_at: FieldValue.serverTimestamp(),
       },
@@ -200,7 +219,6 @@ function createSurveyHandler({
     logger.info("survey otp generated", {
       requestId,
       challengeId: challengeRef.id,
-      method: payload.survey.verification_method,
       deliveryConfigured: false,
     });
 
@@ -291,15 +309,18 @@ function createSurveyHandler({
         const responseRef = db.collection(SURVEY_COLLECTION).doc();
         const surveyResponse = {
           session_id: challenge.session_id || "",
+          nombre: challenge.nombre || "",
+          cedula: challenge.cedula || "",
           country: challenge.country,
-          city: challenge.city,
+          province: challenge.province || "",
           visitor_type: challenge.visitor_type,
           usability_rating: challenge.usability_rating,
           design_rating: challenge.design_rating,
           information_rating: challenge.information_rating,
           found_information: challenge.found_information,
           comment: challenge.comment || "",
-          verification_method: challenge.verification_method,
+          email: challenge.email || "",
+          phone: challenge.phone || "",
           contact_hash: challenge.contact_hash,
           contact_hash_algo: challenge.contact_hash_algo,
           otp_verified: true,
@@ -322,7 +343,7 @@ function createSurveyHandler({
           {
             contact_hash: challenge.contact_hash,
             contact_hash_algo: challenge.contact_hash_algo,
-            verification_method: challenge.verification_method,
+            verification_method: "cedula",
             status: "verificada",
             response_id: responseRef.id,
             verified_at: FieldValue.serverTimestamp(),
@@ -357,10 +378,7 @@ function createSurveyHandler({
       return;
     }
 
-    const contactHash = buildHash(
-      `${payload.survey.verification_method}:${payload.contact}`,
-      ipHashSecret,
-    );
+    const contactHash = buildHash(`cedula:${payload.cedula}`, ipHashSecret);
 
     if (!contactHash.hash) {
       response.status(500).json({ ok: false, error: "hash-unavailable" });
@@ -390,15 +408,18 @@ function createSurveyHandler({
         const responseRef = db.collection(SURVEY_COLLECTION).doc();
         const surveyResponse = {
           session_id: payload.survey.session_id || "",
+          nombre: payload.survey.nombre,
+          cedula: payload.survey.cedula,
           country: payload.survey.country,
-          city: payload.survey.city,
+          province: payload.survey.province,
           visitor_type: payload.survey.visitor_type,
           usability_rating: payload.survey.usability_rating,
           design_rating: payload.survey.design_rating,
           information_rating: payload.survey.information_rating,
           found_information: payload.survey.found_information,
           comment: payload.survey.comment || "",
-          verification_method: payload.survey.verification_method,
+          email: payload.survey.email || "",
+          phone: payload.survey.phone || "",
           contact_hash: contactHash.hash,
           contact_hash_algo: contactHash.algo,
           otp_verified: false,
@@ -421,7 +442,7 @@ function createSurveyHandler({
           {
             contact_hash: contactHash.hash,
             contact_hash_algo: contactHash.algo,
-            verification_method: payload.survey.verification_method,
+            verification_method: "cedula",
             status: "verificada",
             response_id: responseRef.id,
             verified_at: FieldValue.serverTimestamp(),
@@ -489,6 +510,11 @@ function createSurveyHandler({
     const comentarios = normalizeText(request.body?.comentarios, 1000);
     const captchaToken = normalizeText(request.body?.captchaToken, 2000);
 
+    if (!VALID_ACTIONS.has(action)) {
+      response.status(400).json({ ok: false, error: "invalid-action" });
+      return;
+    }
+
     if (
       action === "legacy_submit" &&
       (!Number.isFinite(puntuacion) || puntuacion < 1 || puntuacion > 5)
@@ -499,7 +525,7 @@ function createSurveyHandler({
 
     const captchaSecret = captcha?.secret;
     if (captchaSecret) {
-      if (action !== "legacy_submit") {
+      if (action === "send_otp" || action === "verify_otp") {
         logger.info("survey otp captcha skipped", { requestId, action });
       } else if (!captchaToken) {
         response.status(400).json({ ok: false, error: "captcha-required" });
