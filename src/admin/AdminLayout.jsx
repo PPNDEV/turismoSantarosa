@@ -23,14 +23,9 @@ import {
 import { useAuth } from "../context/useAuth";
 const AdminPortada = lazy(() => import("../admin/AdminPortada"));
 const AdminDashboard = lazy(() => import("../admin/AdminDashboard"));
-const AdminEventos = lazy(() => import("../admin/AdminEventos"));
+const AdminSectionEditor = lazy(() => import("../admin/AdminSectionEditor"));
 const AdminGaleria = lazy(() => import("../admin/AdminGaleria"));
-const AdminGastronomia = lazy(() => import("../admin/AdminGastronomia"));
-const AdminHospedajes = lazy(() => import("../admin/AdminHospedajes"));
-const AdminFloraFauna = lazy(() => import("../admin/AdminFloraFauna"));
 const AdminUsuarios = lazy(() => import("../admin/AdminUsuarios"));
-const AdminActividades = lazy(() => import("../admin/AdminActividades"));
-const AdminTransporte = lazy(() => import("../admin/AdminTransporte"));
 const AdminMensajes = lazy(() => import("../admin/AdminMensajes"));
 const AdminEncuestas = lazy(() => import("../admin/AdminEncuestas"));
 const AdminResenas = lazy(() => import("../admin/AdminResenas"));
@@ -370,55 +365,55 @@ export default function AdminLayout() {
         );
       case "actividades":
         return (
-          <AdminActividades
+          <AdminSectionEditor
+            nodeKey="actividades"
             canEdit={canEditContent}
             currentUser={user}
-            onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.actividades}
           />
         );
       case "eventos":
         return (
-          <AdminEventos
+          <AdminSectionEditor
+            nodeKey="eventos"
             canEdit={canEditContent}
             currentUser={user}
-            onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.eventos}
           />
         );
       case "gastronomia":
         return (
-          <AdminGastronomia
+          <AdminSectionEditor
+            nodeKey="gastronomia"
             canEdit={canEditContent}
             currentUser={user}
-            onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.gastronomia}
           />
         );
       case "hospedajes":
         return (
-          <AdminHospedajes
+          <AdminSectionEditor
+            nodeKey="hospedajes"
             canEdit={canEditContent}
             currentUser={user}
-            onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.hospedajes}
           />
         );
       case "floraFauna":
         return (
-          <AdminFloraFauna
+          <AdminSectionEditor
+            nodeKey="floraFauna"
             canEdit={canEditContent}
             currentUser={user}
-            onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.floraFauna}
           />
         );
       case "transporte":
         return (
-          <AdminTransporte
+          <AdminSectionEditor
+            nodeKey="cooperativas"
             canEdit={canEditContent}
             currentUser={user}
-            onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.transporte}
           />
         );

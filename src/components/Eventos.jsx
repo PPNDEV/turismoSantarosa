@@ -1,132 +1,72 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
+import { FaLandmark, FaTag } from "react-icons/fa";
 import { useContent } from "../context/useContent";
-import { useLanguage } from "../context/useLanguage";
 
-const FALLBACK_EVENT_IMAGE =
-  "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900";
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=900";
 
-function getEventTimestamp(fecha) {
-  const parsedDate = new Date(`${fecha || ""}T12:00:00`);
-  const timestamp = parsedDate.getTime();
-  return Number.isNaN(timestamp) ? Number.MAX_SAFE_INTEGER : timestamp;
-}
-
-function formatFecha(fecha, locale, t) {
-  const parsedDate = new Date(`${fecha || ""}T12:00:00`);
-  if (Number.isNaN(parsedDate.getTime())) {
-    return t("eventosSection.dateToConfirm");
-  }
-
-  return parsedDate.toLocaleDateString(locale, {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function getVisibleEvents(eventos) {
-  return [...eventos]
-    .filter((evento) => evento.activo !== false)
-    .sort((a, b) => getEventTimestamp(a.fecha) - getEventTimestamp(b.fecha));
-}
-
-function getEventImage(imagen) {
-  return imagen && imagen.trim() ? imagen : FALLBACK_EVENT_IMAGE;
+function getImage(imagen) {
+  return imagen && imagen.trim() ? imagen : FALLBACK_IMAGE;
 }
 
 export default function Eventos() {
-  const { eventos } = useContent();
-  const { locale, t } = useLanguage();
-  const proximos = useMemo(
-    () => getVisibleEvents(eventos).slice(0, 4),
-    [eventos],
+  const { sections } = useContent();
+  const eventos = sections?.eventos || {};
+  const manifestaciones = useMemo(
+    () =>
+      (Array.isArray(eventos.manifestaciones) ? eventos.manifestaciones : [])
+        .slice(0, 3),
+    [eventos.manifestaciones],
   );
 
-  const getLocalizedValue = (key, fallback) => {
-    const translated = t(key);
-    return translated === key ? fallback : translated;
-  };
+  if (manifestaciones.length === 0) {
+    return null;
+  }
 
   return (
     <section className="section-gray">
       <div className="container">
         <div className="section-header reveal">
           <h2 className="section-title">
-            {t("eventosSection.titleStart")}{" "}
-            <span className="accent">{t("eventosSection.titleAccent")}</span>
+            Cultura y <span className="accent">Patrimonio</span>
           </h2>
-          <p className="section-subtitle">{t("eventosSection.subtitle")}</p>
+          <p className="section-subtitle">
+            Manifestaciones culturales y riqueza biocultural del Archipielago de
+            Jambeli.
+          </p>
         </div>
 
-        {proximos.length === 0 ? (
-          <div className="eventos-empty">{t("eventosSection.emptyState")}</div>
-        ) : (
-          <div className="eventos-grid">
-            {proximos.map((ev) =>
-              (() => {
-                const translatedType = getLocalizedValue(
-                  `content.events.${ev.id}.type`,
-                  ev.tipo,
-                );
-                const translatedName = getLocalizedValue(
-                  `content.events.${ev.id}.name`,
-                  ev.nombre,
-                );
-                const translatedDescription = getLocalizedValue(
-                  `content.events.${ev.id}.description`,
-                  ev.descripcion,
-                );
-                const translatedPlace = getLocalizedValue(
-                  `content.events.${ev.id}.place`,
-                  ev.lugar,
-                );
-
-                return (
-                  <div key={ev.id} className="evento-card reveal">
-                    <img
-                      src={getEventImage(ev.imagen || ev.url || ev.url_archivo)}
-                      alt={translatedName}
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        if (e.currentTarget.src !== FALLBACK_EVENT_IMAGE) {
-                          e.currentTarget.src = FALLBACK_EVENT_IMAGE;
-                        }
-                      }}
-                    />
-                    <div className="evento-body">
-                      <div className="evento-chip">
-                        {translatedType || t("eventosSection.defaultType")}
-                      </div>
-                      <div className="evento-fecha">
-                        <FaCalendarAlt
-                          className="inline-icon"
-                          aria-hidden="true"
-                        />
-                        {formatFecha(ev.fecha, locale, t)}
-                      </div>
-                      <h3>{translatedName}</h3>
-                      <p>{translatedDescription}</p>
-                      <div className="evento-lugar">
-                        <FaMapMarkerAlt
-                          className="inline-icon"
-                          aria-hidden="true"
-                        />
-                        {translatedPlace}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })(),
-            )}
-          </div>
-        )}
+        <div className="eventos-grid">
+          {manifestaciones.map((item, index) => (
+            <div key={`manifestacion-${index}`} className="evento-card reveal">
+              <img
+                src={getImage(item.imagen)}
+                alt={item.subtipo || item.tipo}
+                loading="lazy"
+                decoding="async"
+                onError={(e) => {
+                  if (e.currentTarget.src !== FALLBACK_IMAGE) {
+                    e.currentTarget.src = FALLBACK_IMAGE;
+                  }
+                }}
+              />
+              <div className="evento-body">
+                <div className="evento-chip">
+                  <FaTag className="inline-icon" aria-hidden="true" />
+                  {item.tipo}
+                </div>
+                <h3>{item.subtipo}</h3>
+                <p>{item.descripcion}</p>
+              </div>
+            </div>
+          ))}
+        </div>
 
         <div className="cta-center">
           <Link to="/eventos" className="btn btn-primary">
-            {t("eventosSection.cta")} →
+            <FaLandmark className="inline-icon" aria-hidden="true" />
+            Ver cultura y patrimonio →
           </Link>
         </div>
       </div>

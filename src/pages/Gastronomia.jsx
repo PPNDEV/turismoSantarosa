@@ -1,10 +1,53 @@
-import { FaMapMarkerAlt, FaPhoneAlt, FaUtensils } from "react-icons/fa";
+import { FaPhoneAlt, FaUtensils } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
 
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900";
+
+const ISLANDS = [
+  { key: "jambeli", label: "Jambelí" },
+  { key: "sanGregorio", label: "San Gregorio" },
+];
+
+function EstablecimientoCard({ item, isla }) {
+  return (
+    <article className="info-card">
+      <img
+        src={item.imagen || FALLBACK_IMAGE}
+        alt={item.nombre}
+        loading="lazy"
+        decoding="async"
+        onError={(e) => {
+          if (e.currentTarget.src !== FALLBACK_IMAGE) {
+            e.currentTarget.src = FALLBACK_IMAGE;
+          }
+        }}
+      />
+      <div className="info-card-body">
+        <span className="badge badge-gold">{isla}</span>
+        <h3>{item.nombre}</h3>
+        {item.actividad && (
+          <div className="info-meta">
+            <strong>Servicio:</strong> {item.actividad}
+          </div>
+        )}
+        {item.descripcion && <p>{item.descripcion}</p>}
+        {item.contacto && (
+          <div className="info-meta">
+            <FaPhoneAlt className="inline-icon" aria-hidden="true" />
+            {item.contacto}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
 export default function GastronomiaPage() {
-  const { gastronomia } = useContent();
+  const { sections } = useContent();
+  const gastronomia = sections?.gastronomia || {};
 
   return (
     <>
@@ -27,37 +70,27 @@ export default function GastronomiaPage() {
               </p>
             </header>
 
-            <div className="info-grid">
-              {gastronomia.map((restaurante) => (
-                <article key={restaurante.id} className="info-card">
-                  <img
-                    src={restaurante.imagen}
-                    alt={restaurante.nombre}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="info-card-body">
-                    <span className="badge badge-gold">{restaurante.isla}</span>
-                    <h3>{restaurante.nombre}</h3>
-                    <p>{restaurante.descripcion}</p>
-                    <div className="info-meta">
-                      <strong>Plato tipico:</strong> {restaurante.platoTipico}
-                    </div>
-                    <div className="info-meta">
-                      <FaMapMarkerAlt
-                        className="inline-icon"
-                        aria-hidden="true"
+            {ISLANDS.map(({ key, label }) => {
+              const items = Array.isArray(gastronomia[key])
+                ? gastronomia[key]
+                : [];
+              if (items.length === 0) return null;
+
+              return (
+                <div key={key} className="info-subsection">
+                  <h3 className="info-subsection-title">{label}</h3>
+                  <div className="info-grid">
+                    {items.map((item, index) => (
+                      <EstablecimientoCard
+                        key={`${key}-${item.nombre || index}`}
+                        item={item}
+                        isla={label}
                       />
-                      {restaurante.ubicacion}
-                    </div>
-                    <div className="info-meta">
-                      <FaPhoneAlt className="inline-icon" aria-hidden="true" />
-                      {restaurante.contacto}
-                    </div>
+                    ))}
                   </div>
-                </article>
-              ))}
-            </div>
+                </div>
+              );
+            })}
           </section>
         </main>
       </div>

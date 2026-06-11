@@ -4,8 +4,9 @@ import {
   FaBed,
   FaLeaf,
   FaMapMarkedAlt,
-  FaMapMarkerAlt,
+  FaPaw,
   FaPhoneAlt,
+  FaRoute,
   FaShip,
   FaUtensils,
 } from "react-icons/fa";
@@ -13,16 +14,98 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
 
-function splitServices(services) {
-  return String(services || "")
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
+const GASTRO_FALLBACK =
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900";
+const HOSPEDAJE_FALLBACK =
+  "https://images.unsplash.com/photo-1455587734955-081b22074882?w=900";
+const SPECIES_FALLBACK =
+  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=900";
+
+function SpeciesCard({ especie, showGrupo }) {
+  const nombre = especie.nombre || especie.nombreComun;
+  return (
+    <article className="info-card species-card">
+      <img
+        src={especie.imagen || SPECIES_FALLBACK}
+        alt={nombre}
+        loading="lazy"
+        decoding="async"
+        onError={(e) => {
+          if (e.currentTarget.src !== SPECIES_FALLBACK) {
+            e.currentTarget.src = SPECIES_FALLBACK;
+          }
+        }}
+      />
+      <div className="info-card-body">
+        {showGrupo && especie.grupo && (
+          <span className="badge badge-ocean">{especie.grupo}</span>
+        )}
+        <h3>{nombre}</h3>
+        {especie.nombreCientifico && (
+          <p className="species-scientific">
+            <em>{especie.nombreCientifico}</em>
+          </p>
+        )}
+      </div>
+    </article>
+  );
+}
+
+const ISLANDS = [
+  { key: "jambeli", label: "Jambelí" },
+  { key: "sanGregorio", label: "San Gregorio" },
+];
+
+function EstablecimientoCard({ item, isla, badgeClass, fallback }) {
+  return (
+    <article className="info-card">
+      <img
+        src={item.imagen || fallback}
+        alt={item.nombre}
+        loading="lazy"
+        decoding="async"
+        onError={(e) => {
+          if (e.currentTarget.src !== fallback) {
+            e.currentTarget.src = fallback;
+          }
+        }}
+      />
+      <div className="info-card-body">
+        <span className={`badge ${badgeClass}`}>{isla}</span>
+        <h3>{item.nombre}</h3>
+        {item.actividad && (
+          <div className="info-meta">
+            <strong>Servicio:</strong> {item.actividad}
+          </div>
+        )}
+        {item.descripcion && <p>{item.descripcion}</p>}
+        {item.contacto && (
+          <div className="info-meta">
+            <FaPhoneAlt className="inline-icon" aria-hidden="true" />
+            {item.contacto}
+          </div>
+        )}
+      </div>
+    </article>
+  );
 }
 
 export default function InformacionTuristica() {
-  const { gastronomia, hospedajes, floraFauna, cooperativas } = useContent();
+  const { sections } = useContent();
+  const gastronomia = sections?.gastronomia || {};
+  const hospedajes = sections?.hospedajes || {};
+  const floraFauna = sections?.floraFauna || {};
+  const cooperativas = sections?.cooperativas || {};
   const { hash } = useLocation();
+
+  const fauna = floraFauna.fauna || {};
+  const flora = floraFauna.flora || {};
+  const faunaEspecies = Array.isArray(fauna.especies) ? fauna.especies : [];
+  const floraEspecies = Array.isArray(flora.especies) ? flora.especies : [];
+  const hospedajeJambeli = Array.isArray(hospedajes.jambeli)
+    ? hospedajes.jambeli
+    : [];
+  const tarifas = Array.isArray(hospedajes.tarifas) ? hospedajes.tarifas : [];
 
   useEffect(() => {
     if (!hash) return;
@@ -57,37 +140,28 @@ export default function InformacionTuristica() {
                 Archipielago de Jambeli.
               </p>
             </header>
-            <div className="info-grid">
-              {gastronomia.map((restaurante) => (
-                <article key={restaurante.id} className="info-card">
-                  <img
-                    src={restaurante.imagen}
-                    alt={restaurante.nombre}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="info-card-body">
-                    <span className="badge badge-gold">{restaurante.isla}</span>
-                    <h3>{restaurante.nombre}</h3>
-                    <p>{restaurante.descripcion}</p>
-                    <div className="info-meta">
-                      <strong>Plato tipico:</strong> {restaurante.platoTipico}
-                    </div>
-                    <div className="info-meta">
-                      <FaMapMarkerAlt
-                        className="inline-icon"
-                        aria-hidden="true"
+            {ISLANDS.map(({ key, label }) => {
+              const items = Array.isArray(gastronomia[key])
+                ? gastronomia[key]
+                : [];
+              if (items.length === 0) return null;
+              return (
+                <div key={key} className="info-subsection">
+                  <h3 className="info-subsection-title">{label}</h3>
+                  <div className="info-grid">
+                    {items.map((item, index) => (
+                      <EstablecimientoCard
+                        key={`gastro-${key}-${item.nombre || index}`}
+                        item={item}
+                        isla={label}
+                        badgeClass="badge-gold"
+                        fallback={GASTRO_FALLBACK}
                       />
-                      {restaurante.ubicacion}
-                    </div>
-                    <div className="info-meta">
-                      <FaPhoneAlt className="inline-icon" aria-hidden="true" />
-                      {restaurante.contacto}
-                    </div>
+                    ))}
                   </div>
-                </article>
-              ))}
-            </div>
+                </div>
+              );
+            })}
           </section>
 
           <section className="info-section-card" id="hospedajes">
@@ -96,82 +170,91 @@ export default function InformacionTuristica() {
                 <FaBed className="inline-icon" aria-hidden="true" />
                 Hospedajes disponibles
               </h2>
-              <p>
-                Opciones de alojamiento con ubicacion, servicios y contacto para
-                cada isla.
-              </p>
+              <p>Opciones de alojamiento con servicios y contacto.</p>
             </header>
-            <div className="info-grid">
-              {hospedajes.map((hospedaje) => (
-                <article key={hospedaje.id} className="info-card">
-                  <img
-                    src={hospedaje.imagen}
-                    alt={hospedaje.nombre}
-                    loading="lazy"
-                    decoding="async"
+            {hospedajes.descripcion && (
+              <p className="info-lead">{hospedajes.descripcion}</p>
+            )}
+            {hospedajeJambeli.length > 0 && (
+              <div className="info-grid">
+                {hospedajeJambeli.map((item, index) => (
+                  <EstablecimientoCard
+                    key={`hosp-${item.nombre || index}`}
+                    item={item}
+                    isla="Jambelí"
+                    badgeClass="badge-ocean"
+                    fallback={HOSPEDAJE_FALLBACK}
                   />
-                  <div className="info-card-body">
-                    <span className="badge badge-ocean">{hospedaje.isla}</span>
-                    <h3>{hospedaje.nombre}</h3>
-                    <div className="info-meta">
-                      <FaMapMarkerAlt
-                        className="inline-icon"
-                        aria-hidden="true"
-                      />
-                      {hospedaje.ubicacion}
-                    </div>
-                    <div className="info-meta">
-                      <strong>Servicios:</strong>
-                    </div>
-                    <ul className="info-list">
-                      {splitServices(hospedaje.servicios).map((servicio) => (
-                        <li key={`${hospedaje.id}-${servicio}`}>{servicio}</li>
+                ))}
+              </div>
+            )}
+            {tarifas.length > 0 && (
+              <div className="info-subsection">
+                <h3 className="info-subsection-title">Tarifas referenciales</h3>
+                <div className="info-table-wrapper">
+                  <table className="info-table">
+                    <thead>
+                      <tr>
+                        <th>Tipo</th>
+                        <th>Tarifa</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tarifas.map((tarifa, index) => (
+                        <tr key={`tarifa-${index}`}>
+                          <td>{tarifa.tipo}</td>
+                          <td>{tarifa.tarifa}</td>
+                        </tr>
                       ))}
-                    </ul>
-                    <div className="info-meta">
-                      <FaPhoneAlt className="inline-icon" aria-hidden="true" />
-                      {hospedaje.contacto}
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </section>
 
-          <section className="info-section-card flora-fauna-section" id="flora-fauna">
+          <section
+            className="info-section-card flora-fauna-section"
+            id="flora-fauna"
+          >
             <header className="info-section-header">
               <h2>
                 <FaLeaf className="inline-icon" aria-hidden="true" />
                 Flora y fauna
               </h2>
-              <p>
-                Biodiversidad representativa del canton y zonas turisticas de
-                observacion.
-              </p>
+              <p>Biodiversidad representativa del canton.</p>
             </header>
-            <div className="info-grid">
-              {floraFauna.map((registro) => (
-                <article key={registro.id} className="info-card">
-                  <img
-                    src={registro.imagen}
-                    alt={registro.nombre}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="info-card-body">
-                    <span className="badge badge-ocean">{registro.tipo}</span>
-                    <h3>{registro.nombre}</h3>
-                    <p>{registro.descripcion}</p>
-                    <div className="info-meta">
-                      <strong>Zona:</strong> {registro.zona}
-                    </div>
-                    <div className="info-meta">
-                      <strong>Estado:</strong> {registro.estado}
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+            {floraFauna.descripcionGeneral && (
+              <p className="info-lead">{floraFauna.descripcionGeneral}</p>
+            )}
+            {faunaEspecies.length > 0 && (
+              <div className="info-subsection">
+                <h3 className="info-subsection-title">
+                  <FaPaw className="inline-icon" aria-hidden="true" /> Fauna
+                </h3>
+                <div className="info-grid">
+                  {faunaEspecies.map((especie, index) => (
+                    <SpeciesCard
+                      key={`fauna-${index}`}
+                      especie={especie}
+                      showGrupo
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {floraEspecies.length > 0 && (
+              <div className="info-subsection">
+                <h3 className="info-subsection-title">
+                  <FaLeaf className="inline-icon" aria-hidden="true" /> Flora
+                </h3>
+                <div className="info-grid">
+                  {floraEspecies.map((especie, index) => (
+                    <SpeciesCard key={`flora-${index}`} especie={especie} />
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="info-section-card" id="transporte">
@@ -180,34 +263,47 @@ export default function InformacionTuristica() {
                 <FaShip className="inline-icon" aria-hidden="true" />
                 Transporte fluvial
               </h2>
-              <p>
-                Rutas fluviales habilitadas para movilizacion entre muelles,
-                islas y zonas de embarcacion.
-              </p>
+              <p>Cooperativas y rutas fluviales habilitadas.</p>
             </header>
-            <div className="cooperativas-grid">
-              {cooperativas.map((cooperativa) => (
-                <article key={cooperativa.id} className="cooperativa-card">
-                  <h3>{cooperativa.nombre}</h3>
-                  <p>{cooperativa.ruta}</p>
-                  <div className="info-meta">
-                    <strong>Frecuencia:</strong> {cooperativa.frecuencia}
+            {ISLANDS.map(({ key, label }) => {
+              const items = Array.isArray(cooperativas[key])
+                ? cooperativas[key]
+                : [];
+              if (items.length === 0) return null;
+              return (
+                <div key={key} className="info-subsection">
+                  <h3 className="info-subsection-title">
+                    {key === "jambeli"
+                      ? "Ruta a Jambelí"
+                      : "Ruta a San Gregorio / Costa Rica"}
+                  </h3>
+                  <div className="cooperativas-grid">
+                    {items.map((item, index) => (
+                      <article
+                        key={`coop-${key}-${item.nombre || index}`}
+                        className="cooperativa-card"
+                      >
+                        <h3>{item.nombre}</h3>
+                        {item.ruta && (
+                          <div className="info-meta">
+                            <FaRoute
+                              className="inline-icon"
+                              aria-hidden="true"
+                            />
+                            {item.ruta}
+                          </div>
+                        )}
+                        {item.procedencia && (
+                          <div className="info-meta">
+                            <strong>Procedencia:</strong> {item.procedencia}
+                          </div>
+                        )}
+                      </article>
+                    ))}
                   </div>
-                  <div className="info-meta">
-                    <strong>Muelle de salida:</strong>{" "}
-                    {cooperativa.puntoSalida}
-                  </div>
-                  <div className="info-meta">
-                    <strong>Muelle o isla de llegada:</strong>{" "}
-                    {cooperativa.puntoLlegada}
-                  </div>
-                  <div className="info-meta">
-                    <FaPhoneAlt className="inline-icon" aria-hidden="true" />
-                    {cooperativa.contacto}
-                  </div>
-                </article>
-              ))}
-            </div>
+                </div>
+              );
+            })}
           </section>
         </main>
       </div>

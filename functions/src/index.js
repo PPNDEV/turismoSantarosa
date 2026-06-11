@@ -1,3 +1,4 @@
+const { setGlobalOptions } = require("firebase-functions/v2");
 const { onRequest } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -6,6 +7,8 @@ const { createRateLimiter } = require("./lib/rateLimiter");
 const { createVisitsHandler } = require("./handlers/visits");
 const { createContactHandler } = require("./handlers/contact");
 const { createSurveyHandler } = require("./handlers/survey");
+
+setGlobalOptions({ cpu: "gcf_gen1" });
 
 admin.initializeApp();
 
@@ -102,6 +105,7 @@ exports.submitSurvey = onRequest(
 
 const adminFunctions = require("./admin");
 exports.adminUpsertContent = adminFunctions.adminUpsertContent;
+exports.adminUpsertSection = adminFunctions.adminUpsertSection;
 exports.adminDeleteContent = adminFunctions.adminDeleteContent;
 exports.aprobarPublicacion = adminFunctions.aprobarPublicacion;
 exports.rechazarPublicacion = adminFunctions.rechazarPublicacion;

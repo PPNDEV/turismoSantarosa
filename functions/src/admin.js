@@ -166,6 +166,105 @@ exports.adminUpsertContent = onCall(
   },
 );
 
+// ---------------------------------------------------------------------------
+// Edición de SECCIONES editoriales completas (contenido anidado).
+// Algunos nodos no son listas planas de tarjetas sino objetos por secciones
+// (p. ej. gastronomia = { jambeli: [...], sanGregorio: [...] }). Esta función
+// guarda el nodo completo de una sola vez. Solo administradores.
+// ---------------------------------------------------------------------------
+const SECTION_NODES = new Set([
+  "actividades",
+  "gastronomia",
+  "hospedajes",
+  "floraFauna",
+  "eventos",
+  "cooperativas",
+]);
+
+const MAX_SECTION_DEPTH = 8;
+const MAX_ARRAY_ITEMS = 500;
+const MAX_OBJECT_KEYS = 200;
+const MAX_STRING_LENGTH = 6000;
+
+function sanitizeRichString(value) {
+  return String(value == null ? "" : value)
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/\r\n?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, MAX_STRING_LENGTH);
+}
+
+function sanitizeSectionValue(value, depth = 0) {
+  if (depth > MAX_SECTION_DEPTH) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    return sanitizeRichString(value);
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value
+      .slice(0, MAX_ARRAY_ITEMS)
+      .map((entry) => sanitizeSectionValue(entry, depth + 1))
+      .filter((entry) => entry !== null && entry !== undefined);
+  }
+  if (value && typeof value === "object") {
+    const out = {};
+    let count = 0;
+    for (const [key, val] of Object.entries(value)) {
+      if (count >= MAX_OBJECT_KEYS) break;
+      if (!/^[a-zA-Z0-9_-]{1,60}$/.test(key)) continue;
+      const sanitized = sanitizeSectionValue(val, depth + 1);
+      if (sanitized !== null && sanitized !== undefined) {
+        out[key] = sanitized;
+        count += 1;
+      }
+    }
+    return out;
+  }
+  return null;
+}
+
+exports.adminUpsertSection = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
+
+    const { nodeKey, data } = request.data;
+    if (!nodeKey || typeof data !== "object" || data === null) {
+      throw new HttpsError("invalid-argument", "Faltan parámetros requeridos.");
+    }
+    if (!SECTION_NODES.has(nodeKey)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Nodo de contenido no permitido.",
+      );
+    }
+
+    const sanitized = sanitizeSectionValue(data);
+    if (!sanitized || typeof sanitized !== "object") {
+      throw new HttpsError("invalid-argument", "Contenido inválido.");
+    }
+
+    await getRtdb(admin).ref(`content/${nodeKey}`).set(sanitized);
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth?.uid,
+      "content.section.upsert",
+      { nodeKey },
+    );
+
+    return { success: true };
+  },
+);
+
 exports.adminDeleteContent = onCall(
   { region: "us-central1" },
   async (request) => {

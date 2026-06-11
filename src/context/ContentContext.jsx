@@ -124,6 +124,10 @@ export function ContentProvider({ children }) {
   const [galeria, setGaleria] = useState([]);
   const [heroSlides, setHeroSlidesState] = useState([]);
   const [cooperativas, setCooperativas] = useState([]);
+  // Datos crudos anidados tal como están en RTDB (por nodo). Las páginas
+  // públicas editoriales (gastronomía, eventos, etc.) leen de aquí porque su
+  // contenido es un objeto por secciones, no una lista plana de tarjetas.
+  const [sections, setSections] = useState({});
   const [loadedNodes, setLoadedNodes] = useState(() => new Set());
   const requiredNodes = useMemo(
     () => getRequiredNodes(location.pathname),
@@ -176,11 +180,16 @@ export function ContentProvider({ children }) {
           }
 
           setter(items);
+          setSections((previous) => ({
+            ...previous,
+            [nodeKey]: snapshot.val(),
+          }));
           setLoadedNodes((previous) => new Set(previous).add(nodeKey));
         },
         (error) => {
           console.warn(`RTDB listener error for content/${nodeKey}:`, error);
           setter([]);
+          setSections((previous) => ({ ...previous, [nodeKey]: null }));
           setLoadedNodes((previous) => new Set(previous).add(nodeKey));
         },
       );
@@ -210,6 +219,12 @@ export function ContentProvider({ children }) {
 
     const adminUpsertContent = httpsCallable(functions, "adminUpsertContent");
     await adminUpsertContent({ nodeKey, itemData, id });
+  }, []);
+
+  /** Upsert de una SECCIÓN editorial completa (contenido anidado por secciones). */
+  const upsertSection = useCallback(async (nodeKey, data) => {
+    const adminUpsertSection = httpsCallable(functions, "adminUpsertSection");
+    await adminUpsertSection({ nodeKey, data });
   }, []);
 
   /** Delete: elimina de RTDB vía Cloud Function */
@@ -376,8 +391,10 @@ export function ContentProvider({ children }) {
       galeria,
       heroSlides,
       cooperativas,
+      sections,
       loading,
 
+      upsertSection,
       upsertActividad,
       deleteActividad,
       upsertActividadesEditorial,
@@ -410,7 +427,9 @@ export function ContentProvider({ children }) {
       galeria,
       heroSlides,
       cooperativas,
+      sections,
       loading,
+      upsertSection,
       upsertActividad,
       deleteActividad,
       upsertActividadesEditorial,

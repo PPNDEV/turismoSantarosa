@@ -202,15 +202,25 @@ async function ensureOwnPrivateProfileIfAdmin(firebaseUser, role) {
     return;
   }
 
-  await setDoc(
-    doc(db, USERS_PRIVATE_COLLECTION, firebaseUser.uid),
-    {
-      email: normalizedEmail,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
+  // Best-effort: en el primer login del admin el custom claim `role` aún no
+  // existe, por lo que la regla `isAdmin()` deniega esta escritura. No debe
+  // bloquear el inicio de sesión: el perfil privado es solo para auditoría.
+  try {
+    await setDoc(
+      doc(db, USERS_PRIVATE_COLLECTION, firebaseUser.uid),
+      {
+        email: normalizedEmail,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    console.warn(
+      "No se pudo registrar el perfil privado del admin (no bloquea el login):",
+      error?.message || error,
+    );
+  }
 }
 
 export function AuthProvider({ children }) {
@@ -364,7 +374,11 @@ export function AuthProvider({ children }) {
 
   const hydrateFirebaseSession = async (firebaseUser) => {
     const profile = await ensureUserProfile(firebaseUser);
-    await ensureOwnPrivateProfileIfAdmin(firebaseUser, profile.role);
+
+    // Fire-and-forget: el perfil privado es solo para auditoría y su escritura
+    // puede ser denegada o quedar pendiente hasta que el admin tenga el custom
+    // claim. No debe bloquear (ni colgar) el inicio de sesión.
+    void ensureOwnPrivateProfileIfAdmin(firebaseUser, profile.role);
 
     if (profile.active === false || profile.deletedAt) {
       await signOut(auth);

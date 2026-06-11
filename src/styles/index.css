@@ -364,10 +364,16 @@ select:focus-visible {
 .header-hidden {
   display: none;
 }
-.header-home,
 .header-page {
   background: transparent;
   border-bottom: none;
+}
+/* En la portada el header va sobre el hero claro: fondo azul marino
+   translúcido para que los enlaces blancos sean legibles. */
+.header-home {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
 }
 .header-home .logo-title,
 .header-home .nav-link,
@@ -2327,6 +2333,10 @@ select:focus-visible {
   background: #fff1f2;
   color: #be123c;
 }
+.survey-status-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
 .survey-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2677,6 +2687,214 @@ select:focus-visible {
   font-size: 0.82rem;
   display: grid;
   gap: 0.22rem;
+}
+/* Contenido editorial por secciones (gastronomía, hospedaje, flora/fauna, etc.) */
+.info-lead {
+  color: var(--gray-700);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin: 0.5rem 0 1.25rem;
+}
+.info-subsection {
+  margin-top: 1.5rem;
+}
+.info-subsection-title {
+  font-size: 1.05rem;
+  color: var(--ocean-dark);
+  margin: 0 0 0.85rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid var(--ocean-light);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.info-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+}
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  background: white;
+}
+.info-table th,
+.info-table td {
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+.info-table th {
+  background: var(--ocean-light);
+  color: var(--ocean-darker);
+  font-weight: 600;
+}
+.info-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.info-card-text .info-card-body {
+  padding: 1.1rem;
+}
+.info-card-text p {
+  color: var(--gray-700);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-top: 0.5rem;
+}
+.species-card img {
+  height: 180px;
+  width: 100%;
+  object-fit: cover;
+}
+.species-scientific {
+  color: var(--gray-700);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+/* Enlaces de ayuda al pie de los formularios (login y registro de editor) */
+.login-register-hint {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+.login-register-hint a {
+  color: var(--gold);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.login-register-hint a:hover {
+  color: var(--gold-light);
+}
+.reviews-form-hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--gray-700);
+}
+.reviews-form-hint a {
+  color: var(--ocean);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.reviews-form-hint a:hover {
+  color: var(--ocean-dark);
+}
+.eventos-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1.5rem;
+}
+.filter-chip {
+  border: 1px solid var(--gray-200);
+  background: white;
+  color: var(--gray-700);
+  border-radius: 999px;
+  padding: 0.4rem 0.95rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.filter-chip:hover {
+  border-color: var(--ocean);
+  color: var(--ocean);
+}
+.filter-chip.active {
+  background: var(--ocean);
+  border-color: var(--ocean);
+  color: white;
+}
+/* Editor genérico de secciones del panel admin */
+.admin-section-subtitle {
+  color: var(--gray-700);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+.admin-section-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.admin-section-fields {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+.admin-section-fields:disabled {
+  opacity: 0.7;
+}
+.admin-section-group {
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 1rem;
+  background: #fafbfc;
+}
+.admin-section-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.admin-section-group-title {
+  font-size: 1rem;
+  color: var(--ocean-dark);
+  margin: 0 0 0.5rem;
+}
+.admin-section-group-body {
+  display: grid;
+  gap: 0.65rem;
+}
+.admin-section-list {
+  display: grid;
+  gap: 0.85rem;
+}
+.admin-section-item {
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  background: white;
+  padding: 0.85rem;
+}
+.admin-section-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.admin-section-item-title {
+  font-weight: 600;
+  color: var(--navy);
+  font-size: 0.9rem;
+}
+.admin-section-item-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+.admin-section-item-body {
+  display: grid;
+  gap: 0.6rem;
+}
+.admin-section-empty {
+  color: var(--gray-700);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+}
+.admin-alert-success {
+  background: #e7f7ed;
+  color: #1c7a43;
+  border: 1px solid #b6e6c8;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
 }
 .cooperativas-grid {
   margin-top: 1rem;

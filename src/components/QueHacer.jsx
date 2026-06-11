@@ -1,14 +1,13 @@
 import { Link } from "react-router-dom";
 import {
   FaArrowRight,
-  FaBinoculars,
   FaCamera,
+  FaCocktail,
   FaFish,
-  FaLeaf,
-  FaTheaterMasks,
   FaTree,
   FaUmbrellaBeach,
-  FaUtensils,
+  FaWalking,
+  FaWater,
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import { useLanguage } from "../context/useLanguage";
@@ -21,14 +20,22 @@ const DEFAULT_EDITORIAL = {
   title: "¡Santa Rosa, te enamora!",
   subtitle:
     "Santa Rosa, ciudad Benemérita del Ecuador, perteneciente a la provincia de El Oro, es reconocida a nivel nacional e internacional por ser pionera en el cultivo del camarón en cautiverio.",
-  intro: `Tierra de encantos naturales y culturales que invita a propios y extraños a adentrarse en un sinfín de emociones: descubrir la calidad y calidez de su gente, perdiéndose entre ríos, cascadas, playas, mares y atardeceres deslumbrantes.
-
-Puerto Jelí, parroquia urbana y emblema turístico del cantón, cosecha y prepara el marisco más fresco y delicioso —del mar a su mesa—, lo que le ha valido el reconocimiento como Destino Gastronómico del Sur del Ecuador.
-
-Nuestras parroquias rurales, como La Avanzada, tierra productiva poseedora de un mágico encanto, bordeada de ríos y cascadas, invitan a deleitarse con la más exquisita comida criolla; mientras las islas del Archipiélago de Jambelí, rinconcitos mágicos, reciben a sus visitantes con turismo de sol y playa, ecoturismo, aventura, turismo comunitario, gastronómico y cultural.
-
-Porque donde llueve turismo, llueven oportunidades, te invitamos a descubrir Santa Rosa.`,
+  intro: "",
 };
+
+// Mapea el campo `icono` del contenido a un icono visual.
+const ICON_BY_KEY = {
+  water: FaWater,
+  walk: FaWalking,
+  tree: FaTree,
+  glass: FaCocktail,
+  fish: FaFish,
+  beach: FaUmbrellaBeach,
+};
+
+function getActivityIcon(icono) {
+  return ICON_BY_KEY[String(icono || "").toLowerCase()] || FaUmbrellaBeach;
+}
 
 function getIntroParagraphs(intro) {
   return String(intro || "")
@@ -37,61 +44,8 @@ function getIntroParagraphs(intro) {
     .filter(Boolean);
 }
 
-function buildFallbackActivities(t) {
-  return [
-    {
-      icon: FaUmbrellaBeach,
-      nombre: t("queHacer.activities.beach.name"),
-      descripcion: t("queHacer.activities.beach.desc"),
-      isla: "Jambeli",
-    },
-    {
-      icon: FaBinoculars,
-      nombre: t("queHacer.activities.nature.name"),
-      descripcion: t("queHacer.activities.nature.desc"),
-      isla: "Costa Rica",
-    },
-    {
-      icon: FaUtensils,
-      nombre: t("queHacer.activities.gastronomy.name"),
-      descripcion: t("queHacer.activities.gastronomy.desc"),
-      isla: "San Gregorio",
-    },
-    {
-      icon: FaFish,
-      nombre: t("queHacer.activities.fishing.name"),
-      descripcion: t("queHacer.activities.fishing.desc"),
-      isla: "Mar abierto",
-    },
-    {
-      icon: FaLeaf,
-      nombre: t("queHacer.activities.ecotourism.name"),
-      descripcion: t("queHacer.activities.ecotourism.desc"),
-      isla: "La Tembladera",
-    },
-    {
-      icon: FaTheaterMasks,
-      nombre: t("queHacer.activities.culture.name"),
-      descripcion: t("queHacer.activities.culture.desc"),
-      isla: "Santa Rosa",
-    },
-    {
-      icon: FaTree,
-      nombre: t("queHacer.activities.mangrove.name"),
-      descripcion: t("queHacer.activities.mangrove.desc"),
-      isla: "Manglares",
-    },
-    {
-      icon: FaCamera,
-      nombre: t("queHacer.activities.photo.name"),
-      descripcion: t("queHacer.activities.photo.desc"),
-      isla: "Paisajes",
-    },
-  ];
-}
-
 function ActivityCard({ activity, index }) {
-  const Icon = typeof activity.icon === "function" ? activity.icon : FaCamera;
+  const Icon = getActivityIcon(activity.icono);
 
   return (
     <article className="activity-card reveal">
@@ -101,13 +55,16 @@ function ActivityCard({ activity, index }) {
           alt={activity.nombre}
           loading="lazy"
           decoding="async"
+          onError={(e) => {
+            if (e.currentTarget.src !== FALLBACK_IMAGE) {
+              e.currentTarget.src = FALLBACK_IMAGE;
+            }
+          }}
         />
       </div>
       <div className="activity-card-body">
         <div className="activity-card-meta">
-          <span className="badge badge-ocean">
-            {activity.isla || "Santa Rosa"}
-          </span>
+          <span className="badge badge-ocean">{activity.isla || "Jambelí"}</span>
           <span className="activity-card-index">
             {String(index + 1).padStart(2, "0")}
           </span>
@@ -124,9 +81,7 @@ function ActivityCard({ activity, index }) {
 export default function QueHacer({ mode = "teaser" }) {
   const { t } = useLanguage();
   const content = useContent() || {};
-  const actividades = Array.isArray(content.actividades)
-    ? content.actividades
-    : [];
+  const actividadesData = content.sections?.actividades || {};
   const actividadesEditorial = Array.isArray(content.actividadesEditorial)
     ? content.actividadesEditorial
     : [];
@@ -135,11 +90,13 @@ export default function QueHacer({ mode = "teaser" }) {
     ...DEFAULT_EDITORIAL,
     ...(actividadesEditorial[0] || {}),
   };
-  const fallbackActivities = buildFallbackActivities(t);
-  const visibleActivities =
-    actividades.length > 0 ? actividades : fallbackActivities;
-  const teaserActivities = visibleActivities.slice(0, 4);
+  const leadText = actividadesData.descripcion || editorial.intro;
+  const activities = Array.isArray(actividadesData.listado)
+    ? actividadesData.listado
+    : [];
+  const teaserActivities = activities.slice(0, 4);
   const isPage = mode === "page";
+  const visibleActivities = isPage ? activities : teaserActivities;
 
   return (
     <section
@@ -174,33 +131,33 @@ export default function QueHacer({ mode = "teaser" }) {
           </div>
         )}
 
-        {!isPage && (
+        {leadText && (
           <div className="activities-teaser-intro reveal">
-            {getIntroParagraphs(editorial.intro).map((paragraph, index) => (
+            {getIntroParagraphs(leadText).map((paragraph, index) => (
               <p key={index}>{paragraph}</p>
             ))}
           </div>
         )}
 
-        <div
-          className={
-            isPage
-              ? "activities-grid"
-              : "activities-grid activities-grid-teaser"
-          }
-        >
-          {(isPage ? visibleActivities : teaserActivities).map(
-            (activity, index) => (
+        {visibleActivities.length > 0 && (
+          <div
+            className={
+              isPage
+                ? "activities-grid"
+                : "activities-grid activities-grid-teaser"
+            }
+          >
+            {visibleActivities.map((activity, index) => (
               <ActivityCard
                 key={activity.id || `${activity.nombre}-${index}`}
                 activity={activity}
                 index={index}
               />
-            ),
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {!isPage && (
+        {!isPage && activities.length > 0 && (
           <div className="activities-teaser-footer reveal">
             <Link className="btn btn-primary" to="/actividades">
               Explorar editorial completa

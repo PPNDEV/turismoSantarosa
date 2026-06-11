@@ -201,7 +201,11 @@ export default function AdminActividades({
 
   const save = async () => {
     if (
-      !canManageContentItem(editing ? initialForm : null, currentUser, canEdit) ||
+      !canManageContentItem(
+        editing ? initialForm : null,
+        currentUser,
+        canEdit,
+      ) ||
       saving
     )
       return;
@@ -518,9 +522,7 @@ export default function AdminActividades({
                   </strong>
                 </td>
                 <td>{a.isla || "-"}</td>
-                <td className="admin-cell-ellipsis">
-                  {a.descripcion}
-                </td>
+                <td className="admin-cell-ellipsis">{a.descripcion}</td>
                 <td>
                   <button
                     className="action-btn edit-btn"
