@@ -1,4 +1,3 @@
-/* ci-test */
 import { lazy, Suspense, useEffect } from "react";
 import {
   BrowserRouter,

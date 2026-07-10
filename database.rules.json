@@ -7,10 +7,6 @@
     "contentPending": {
       ".read": "auth != null && (auth.token.role == 'administrador' || auth.token.role == 'editor')",
       ".write": false
-    },
-    "_citest": {
-      ".read": false,
-      ".write": false
     }
   }
 }
