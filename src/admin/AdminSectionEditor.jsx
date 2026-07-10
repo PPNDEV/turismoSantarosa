@@ -66,6 +66,17 @@ const SUMMARY_NAME_KEYS = [
   "tarifa",
 ];
 
+function summarizeListDetail(itemFields, itemValue) {
+  const detailField = itemFields.find(
+    (field) =>
+      field.type !== "image" &&
+      !SUMMARY_NAME_KEYS.includes(field.name) &&
+      itemValue?.[field.name],
+  );
+
+  return detailField ? String(itemValue[detailField.name]) : "Sin detalle";
+}
+
 function summarizeListItem(itemFields, itemValue, itemLabel, index) {
   let title = "";
   for (const key of SUMMARY_NAME_KEYS) {
@@ -445,11 +456,10 @@ function FieldRenderer({
           </h3>
           <button
             type="button"
-            className="btn btn-outline btn-sm"
+            className="btn btn-primary btn-sm"
             onClick={() => onAddItem(path, field.item)}
           >
-            <FaPlus className="inline-icon" aria-hidden="true" /> Agregar{" "}
-            {itemLabel.toLowerCase()}
+            <FaPlus className="inline-icon" aria-hidden="true" /> Añadir
           </button>
         </div>
 
@@ -458,35 +468,49 @@ function FieldRenderer({
             Sin {itemLabel.toLowerCase()}s. Usa “Agregar”.
           </p>
         ) : (
-          <div className="admin-section-card-grid">
-            {items.map((item, index) => {
-              const summary = summarizeListItem(
-                field.item,
-                item,
-                itemLabel,
-                index,
-              );
-              return (
-                <div className="admin-section-card" key={index}>
-                  <span className="admin-section-card-order">
-                    {index + 1}
-                  </span>
-                  <span className="admin-section-card-thumb" aria-hidden="true">
-                    {summary.image ? (
-                      <img src={summary.image} alt="" />
-                    ) : (
-                      <FaImage aria-hidden="true" />
-                    )}
-                  </span>
-                  <span className="admin-section-card-body">
-                    <span className="admin-section-card-title">
-                      {summary.title}
-                    </span>
-                    <span className="admin-section-card-subtitle">
-                      {itemLabel}
-                    </span>
-                  </span>
-                  <span className="admin-section-card-actions">
+          <div className="admin-section-table-scroll">
+            <table className="admin-section-table">
+              <thead>
+                <tr>
+                  <th>Orden</th>
+                  <th>Imagen</th>
+                  <th>Título</th>
+                  <th>Detalle</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, index) => {
+                  const summary = summarizeListItem(
+                    field.item,
+                    item,
+                    itemLabel,
+                    index,
+                  );
+                  const detail = summarizeListDetail(field.item, item);
+                  return (
+                    <tr key={index}>
+                      <td>{index + 1}</td>
+                      <td>
+                        <span className="admin-section-table-thumb">
+                          {summary.image ? (
+                            <img src={summary.image} alt={`Imagen de ${summary.title}`} />
+                          ) : (
+                            <FaImage aria-hidden="true" />
+                          )}
+                        </span>
+                      </td>
+                      <td>
+                        <strong className="admin-section-table-title">
+                          {summary.title}
+                        </strong>
+                        <span className="admin-section-table-type">{itemLabel}</span>
+                      </td>
+                      <td>
+                        <span className="admin-section-table-detail">{detail}</span>
+                      </td>
+                      <td>
+                        <span className="admin-section-table-actions">
                     <button
                       type="button"
                       className="action-btn move-btn icon-btn"
@@ -509,25 +533,29 @@ function FieldRenderer({
                     </button>
                     <button
                       type="button"
-                      className="btn btn-outline btn-sm admin-section-card-edit-btn"
+                      className="action-btn edit-btn icon-btn"
                       onClick={() => onEditItem(path, index, field)}
+                      title="Editar"
+                      aria-label={`Editar ${summary.title}`}
                     >
-                      <FaEdit className="inline-icon" aria-hidden="true" />{" "}
-                      Editar
+                      <FaEdit aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       className="action-btn del-btn icon-btn"
                       onClick={() => onRemoveItem(path, index)}
                       title="Eliminar"
-                      aria-label="Eliminar"
+                      aria-label={`Eliminar ${summary.title}`}
                     >
                       <FaTrash aria-hidden="true" />
                     </button>
-                  </span>
-                </div>
-              );
-            })}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
