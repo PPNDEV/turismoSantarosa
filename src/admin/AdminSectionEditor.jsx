@@ -2,8 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FaArrowDown,
   FaArrowUp,
+  FaEdit,
+  FaImage,
   FaPlus,
   FaSave,
+  FaTimes,
   FaTrash,
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
@@ -54,6 +57,37 @@ function sanitizeStorageId(value) {
     .slice(0, 60);
 }
 
+// Nombre/miniatura que se muestra en la tarjeta compacta de cada elemento de una lista.
+const SUMMARY_NAME_KEYS = [
+  "nombre",
+  "nombreComun",
+  "titulo",
+  "tipo",
+  "tarifa",
+];
+
+function summarizeListItem(itemFields, itemValue, itemLabel, index) {
+  let title = "";
+  for (const key of SUMMARY_NAME_KEYS) {
+    if (itemValue?.[key]) {
+      title = String(itemValue[key]);
+      break;
+    }
+  }
+  if (!title) {
+    const textField = itemFields.find((f) => f.type === "text");
+    if (textField && itemValue?.[textField.name]) {
+      title = String(itemValue[textField.name]);
+    }
+  }
+  if (!title) title = `${itemLabel} ${index + 1}`;
+
+  const imageField = itemFields.find((f) => f.type === "image");
+  const image = imageField ? itemValue?.[imageField.name] : "";
+
+  return { title, image };
+}
+
 // ---------------------------------------------------------------------------
 // Editor genérico de secciones editoriales anidadas.
 // ---------------------------------------------------------------------------
@@ -73,6 +107,7 @@ export default function AdminSectionEditor({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [editingList, setEditingList] = useState(null);
   const initializedRef = useRef(false);
 
   const isAdmin = currentUser?.role === "administrador";
@@ -198,6 +233,11 @@ export default function AdminSectionEditor({
     setFiles({});
     setError("");
     setSuccess("");
+    setEditingList(null);
+  };
+
+  const openListItemEditor = (path, index, field) => {
+    setEditingList({ path, index, field });
   };
 
   if (!schema) {
@@ -271,10 +311,83 @@ export default function AdminSectionEditor({
               onAddItem={addListItem}
               onRemoveItem={removeListItem}
               onMoveItem={moveListItem}
+              onEditItem={openListItemEditor}
             />
           ))}
         </fieldset>
       </div>
+
+      {editingList &&
+        getIn(draft, [...editingList.path, editingList.index]) !==
+          undefined && (
+          <div
+            className="modal-overlay"
+            onClick={() => setEditingList(null)}
+          >
+            <div
+              className="modal-box admin-user-modal admin-section-item-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="admin-modal-header">
+                <h2>
+                  {(editingList.field.itemLabel || "Elemento")}{" "}
+                  {editingList.index + 1}
+                </h2>
+                <button
+                  type="button"
+                  className="action-btn"
+                  onClick={() => setEditingList(null)}
+                  aria-label="Cerrar"
+                >
+                  <FaTimes aria-hidden="true" />
+                </button>
+              </div>
+
+              <fieldset
+                className="admin-section-fields"
+                disabled={!canEditSection || saving}
+              >
+                {editingList.field.item.map((sub) => (
+                  <FieldRenderer
+                    key={sub.name}
+                    field={sub}
+                    path={[...editingList.path, editingList.index, sub.name]}
+                    draft={draft}
+                    files={files}
+                    onChange={updateValue}
+                    onFileChange={handleFileChange}
+                    onAddItem={addListItem}
+                    onRemoveItem={removeListItem}
+                    onMoveItem={moveListItem}
+                    onEditItem={openListItemEditor}
+                  />
+                ))}
+              </fieldset>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => {
+                    removeListItem(editingList.path, editingList.index);
+                    setEditingList(null);
+                  }}
+                  disabled={!canEditSection || saving}
+                >
+                  <FaTrash className="inline-icon" aria-hidden="true" />{" "}
+                  Eliminar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setEditingList(null)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
@@ -292,6 +405,7 @@ function FieldRenderer({
   onAddItem,
   onRemoveItem,
   onMoveItem,
+  onEditItem,
 }) {
   const value = getIn(draft, path);
 
@@ -312,6 +426,7 @@ function FieldRenderer({
               onAddItem={onAddItem}
               onRemoveItem={onRemoveItem}
               onMoveItem={onMoveItem}
+              onEditItem={onEditItem}
             />
           ))}
         </div>
@@ -343,76 +458,76 @@ function FieldRenderer({
             Sin {itemLabel.toLowerCase()}s. Usa “Agregar”.
           </p>
         ) : (
-          <div className="admin-section-list-table-wrap">
-            <table className="admin-section-list-table">
-              <thead>
-                <tr>
-                  <th>Orden</th>
-                  <th>{itemLabel}</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((_, index) => (
-                  <tr key={index}>
-                    <td className="admin-section-order-cell">
-                      <span>{index + 1}</span>
-                    </td>
-                    <td>
-                      <div className="admin-section-item-body">
-                        {field.item.map((sub) => (
-                          <FieldRenderer
-                            key={sub.name}
-                            field={sub}
-                            path={[...path, index, sub.name]}
-                            draft={draft}
-                            files={files}
-                            onChange={onChange}
-                            onFileChange={onFileChange}
-                            onAddItem={onAddItem}
-                            onRemoveItem={onRemoveItem}
-                            onMoveItem={onMoveItem}
-                          />
-                        ))}
-                      </div>
-                    </td>
-                    <td className="admin-section-actions-cell">
-                      <div className="admin-actions-inline">
-                        <button
-                          type="button"
-                          className="action-btn move-btn icon-btn"
-                          onClick={() => onMoveItem(path, index, -1)}
-                          disabled={index === 0}
-                          title="Subir"
-                          aria-label="Subir"
-                        >
-                          <FaArrowUp aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          className="action-btn move-btn icon-btn"
-                          onClick={() => onMoveItem(path, index, 1)}
-                          disabled={index === items.length - 1}
-                          title="Bajar"
-                          aria-label="Bajar"
-                        >
-                          <FaArrowDown aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          className="action-btn del-btn icon-btn"
-                          onClick={() => onRemoveItem(path, index)}
-                          title="Eliminar"
-                          aria-label="Eliminar"
-                        >
-                          <FaTrash aria-hidden="true" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="admin-section-card-grid">
+            {items.map((item, index) => {
+              const summary = summarizeListItem(
+                field.item,
+                item,
+                itemLabel,
+                index,
+              );
+              return (
+                <div className="admin-section-card" key={index}>
+                  <span className="admin-section-card-order">
+                    {index + 1}
+                  </span>
+                  <span className="admin-section-card-thumb" aria-hidden="true">
+                    {summary.image ? (
+                      <img src={summary.image} alt="" />
+                    ) : (
+                      <FaImage aria-hidden="true" />
+                    )}
+                  </span>
+                  <span className="admin-section-card-body">
+                    <span className="admin-section-card-title">
+                      {summary.title}
+                    </span>
+                    <span className="admin-section-card-subtitle">
+                      {itemLabel}
+                    </span>
+                  </span>
+                  <span className="admin-section-card-actions">
+                    <button
+                      type="button"
+                      className="action-btn move-btn icon-btn"
+                      onClick={() => onMoveItem(path, index, -1)}
+                      disabled={index === 0}
+                      title="Subir"
+                      aria-label="Subir"
+                    >
+                      <FaArrowUp aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="action-btn move-btn icon-btn"
+                      onClick={() => onMoveItem(path, index, 1)}
+                      disabled={index === items.length - 1}
+                      title="Bajar"
+                      aria-label="Bajar"
+                    >
+                      <FaArrowDown aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm admin-section-card-edit-btn"
+                      onClick={() => onEditItem(path, index, field)}
+                    >
+                      <FaEdit className="inline-icon" aria-hidden="true" />{" "}
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="action-btn del-btn icon-btn"
+                      onClick={() => onRemoveItem(path, index)}
+                      title="Eliminar"
+                      aria-label="Eliminar"
+                    >
+                      <FaTrash aria-hidden="true" />
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
