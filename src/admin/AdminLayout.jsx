@@ -368,6 +368,7 @@ export default function AdminLayout() {
       case "actividades":
         return (
           <AdminSectionEditor
+            key="actividades"
             nodeKey="actividades"
             canEdit={canEditContent}
             currentUser={user}
@@ -377,6 +378,7 @@ export default function AdminLayout() {
       case "eventos":
         return (
           <AdminSectionEditor
+            key="eventos"
             nodeKey="eventos"
             canEdit={canEditContent}
             currentUser={user}
@@ -386,6 +388,7 @@ export default function AdminLayout() {
       case "gastronomia":
         return (
           <AdminSectionEditor
+            key="gastronomia"
             nodeKey="gastronomia"
             canEdit={canEditContent}
             currentUser={user}
@@ -395,6 +398,7 @@ export default function AdminLayout() {
       case "hospedajes":
         return (
           <AdminSectionEditor
+            key="hospedajes"
             nodeKey="hospedajes"
             canEdit={canEditContent}
             currentUser={user}
@@ -404,6 +408,7 @@ export default function AdminLayout() {
       case "floraFauna":
         return (
           <AdminSectionEditor
+            key="floraFauna"
             nodeKey="floraFauna"
             canEdit={canEditContent}
             currentUser={user}
@@ -413,6 +418,7 @@ export default function AdminLayout() {
       case "transporte":
         return (
           <AdminSectionEditor
+            key="cooperativas"
             nodeKey="cooperativas"
             canEdit={canEditContent}
             currentUser={user}
