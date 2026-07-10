@@ -121,6 +121,7 @@ const menuItems = [
     title: "Mensajes de Contacto",
     previewPath: "/admin",
     description: "Consulta mensajes enviados por los visitantes del sitio.",
+    requiresAdmin: true,
   },
   {
     key: "encuestas",
@@ -129,6 +130,7 @@ const menuItems = [
     title: "Encuestas de Satisfacción",
     previewPath: "/admin",
     description: "Visualiza puntuaciones y comentarios de los visitantes.",
+    requiresAdmin: true,
   },
   {
     key: "resenas",
@@ -443,6 +445,7 @@ export default function AdminLayout() {
       case "resenas":
         return (
           <AdminResenas
+            canModerate={canManageUsers}
             onLivePreviewChange={handleLivePreviewChange}
             onDirtyChange={dirtyChangeHandlers.resenas}
           />

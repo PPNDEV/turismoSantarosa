@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FaSave,
+  FaSyncAlt,
   FaTimes,
   FaTrash,
   FaUserPlus,
@@ -39,13 +40,31 @@ export default function AdminUsuarios({
     createUser,
     updateUserRole,
     deleteUser,
+    refreshUsers,
     canManageUsers,
   } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [savingRole, setSavingRole] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshUsers();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Al abrir la sección, recarga la lista autoritativa para incluir cuentas
+  // recién creadas o editores aprobados que aún no estén en la vista en vivo.
+  useEffect(() => {
+    void refreshUsers();
+  }, [refreshUsers]);
   const renderInlineCreateForm = false;
 
   const adminCount = useMemo(
@@ -74,6 +93,7 @@ export default function AdminUsuarios({
       return;
     }
 
+    setCreating(true);
     try {
       await createUser(form);
       setSuccess("Usuario creado correctamente.");
@@ -81,6 +101,8 @@ export default function AdminUsuarios({
       setShowCreateForm(false);
     } catch (creationError) {
       setError(creationError.message || "No se pudo crear el usuario.");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -171,15 +193,26 @@ export default function AdminUsuarios({
             <FaUserShield className="inline-icon" aria-hidden="true" />
             Gestión de Roles ({users.length})
           </h2>
-          <button
-            className="btn btn-primary"
-            onClick={openCreateForm}
-            disabled={!canManageUsers}
-            type="button"
-          >
-            <FaUserPlus className="inline-icon" aria-hidden="true" />
-            Crear Usuario
-          </button>
+          <div className="admin-header-actions">
+            <button
+              className="btn btn-outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              type="button"
+            >
+              <FaSyncAlt className="inline-icon" aria-hidden="true" />
+              {refreshing ? "Actualizando..." : "Actualizar"}
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={openCreateForm}
+              disabled={!canManageUsers}
+              type="button"
+            >
+              <FaUserPlus className="inline-icon" aria-hidden="true" />
+              Crear Usuario
+            </button>
+          </div>
         </div>
 
         <div className="admin-users-meta">
@@ -331,10 +364,14 @@ export default function AdminUsuarios({
               <button
                 className="btn btn-primary"
                 type="submit"
-                disabled={!canManageUsers}
+                disabled={!canManageUsers || creating}
               >
-                <FaSave className="inline-icon" aria-hidden="true" />
-                Crear Usuario
+                {creating ? (
+                  <span className="btn-spinner" aria-hidden="true" />
+                ) : (
+                  <FaSave className="inline-icon" aria-hidden="true" />
+                )}
+                {creating ? "Creando..." : "Crear Usuario"}
               </button>
             </div>
           </form>

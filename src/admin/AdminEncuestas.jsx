@@ -8,14 +8,13 @@ import {
 } from "react-icons/fa";
 import {
   collection,
-  deleteDoc,
-  doc,
   getDocs,
   limit,
   orderBy,
   query,
 } from "firebase/firestore";
-import { db } from "../services/firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "../services/firebase";
 
 const PAGE_LIMIT = 50;
 
@@ -215,10 +214,21 @@ export default function AdminEncuestas({
   );
 
   const del = async (id) => {
-    if (confirm("Eliminar esta encuesta?")) {
-      await deleteDoc(doc(db, "encuestas_satisfaccion", id));
+    if (!confirm("Eliminar esta encuesta?")) {
+      return;
+    }
+
+    try {
+      const adminDeleteSurvey = httpsCallable(functions, "adminDeleteSurvey");
+      await adminDeleteSurvey({ id });
       setEncuestas((current) =>
         current.filter((encuesta) => encuesta.id !== id),
+      );
+    } catch (error) {
+      console.error("No se pudo eliminar la encuesta:", error);
+      alert(
+        error?.message ||
+          "No se pudo eliminar la encuesta. Verifica tus permisos.",
       );
     }
   };

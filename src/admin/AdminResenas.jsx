@@ -9,15 +9,13 @@ import {
 } from "react-icons/fa";
 import {
   collection,
-  deleteDoc,
-  doc,
   getDocs,
   limit,
   orderBy,
   query,
-  updateDoc,
 } from "firebase/firestore";
-import { db } from "../services/firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "../services/firebase";
 
 const PAGE_LIMIT = 80;
 
@@ -47,6 +45,7 @@ function formatDate(date) {
 }
 
 export default function AdminResenas({
+  canModerate = false,
   onLivePreviewChange = () => {},
   onDirtyChange = () => {},
 }) {
@@ -105,18 +104,40 @@ export default function AdminResenas({
   );
 
   const updateEstado = async (id, estado) => {
-    await updateDoc(doc(db, "resenas_turisticas", id), { estado });
-    setResenas((current) =>
-      current.map((resena) =>
-        resena.id === id ? { ...resena, estado } : resena,
-      ),
-    );
+    try {
+      const adminUpdateReviewStatus = httpsCallable(
+        functions,
+        "adminUpdateReviewStatus",
+      );
+      await adminUpdateReviewStatus({ id, estado });
+      setResenas((current) =>
+        current.map((resena) =>
+          resena.id === id ? { ...resena, estado } : resena,
+        ),
+      );
+    } catch (error) {
+      console.error("No se pudo actualizar la reseña:", error);
+      alert(
+        error?.message ||
+          "No se pudo actualizar la reseña. Verifica tus permisos.",
+      );
+    }
   };
 
   const del = async (id) => {
     if (!confirm("Eliminar esta resena?")) return;
-    await deleteDoc(doc(db, "resenas_turisticas", id));
-    setResenas((current) => current.filter((resena) => resena.id !== id));
+
+    try {
+      const adminDeleteReview = httpsCallable(functions, "adminDeleteReview");
+      await adminDeleteReview({ id });
+      setResenas((current) => current.filter((resena) => resena.id !== id));
+    } catch (error) {
+      console.error("No se pudo eliminar la reseña:", error);
+      alert(
+        error?.message ||
+          "No se pudo eliminar la reseña. Verifica tus permisos.",
+      );
+    }
   };
 
   const estadoDe = (resena) => resena.estado || "pendiente";
@@ -159,6 +180,13 @@ export default function AdminResenas({
           </button>
         </div>
 
+        {!canModerate && (
+          <div className="admin-readonly-note">
+            Modo consulta: puedes revisar las reseñas, pero solo un administrador
+            puede aprobarlas, rechazarlas o eliminarlas.
+          </div>
+        )}
+
         <div className="admin-filter-bar">
           {filtros.map((item) => (
             <button
@@ -194,7 +222,7 @@ export default function AdminResenas({
                 <th>Visitante</th>
                 <th>Cedula</th>
                 <th>Fecha</th>
-                <th>Acciones</th>
+                {canModerate && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -218,31 +246,33 @@ export default function AdminResenas({
                   <td>{resena.nombre}</td>
                   <td>{resena.cedula || "-"}</td>
                   <td>{formatDate(resena.fecha)}</td>
-                  <td>
-                    <div className="admin-actions-inline">
-                      <button
-                        className="action-btn edit-btn"
-                        onClick={() => updateEstado(resena.id, "aprobada")}
-                        title="Aprobar"
-                      >
-                        <FaCheck className="inline-icon" aria-hidden="true" />
-                      </button>
-                      <button
-                        className="action-btn reject-btn"
-                        onClick={() => updateEstado(resena.id, "rechazada")}
-                        title="Rechazar"
-                      >
-                        <FaTimes className="inline-icon" aria-hidden="true" />
-                      </button>
-                      <button
-                        className="action-btn del-btn"
-                        onClick={() => del(resena.id)}
-                        title="Eliminar"
-                      >
-                        <FaTrash className="inline-icon" aria-hidden="true" />
-                      </button>
-                    </div>
-                  </td>
+                  {canModerate && (
+                    <td>
+                      <div className="admin-actions-inline">
+                        <button
+                          className="action-btn edit-btn"
+                          onClick={() => updateEstado(resena.id, "aprobada")}
+                          title="Aprobar"
+                        >
+                          <FaCheck className="inline-icon" aria-hidden="true" />
+                        </button>
+                        <button
+                          className="action-btn reject-btn"
+                          onClick={() => updateEstado(resena.id, "rechazada")}
+                          title="Rechazar"
+                        >
+                          <FaTimes className="inline-icon" aria-hidden="true" />
+                        </button>
+                        <button
+                          className="action-btn del-btn"
+                          onClick={() => del(resena.id)}
+                          title="Eliminar"
+                        >
+                          <FaTrash className="inline-icon" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -67,6 +67,7 @@ const translations = {
       prevSlide: "Slide anterior",
       nextSlide: "Siguiente slide",
       goToSlide: "Ir al slide",
+      viewInfo: "Ver información",
     },
     heroSlides: {
       "hero-1": {
@@ -301,6 +302,7 @@ const translations = {
       prevSlide: "Previous slide",
       nextSlide: "Next slide",
       goToSlide: "Go to slide",
+      viewInfo: "View information",
     },
     heroSlides: {
       "hero-1": {
@@ -609,6 +611,7 @@ const translations = {
       prevSlide: "Slide anterior",
       nextSlide: "Próximo slide",
       goToSlide: "Ir para o slide",
+      viewInfo: "Ver informações",
     },
     heroSlides: {
       "hero-1": {

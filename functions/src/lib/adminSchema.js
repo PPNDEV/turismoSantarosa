@@ -80,7 +80,8 @@ const REQUIRED_FIELDS = {
   eventos: ["nombre"],
   floraFauna: ["nombre"],
   galeria: ["url"],
-  heroSlides: ["title"],
+  // El título de la portada es opcional; lo imprescindible es la imagen de fondo.
+  heroSlides: ["bg"],
   cooperativas: ["nombre"],
 };
 

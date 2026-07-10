@@ -665,3 +665,141 @@ exports.asignarRol = onCall({ region: "us-central1" }, async (request) => {
     throw new HttpsError("internal", e.message);
   }
 });
+
+// Borrado de encuestas de satisfacción. Se hace por Cloud Function (Admin SDK)
+// porque las reglas de Firestore exigen el custom claim `role`, que el admin
+// semilla puede no tener; aquí se valida el rol contra el documento usersPublic.
+exports.adminDeleteSurvey = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
+    const { id } = request.data || {};
+
+    if (!id || typeof id !== "string") {
+      throw new HttpsError("invalid-argument", "Falta el ID de la encuesta.");
+    }
+
+    await db.collection("encuestas_satisfaccion").doc(id).delete();
+
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth?.uid,
+      "survey.delete",
+      { id },
+    );
+
+    return { success: true };
+  },
+);
+
+// Borrado de mensajes de contacto. Misma razón que adminDeleteSurvey: las
+// reglas exigen el custom claim, así que el borrado pasa por el Admin SDK.
+exports.adminDeleteContactMessage = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
+    const { id } = request.data || {};
+
+    if (!id || typeof id !== "string") {
+      throw new HttpsError("invalid-argument", "Falta el ID del mensaje.");
+    }
+
+    await db.collection("mensajes_contacto").doc(id).delete();
+
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth?.uid,
+      "contact.delete",
+      { id },
+    );
+
+    return { success: true };
+  },
+);
+
+const REVIEW_STATES = ["pendiente", "aprobada", "rechazada"];
+
+// Moderación de reseñas: cambiar estado. Pasa por el Admin SDK para no depender
+// del custom claim que la regla isAdmin() exige.
+exports.adminUpdateReviewStatus = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
+    const { id, estado } = request.data || {};
+
+    if (!id || typeof id !== "string") {
+      throw new HttpsError("invalid-argument", "Falta el ID de la reseña.");
+    }
+
+    if (!REVIEW_STATES.includes(estado)) {
+      throw new HttpsError("invalid-argument", "Estado de reseña inválido.");
+    }
+
+    await db.collection("resenas_turisticas").doc(id).update({ estado });
+
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth?.uid,
+      "review.status",
+      { id, estado },
+    );
+
+    return { success: true };
+  },
+);
+
+// Borrado de reseñas turísticas vía Admin SDK.
+exports.adminDeleteReview = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    await verifyRole(db, request.auth?.uid, [ROLE_ADMIN]);
+    const { id } = request.data || {};
+
+    if (!id || typeof id !== "string") {
+      throw new HttpsError("invalid-argument", "Falta el ID de la reseña.");
+    }
+
+    await db.collection("resenas_turisticas").doc(id).delete();
+
+    await logAdminAction(
+      { db, FieldValue: admin.firestore.FieldValue, logger },
+      request.auth?.uid,
+      "review.delete",
+      { id },
+    );
+
+    return { success: true };
+  },
+);
+
+// Sincroniza el custom claim `role` del usuario autenticado con el rol que
+// tiene en usersPublic. Resuelve el arranque del admin semilla (rol en
+// Firestore pero no en el token) y mantiene el claim al día tras cambios de rol.
+// No permite escalar privilegios: el rol se toma de usersPublic, documento que
+// solo un administrador puede elevar.
+exports.sincronizarMiRol = onCall({ region: "us-central1" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
+  }
+
+  const snapshot = await db.collection("usersPublic").doc(uid).get();
+  if (!snapshot.exists) {
+    throw new HttpsError("permission-denied", "Perfil no encontrado.");
+  }
+
+  const data = snapshot.data() || {};
+  if (data.active === false) {
+    throw new HttpsError("permission-denied", "Usuario inactivo.");
+  }
+
+  const role = normalizeRole(data.role);
+  const currentClaim = request.auth.token.role || null;
+  const updated = currentClaim !== role;
+
+  if (updated) {
+    await admin.auth().setCustomUserClaims(uid, { role });
+  }
+
+  return { role, updated };
+});

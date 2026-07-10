@@ -1,5 +1,6 @@
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { onRequest } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const httpUtils = require("./lib/httpUtils");
@@ -25,8 +26,18 @@ const allowedOrigins = httpUtils.parseAllowedOrigins(
 );
 const corsOption = allowedOrigins.length > 0 ? allowedOrigins : true;
 const captchaProvider = process.env.CAPTCHA_PROVIDER || "turnstile";
-const captchaSecret = process.env.CAPTCHA_SECRET || "";
+const captchaSecret = defineSecret("CAPTCHA_SECRET");
 const ipHashSecret = process.env.IP_HASH_SECRET || "";
+const envCaptcha = {
+  secret: process.env.CAPTCHA_SECRET || "",
+  provider: captchaProvider,
+};
+const surveyCaptcha = {
+  get secret() {
+    return process.env.CAPTCHA_SECRET || captchaSecret.value() || "";
+  },
+  provider: captchaProvider,
+};
 
 const { enforceRateLimit } = createRateLimiter({ db, FieldValue, Timestamp });
 
@@ -50,10 +61,7 @@ const contactHandler = createContactHandler({
   rateLimit: RATE_LIMIT_CONTACT,
   httpUtils,
   allowedOrigins,
-  captcha: {
-    secret: captchaSecret,
-    provider: captchaProvider,
-  },
+  captcha: envCaptcha,
   ipHashSecret,
 });
 
@@ -66,10 +74,7 @@ const surveyHandler = createSurveyHandler({
   rateLimit: RATE_LIMIT_SURVEY,
   httpUtils,
   allowedOrigins,
-  captcha: {
-    secret: captchaSecret,
-    provider: captchaProvider,
-  },
+  captcha: surveyCaptcha,
   ipHashSecret,
 });
 
@@ -99,6 +104,7 @@ exports.submitSurvey = onRequest(
     cors: corsOption,
     invoker: "public",
     maxInstances: 10,
+    secrets: [captchaSecret],
   },
   surveyHandler,
 );
@@ -114,6 +120,11 @@ exports.adminListUsers = adminFunctions.adminListUsers;
 exports.adminUpdateUserRole = adminFunctions.adminUpdateUserRole;
 exports.adminDeleteUser = adminFunctions.adminDeleteUser;
 exports.asignarRol = adminFunctions.asignarRol;
+exports.adminDeleteSurvey = adminFunctions.adminDeleteSurvey;
+exports.adminDeleteContactMessage = adminFunctions.adminDeleteContactMessage;
+exports.adminUpdateReviewStatus = adminFunctions.adminUpdateReviewStatus;
+exports.adminDeleteReview = adminFunctions.adminDeleteReview;
+exports.sincronizarMiRol = adminFunctions.sincronizarMiRol;
 
 const editorRequests = require("./handlers/editorRequests");
 exports.solicitarCuentaEditor = editorRequests.solicitarCuentaEditor;

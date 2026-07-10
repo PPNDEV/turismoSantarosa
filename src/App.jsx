@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  Link,
   useLocation,
 } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
@@ -73,15 +74,77 @@ function PageWrapper({ title, children }) {
 }
 
 
-// Ruta protegida
-function PrivateRoute({ children }) {
-  const { user, authReady } = useAuth();
+// Pantalla para cuentas autenticadas sin acceso al panel (p. ej. un editor
+// cuya solicitud sigue pendiente de aprobación por el administrador).
+function CuentaEnRevision() {
+  const { user, logout } = useAuth();
 
-  if (!authReady) {
+  return (
+    <div className="app-loading-screen" role="status" aria-live="polite">
+      <div
+        className="app-loading-card"
+        style={{
+          flexDirection: "column",
+          textAlign: "center",
+          gap: "1.1rem",
+          maxWidth: "460px",
+        }}
+      >
+        <div className="app-loading-logo">
+          <img
+            src={loadingCrestSrc}
+            alt="Escudo de Santa Rosa"
+            width="72"
+            height="88"
+          />
+        </div>
+        <div className="app-loading-copy" style={{ textAlign: "center" }}>
+          <span>Visit Santa Rosa</span>
+          <strong>Cuenta en revisión</strong>
+        </div>
+        <p style={{ color: "#475569", fontSize: "0.95rem", lineHeight: 1.55 }}>
+          Hola{user?.displayName ? ` ${user.displayName}` : ""}, tu cuenta aún no
+          tiene acceso al panel. Si te registraste como editor, podrás ingresar
+          cuando el administrador valide tu RUC y apruebe tu solicitud.
+        </p>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
+          <Link to="/" className="btn btn-outline">
+            Volver al inicio
+          </Link>
+          <button type="button" className="btn btn-primary" onClick={logout}>
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Ruta protegida: solo admin/editor acceden al panel. Las cuentas sin permisos
+// (visualizador / editor pendiente) inician sesión pero ven "Cuenta en revisión".
+function PrivateRoute({ children }) {
+  const { user, authReady, profileReady, canEditContent } = useAuth();
+
+  if (!authReady || (user && !profileReady)) {
     return <AppLoading label="Verificando acceso al panel..." />;
   }
 
-  return user ? children : <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canEditContent) {
+    return <CuentaEnRevision />;
+  }
+
+  return children;
 }
 
 function VisitTracker() {

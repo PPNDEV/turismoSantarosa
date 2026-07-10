@@ -79,7 +79,6 @@ export default function AdminSectionEditor({
   const canEditSection = canEdit && isAdmin;
 
   // Inicializa el borrador la primera vez que llega el contenido del nodo.
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (initializedRef.current || rawSection === undefined) return;
     const base =
@@ -90,7 +89,6 @@ export default function AdminSectionEditor({
     setInitial(base);
     initializedRef.current = true;
   }, [rawSection, schema]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const dirty = useMemo(() => {
     if (!draft || !initial) return false;
@@ -237,7 +235,11 @@ export default function AdminSectionEditor({
               onClick={save}
               disabled={!canEditSection || saving || !dirty}
             >
-              <FaSave className="inline-icon" aria-hidden="true" />
+              {saving ? (
+                <span className="btn-spinner" aria-hidden="true" />
+              ) : (
+                <FaSave className="inline-icon" aria-hidden="true" />
+              )}
               {saving ? "Guardando..." : "Guardar y publicar"}
             </button>
           </div>
@@ -341,60 +343,76 @@ function FieldRenderer({
             Sin {itemLabel.toLowerCase()}s. Usa “Agregar”.
           </p>
         ) : (
-          <div className="admin-section-list">
-            {items.map((_, index) => (
-              <div className="admin-section-item" key={index}>
-                <div className="admin-section-item-header">
-                  <span className="admin-section-item-title">
-                    {itemLabel} #{index + 1}
-                  </span>
-                  <div className="admin-section-item-actions">
-                    <button
-                      type="button"
-                      className="action-btn"
-                      onClick={() => onMoveItem(path, index, -1)}
-                      disabled={index === 0}
-                      aria-label="Subir"
-                    >
-                      <FaArrowUp aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className="action-btn"
-                      onClick={() => onMoveItem(path, index, 1)}
-                      disabled={index === items.length - 1}
-                      aria-label="Bajar"
-                    >
-                      <FaArrowDown aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className="action-btn del-btn"
-                      onClick={() => onRemoveItem(path, index)}
-                      aria-label="Eliminar"
-                    >
-                      <FaTrash aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
-                <div className="admin-section-item-body">
-                  {field.item.map((sub) => (
-                    <FieldRenderer
-                      key={sub.name}
-                      field={sub}
-                      path={[...path, index, sub.name]}
-                      draft={draft}
-                      files={files}
-                      onChange={onChange}
-                      onFileChange={onFileChange}
-                      onAddItem={onAddItem}
-                      onRemoveItem={onRemoveItem}
-                      onMoveItem={onMoveItem}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="admin-section-list-table-wrap">
+            <table className="admin-section-list-table">
+              <thead>
+                <tr>
+                  <th>Orden</th>
+                  <th>{itemLabel}</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((_, index) => (
+                  <tr key={index}>
+                    <td className="admin-section-order-cell">
+                      <span>{index + 1}</span>
+                    </td>
+                    <td>
+                      <div className="admin-section-item-body">
+                        {field.item.map((sub) => (
+                          <FieldRenderer
+                            key={sub.name}
+                            field={sub}
+                            path={[...path, index, sub.name]}
+                            draft={draft}
+                            files={files}
+                            onChange={onChange}
+                            onFileChange={onFileChange}
+                            onAddItem={onAddItem}
+                            onRemoveItem={onRemoveItem}
+                            onMoveItem={onMoveItem}
+                          />
+                        ))}
+                      </div>
+                    </td>
+                    <td className="admin-section-actions-cell">
+                      <div className="admin-actions-inline">
+                        <button
+                          type="button"
+                          className="action-btn move-btn icon-btn"
+                          onClick={() => onMoveItem(path, index, -1)}
+                          disabled={index === 0}
+                          title="Subir"
+                          aria-label="Subir"
+                        >
+                          <FaArrowUp aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="action-btn move-btn icon-btn"
+                          onClick={() => onMoveItem(path, index, 1)}
+                          disabled={index === items.length - 1}
+                          title="Bajar"
+                          aria-label="Bajar"
+                        >
+                          <FaArrowDown aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="action-btn del-btn icon-btn"
+                          onClick={() => onRemoveItem(path, index)}
+                          title="Eliminar"
+                          aria-label="Eliminar"
+                        >
+                          <FaTrash aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -2,14 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { FaEnvelope, FaReply, FaSyncAlt, FaTrash } from "react-icons/fa";
 import {
   collection,
-  deleteDoc,
-  doc,
   getDocs,
   limit,
   orderBy,
   query,
 } from "firebase/firestore";
-import { db } from "../services/firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "../services/firebase";
 
 const PAGE_LIMIT = 50;
 
@@ -78,12 +77,26 @@ export default function AdminMensajes({
   );
 
   const del = async (id) => {
-    if (confirm("Eliminar este mensaje?")) {
-      await deleteDoc(doc(db, "mensajes_contacto", id));
+    if (!confirm("Eliminar este mensaje?")) {
+      return;
+    }
+
+    try {
+      const adminDeleteContactMessage = httpsCallable(
+        functions,
+        "adminDeleteContactMessage",
+      );
+      await adminDeleteContactMessage({ id });
       setMensajes((current) => current.filter((mensaje) => mensaje.id !== id));
       if (selected === id) {
         setSelected(null);
       }
+    } catch (error) {
+      console.error("No se pudo eliminar el mensaje:", error);
+      alert(
+        error?.message ||
+          "No se pudo eliminar el mensaje. Verifica tus permisos.",
+      );
     }
   };
 

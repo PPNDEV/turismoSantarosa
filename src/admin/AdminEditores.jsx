@@ -3,6 +3,7 @@ import { FaCheck, FaIdCard, FaStore, FaTimes } from "react-icons/fa";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../services/firebase";
+import { useAuth } from "../context/useAuth";
 
 const ESTADO_LABEL = {
   pendiente_ruc: "Pendiente de RUC",
@@ -21,6 +22,7 @@ const CATEGORIA_LABEL = {
 };
 
 export default function AdminEditores({ onLivePreviewChange = () => {} }) {
+  const { refreshUsers } = useAuth();
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -87,6 +89,9 @@ export default function AdminEditores({ onLivePreviewChange = () => {} }) {
     try {
       const aprobar = httpsCallable(functions, "aprobarSolicitudEditor");
       await aprobar({ uid: solicitud.uid || solicitud.id });
+      // Recarga la lista de usuarios para que el editor recién aprobado aparezca
+      // de inmediato en la sección "Usuarios".
+      await refreshUsers();
       setSuccess(`${solicitud.negocio || "Editor"} aprobado correctamente.`);
     } catch (err) {
       setError(err.message || "Error al aprobar la solicitud.");

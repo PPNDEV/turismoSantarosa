@@ -266,7 +266,11 @@ export default function AdminGaleria({
                   onClick={save}
                   disabled={saving}
                 >
-                  <FaSave className="inline-icon" aria-hidden="true" />
+                  {saving ? (
+                    <span className="btn-spinner" aria-hidden="true" />
+                  ) : (
+                    <FaSave className="inline-icon" aria-hidden="true" />
+                  )}
                   {saving ? "Optimizando y guardando..." : "Guardar"}
                 </button>
                 <button

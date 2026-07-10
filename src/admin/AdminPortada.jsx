@@ -16,34 +16,16 @@ import {
   isAdminUser,
 } from "./adminOwnership";
 
-const CTA_OPTIONS = [
-  {
-    id: "eventos",
-    label: "Eventos",
-    cta: "Ver eventos",
-    ctaTo: "/eventos",
-  },
-  {
-    id: "informacion",
-    label: "Informacion turistica",
-    cta: "Planificar visita",
-    ctaTo: "/informacion",
-  },
-  {
-    id: "galeria",
-    label: "Galeria",
-    cta: "Ver galeria",
-    ctaTo: "/galeria",
-  },
-];
+// Todas las portadas comparten un único botón "Ver información" hacia la página
+// de información turística. Ya no se configura una acción por portada.
+const HERO_CTA_LABEL = "Ver información";
+const HERO_CTA_TO = "/informacion";
 
 const emptySlide = {
   bg: "",
   tag: "",
   title: "",
   sub: "",
-  cta: CTA_OPTIONS[0].cta,
-  ctaTo: CTA_OPTIONS[0].ctaTo,
 };
 
 function hasDraftChanges(currentForm, initialForm) {
@@ -67,14 +49,6 @@ function createSlideId(title) {
       : Math.random().toString(36).slice(2, 10);
 
   return `hero-${slugify(title)}-${suffix}`;
-}
-
-function getCtaOptionId(slide) {
-  return (
-    CTA_OPTIONS.find(
-      (option) => option.cta === slide.cta && option.ctaTo === slide.ctaTo,
-    )?.id || "custom"
-  );
 }
 
 function SlideThumb({ slide }) {
@@ -119,7 +93,6 @@ export default function AdminPortada({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const ctaOptionId = useMemo(() => getCtaOptionId(form), [form]);
   const visibleHeroSlides = useMemo(
     () => getVisibleAdminItems(heroSlides, currentUser, canEdit),
     [heroSlides, currentUser, canEdit],
@@ -130,14 +103,13 @@ export default function AdminPortada({
 
   const previewSlide = {
     bg: localPreviewUrl || form.bg || "",
-    tag: form.tag || "Etiqueta destacada",
-    title: form.title || "Titulo principal de la portada",
-    sub:
-      form.sub ||
-      "Texto descriptivo para invitar al usuario a explorar el sitio.",
-    cta: form.cta || CTA_OPTIONS[0].cta,
-    ctaTo: form.ctaTo || CTA_OPTIONS[0].ctaTo,
+    tag: form.tag || "",
+    title: form.title || "",
+    sub: form.sub || "",
+    cta: HERO_CTA_LABEL,
+    ctaTo: HERO_CTA_TO,
   };
+  const previewHasTitle = Boolean(previewSlide.title.trim());
 
   const openNew = () => {
     if (!canCreateSlide) return;
@@ -174,17 +146,6 @@ export default function AdminPortada({
     setLocalPreviewUrl("");
   };
 
-  const handleCtaOptionChange = (optionId) => {
-    const option = CTA_OPTIONS.find((entry) => entry.id === optionId);
-    if (!option) return;
-
-    setForm({
-      ...form,
-      cta: option.cta,
-      ctaTo: option.ctaTo,
-    });
-  };
-
   const handleImageSelect = (file) => {
     if (!file) return;
 
@@ -203,17 +164,12 @@ export default function AdminPortada({
       saving
     )
       return;
-    if (
-      !form.title ||
-      !form.cta ||
-      !form.ctaTo ||
-      (!form.bg && !selectedFile)
-    ) {
-      setError("Completa titulo, accion del boton e imagen de fondo.");
+    if (!form.bg && !selectedFile) {
+      setError("Selecciona una imagen de fondo para la portada.");
       return;
     }
 
-    const slideId = editing || createSlideId(form.title);
+    const slideId = editing || createSlideId(form.title || "portada");
     setSaving(true);
     setError("");
 
@@ -225,6 +181,8 @@ export default function AdminPortada({
       await upsertHeroSlide({
         ...form,
         bg: imageUrl,
+        cta: HERO_CTA_LABEL,
+        ctaTo: HERO_CTA_TO,
         id: slideId,
       });
 
@@ -331,7 +289,6 @@ export default function AdminPortada({
               <th>Imagen</th>
               <th>Codigo</th>
               <th>Titulo</th>
-              <th>CTA</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -346,12 +303,15 @@ export default function AdminPortada({
                   <code className="admin-id-code">{slide.id}</code>
                 </td>
                 <td>
-                  <strong>{slide.title}</strong>
+                  <strong>
+                    {slide.title || (
+                      <em className="admin-comment-empty">Sin título</em>
+                    )}
+                  </strong>
                   <div className="admin-slide-tag-muted">
                     {slide.tag}
                   </div>
                 </td>
-                <td>{slide.cta}</td>
                 <td>
                   <button
                     className="action-btn move-btn icon-btn icon-btn-spaced"
@@ -411,7 +371,7 @@ export default function AdminPortada({
             >
               x
             </button>
-            <h2>{editing ? "Editar Slide" : "Nueva Slide"}</h2>
+            <h2>{editing ? "Editar Portada" : "Nueva Portada"}</h2>
             <div className="admin-form-preview-grid">
               <div className="admin-form-column">
                 <div className="modal-field">
@@ -444,68 +404,31 @@ export default function AdminPortada({
                 </div>
 
                 <div className="modal-field">
-                  <label>Titulo</label>
+                  <label>Titulo (opcional)</label>
                   <input
                     type="text"
                     value={form.title || ""}
                     onChange={(e) =>
                       setForm({ ...form, title: e.target.value })
                     }
-                    placeholder="Titulo principal"
+                    placeholder="Titulo principal (opcional)"
                   />
                 </div>
 
                 <div className="modal-field">
-                  <label>Subtitulo</label>
+                  <label>Subtitulo (opcional)</label>
                   <input
                     type="text"
                     value={form.sub || ""}
                     onChange={(e) => setForm({ ...form, sub: e.target.value })}
-                    placeholder="Texto breve para invitar a explorar"
+                    placeholder="Texto breve para invitar a explorar (opcional)"
                   />
                 </div>
 
-                <div className="modal-field">
-                  <label>Accion del boton</label>
-                  <select
-                    value={ctaOptionId}
-                    onChange={(e) => handleCtaOptionChange(e.target.value)}
-                  >
-                    {CTA_OPTIONS.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label} - {option.cta}
-                      </option>
-                    ))}
-                    <option value="custom">Personalizado</option>
-                  </select>
+                <div className="admin-readonly-note">
+                  Todas las portadas muestran un único botón “Ver información”. Si
+                  no escribes un título, la imagen se mostrará con un sombreado.
                 </div>
-
-                {ctaOptionId === "custom" && (
-                  <>
-                    <div className="modal-field">
-                      <label>Texto del boton</label>
-                      <input
-                        type="text"
-                        value={form.cta || ""}
-                        onChange={(e) =>
-                          setForm({ ...form, cta: e.target.value })
-                        }
-                        placeholder="Texto del boton"
-                      />
-                    </div>
-                    <div className="modal-field">
-                      <label>Enlace del boton</label>
-                      <input
-                        type="text"
-                        value={form.ctaTo || ""}
-                        onChange={(e) =>
-                          setForm({ ...form, ctaTo: e.target.value })
-                        }
-                        placeholder="/eventos"
-                      />
-                    </div>
-                  </>
-                )}
 
                 <div className="admin-generated-id">
                   Codigo unico:{" "}
@@ -529,7 +452,11 @@ export default function AdminPortada({
                     onClick={save}
                     disabled={saving}
                   >
-                    <FaSave className="inline-icon" aria-hidden="true" />
+                    {saving ? (
+                      <span className="btn-spinner" aria-hidden="true" />
+                    ) : (
+                      <FaSave className="inline-icon" aria-hidden="true" />
+                    )}
                     {saving ? "Guardando..." : "Guardar"}
                   </button>
                 </div>
@@ -550,14 +477,26 @@ export default function AdminPortada({
                         decoding="async"
                         onError={() => setPreviewError(true)}
                       />
-                      <div className="admin-slide-overlay">
-                        <span className="admin-slide-tag">
-                          {previewSlide.tag}
-                        </span>
-                        <h3 className="admin-slide-title">
-                          {previewSlide.title}
-                        </h3>
-                        <p className="admin-slide-sub">{previewSlide.sub}</p>
+                      <div
+                        className={`admin-slide-overlay ${
+                          previewHasTitle
+                            ? "admin-slide-overlay-titled"
+                            : "admin-slide-overlay-plain"
+                        }`}
+                      >
+                        {previewSlide.tag && (
+                          <span className="admin-slide-tag">
+                            {previewSlide.tag}
+                          </span>
+                        )}
+                        {previewSlide.title && (
+                          <h3 className="admin-slide-title">
+                            {previewSlide.title}
+                          </h3>
+                        )}
+                        {previewSlide.sub && (
+                          <p className="admin-slide-sub">{previewSlide.sub}</p>
+                        )}
                         <span className="btn btn-gold admin-slide-cta">
                           {previewSlide.cta}
                         </span>
