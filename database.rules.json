@@ -3,6 +3,10 @@
     "content": {
       ".read": true,
       ".write": false
+    },
+    "_citest": {
+      ".read": false,
+      ".write": false
     }
   }
 }
