@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FaBed, FaEdit, FaMapMarkerAlt, FaSave, FaTrash } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
+import AdminContentThumb from "./AdminContentThumb";
 import AdminCoordinatesField from "./AdminCoordinatesField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
 import {
@@ -245,9 +246,11 @@ export default function AdminHospedajes({
           <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
-        <table>
+        <div className="admin-table-scroll">
+        <table className="admin-content-table">
           <thead>
             <tr>
+              <th>Imagen</th>
               <th>Hospedaje</th>
               <th>Isla</th>
               <th>Ubicación</th>
@@ -258,37 +261,42 @@ export default function AdminHospedajes({
           <tbody>
             {visibleHospedajes.map((hospedaje) => (
               <tr key={hospedaje.id}>
+                <td><AdminContentThumb src={hospedaje.imagen} alt={`Imagen de ${hospedaje.nombre}`} /></td>
                 <td>
                   <strong>{hospedaje.nombre}</strong>
                 </td>
                 <td>{hospedaje.isla}</td>
                 <td>{hospedaje.ubicacion}</td>
                 <td>{hospedaje.contacto}</td>
-                <td>
+                <td><div className="admin-actions-inline">
                   <button
-                    className="action-btn edit-btn"
+                    className="action-btn edit-btn icon-btn"
                     onClick={() => openEdit(hospedaje)}
                     disabled={
                       !canManageContentItem(hospedaje, currentUser, canEdit)
                     }
+                    title="Editar hospedaje"
+                    aria-label={`Editar ${hospedaje.nombre}`}
                   >
                     <FaEdit className="inline-icon" aria-hidden="true" />
-                    Editar
                   </button>
                   <button
-                    className="action-btn del-btn"
+                    className="action-btn del-btn icon-btn"
                     onClick={() => del(hospedaje)}
                     disabled={
                       !canManageContentItem(hospedaje, currentUser, canEdit)
                     }
+                    title="Eliminar hospedaje"
+                    aria-label={`Eliminar ${hospedaje.nombre}`}
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>
-                </td>
+                </div></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (

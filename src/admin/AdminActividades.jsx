@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
+import AdminContentThumb from "./AdminContentThumb";
 import AdminCoordinatesField from "./AdminCoordinatesField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
 import {
@@ -503,9 +504,11 @@ export default function AdminActividades({
           <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
-        <table>
+        <div className="admin-table-scroll">
+        <table className="admin-content-table">
           <thead>
             <tr>
+              <th>Imagen</th>
               <th>Actividad</th>
               <th>Isla</th>
               <th>Descripción</th>
@@ -515,6 +518,7 @@ export default function AdminActividades({
           <tbody>
             {visibleActividades.map((a) => (
               <tr key={a.id}>
+                <td><AdminContentThumb src={a.imagen} alt={`Imagen de ${a.nombre}`} /></td>
                 <td>
                   <strong>
                     <FaHiking className="inline-icon" aria-hidden="true" />{" "}
@@ -523,26 +527,31 @@ export default function AdminActividades({
                 </td>
                 <td>{a.isla || "-"}</td>
                 <td className="admin-cell-ellipsis">{a.descripcion}</td>
-                <td>
+                <td><div className="admin-actions-inline">
                   <button
-                    className="action-btn edit-btn"
+                    className="action-btn edit-btn icon-btn"
                     onClick={() => openEdit(a)}
                     disabled={!canManageContentItem(a, currentUser, canEdit)}
+                    title="Editar actividad"
+                    aria-label={`Editar ${a.nombre}`}
                   >
-                    <FaEdit className="inline-icon" aria-hidden="true" /> Editar
+                    <FaEdit className="inline-icon" aria-hidden="true" />
                   </button>
                   <button
-                    className="action-btn del-btn"
+                    className="action-btn del-btn icon-btn"
                     onClick={() => del(a)}
                     disabled={!canManageContentItem(a, currentUser, canEdit)}
+                    title="Eliminar actividad"
+                    aria-label={`Eliminar ${a.nombre}`}
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>
-                </td>
+                </div></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (

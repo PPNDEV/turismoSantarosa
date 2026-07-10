@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FaEdit, FaSave, FaTrash, FaUtensils } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import AdminImageField from "./AdminImageField";
+import AdminContentThumb from "./AdminContentThumb";
 import AdminCoordinatesField from "./AdminCoordinatesField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
 import {
@@ -238,9 +239,11 @@ export default function AdminGastronomia({
           <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
-        <table>
+        <div className="admin-table-scroll">
+        <table className="admin-content-table">
           <thead>
             <tr>
+              <th>Imagen</th>
               <th>Restaurante</th>
               <th>Isla</th>
               <th>Plato típico</th>
@@ -251,37 +254,42 @@ export default function AdminGastronomia({
           <tbody>
             {visibleGastronomia.map((restaurante) => (
               <tr key={restaurante.id}>
+                <td><AdminContentThumb src={restaurante.imagen} alt={`Imagen de ${restaurante.nombre}`} /></td>
                 <td>
                   <strong>{restaurante.nombre}</strong>
                 </td>
                 <td>{restaurante.isla}</td>
                 <td>{restaurante.platoTipico}</td>
                 <td>{restaurante.contacto}</td>
-                <td>
+                <td><div className="admin-actions-inline">
                   <button
-                    className="action-btn edit-btn"
+                    className="action-btn edit-btn icon-btn"
                     onClick={() => openEdit(restaurante)}
                     disabled={
                       !canManageContentItem(restaurante, currentUser, canEdit)
                     }
+                    title="Editar restaurante"
+                    aria-label={`Editar ${restaurante.nombre}`}
                   >
                     <FaEdit className="inline-icon" aria-hidden="true" />
-                    Editar
                   </button>
                   <button
-                    className="action-btn del-btn"
+                    className="action-btn del-btn icon-btn"
                     onClick={() => del(restaurante)}
                     disabled={
                       !canManageContentItem(restaurante, currentUser, canEdit)
                     }
+                    title="Eliminar restaurante"
+                    aria-label={`Eliminar ${restaurante.nombre}`}
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>
-                </td>
+                </div></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (

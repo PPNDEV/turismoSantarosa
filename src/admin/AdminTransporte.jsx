@@ -148,7 +148,8 @@ export default function AdminTransporte({
           <div className="admin-readonly-note">{ownershipNote}</div>
         )}
 
-        <table>
+        <div className="admin-table-scroll">
+        <table className="admin-content-table">
           <thead>
             <tr>
               <th>Cooperativa</th>
@@ -165,26 +166,31 @@ export default function AdminTransporte({
                 <td>{c.ruta || c.ruta_hacia_muelle || "-"}</td>
                 <td>{c.frecuencia || "-"}</td>
                 <td>{c.contacto || "-"}</td>
-                <td>
+                <td><div className="admin-actions-inline">
                   <button
-                    className="action-btn edit-btn"
+                    className="action-btn edit-btn icon-btn"
                     onClick={() => openEdit(c)}
                     disabled={!canManageContentItem(c, currentUser, canEdit)}
+                    title="Editar transporte"
+                    aria-label={`Editar ${c.nombre || c.cooperativa}`}
                   >
-                    <FaEdit className="inline-icon" aria-hidden="true" /> Editar
+                    <FaEdit className="inline-icon" aria-hidden="true" />
                   </button>
                   <button
-                    className="action-btn del-btn"
+                    className="action-btn del-btn icon-btn"
                     onClick={() => del(c)}
                     disabled={!canManageContentItem(c, currentUser, canEdit)}
+                    title="Eliminar transporte"
+                    aria-label={`Eliminar ${c.nombre || c.cooperativa}`}
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>
-                </td>
+                </div></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (

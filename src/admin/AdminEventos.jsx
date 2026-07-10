@@ -8,6 +8,7 @@ import {
   FaTrash,
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
+import AdminContentThumb from "./AdminContentThumb";
 import AdminImageField from "./AdminImageField";
 import AdminCoordinatesField from "./AdminCoordinatesField";
 import { createContentId, uploadContentImage } from "../services/uploadService";
@@ -288,9 +289,11 @@ export default function AdminEventos({
         {ownershipNote && (
           <div className="admin-readonly-note">{ownershipNote}</div>
         )}
-        <table>
+        <div className="admin-table-scroll">
+        <table className="admin-content-table">
           <thead>
             <tr>
+              <th>Imagen</th>
               <th>Nombre</th>
               <th>Tipo</th>
               <th>Fecha</th>
@@ -302,6 +305,7 @@ export default function AdminEventos({
           <tbody>
             {orderedEventos.map((ev) => (
               <tr key={ev.id}>
+                <td><AdminContentThumb src={ev.imagen} alt={`Imagen de ${ev.nombre}`} /></td>
                 <td>
                   <strong>{ev.nombre}</strong>
                 </td>
@@ -315,27 +319,31 @@ export default function AdminEventos({
                     {ev.activo !== false ? "Publicado" : "Oculto"}
                   </span>
                 </td>
-                <td>
+                <td><div className="admin-actions-inline">
                   <button
-                    className="action-btn edit-btn"
+                    className="action-btn edit-btn icon-btn"
                     onClick={() => openEdit(ev)}
                     disabled={!canManageContentItem(ev, currentUser, canEdit)}
+                    title="Editar evento"
+                    aria-label={`Editar ${ev.nombre}`}
                   >
                     <FaEdit className="inline-icon" aria-hidden="true" />
-                    Editar
                   </button>
                   <button
-                    className="action-btn del-btn"
+                    className="action-btn del-btn icon-btn"
                     onClick={() => del(ev)}
                     disabled={!canManageContentItem(ev, currentUser, canEdit)}
+                    title="Eliminar evento"
+                    aria-label={`Eliminar ${ev.nombre}`}
                   >
                     <FaTrash className="inline-icon" aria-hidden="true" />
                   </button>
-                </td>
+                </div></td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (

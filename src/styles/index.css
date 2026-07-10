@@ -4365,6 +4365,38 @@ select:focus-visible {
   box-shadow: 0 8px 24px rgba(13, 33, 55, 0.06);
   overflow: hidden;
 }
+.admin-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-300) transparent;
+}
+.admin-content-table {
+  min-width: 760px;
+}
+.admin-content-table th:first-child,
+.admin-content-table td:first-child {
+  padding-left: 1.25rem;
+}
+.admin-content-table th:last-child,
+.admin-content-table td:last-child {
+  padding-right: 1.25rem;
+  white-space: nowrap;
+}
+.admin-content-table tbody tr {
+  transition: background-color 160ms ease;
+}
+.admin-content-table td {
+  height: 82px;
+  vertical-align: middle;
+}
+.admin-content-table .admin-slide-thumb {
+  width: 92px;
+  height: 56px;
+}
+.admin-content-table .badge {
+  white-space: nowrap;
+}
 .admin-table-header {
   background: linear-gradient(180deg, var(--gray-50), #ffffff);
 }
