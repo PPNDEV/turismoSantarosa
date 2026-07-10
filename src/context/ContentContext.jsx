@@ -128,6 +128,7 @@ export function ContentProvider({ children }) {
   // públicas editoriales (gastronomía, eventos, etc.) leen de aquí porque su
   // contenido es un objeto por secciones, no una lista plana de tarjetas.
   const [sections, setSections] = useState({});
+  const [contentErrors, setContentErrors] = useState({});
   const [loadedNodes, setLoadedNodes] = useState(() => new Set());
   const requiredNodes = useMemo(
     () => getRequiredNodes(location.pathname),
@@ -184,12 +185,20 @@ export function ContentProvider({ children }) {
             ...previous,
             [nodeKey]: snapshot.val(),
           }));
+          setContentErrors((previous) => {
+            if (!previous[nodeKey]) return previous;
+            const next = { ...previous };
+            delete next[nodeKey];
+            return next;
+          });
           setLoadedNodes((previous) => new Set(previous).add(nodeKey));
         },
         (error) => {
           console.warn(`RTDB listener error for content/${nodeKey}:`, error);
-          setter([]);
-          setSections((previous) => ({ ...previous, [nodeKey]: null }));
+          setContentErrors((previous) => ({
+            ...previous,
+            [nodeKey]: error?.message || "No se pudo cargar el contenido.",
+          }));
           setLoadedNodes((previous) => new Set(previous).add(nodeKey));
         },
       );
@@ -392,6 +401,7 @@ export function ContentProvider({ children }) {
       heroSlides,
       cooperativas,
       sections,
+      contentErrors,
       loading,
 
       upsertSection,
@@ -428,6 +438,7 @@ export function ContentProvider({ children }) {
       heroSlides,
       cooperativas,
       sections,
+      contentErrors,
       loading,
       upsertSection,
       upsertActividad,

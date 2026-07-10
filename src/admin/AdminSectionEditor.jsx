@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FaArrowDown,
   FaArrowUp,
+  FaCheck,
   FaEdit,
   FaImage,
   FaPlus,
@@ -62,26 +63,60 @@ const SUMMARY_NAME_KEYS = [
   "nombre",
   "nombreComun",
   "titulo",
+  "subtipo",
   "tipo",
   "tarifa",
 ];
 
-function summarizeListDetail(itemFields, itemValue) {
+function summarizeListDetail(itemFields, itemValue, titleKey) {
   const detailField = itemFields.find(
     (field) =>
       field.type !== "image" &&
-      !SUMMARY_NAME_KEYS.includes(field.name) &&
+      field.name !== titleKey &&
       itemValue?.[field.name],
   );
 
   return detailField ? String(itemValue[detailField.name]) : "Sin detalle";
 }
 
+function remapListFileKeys(fileMap, path, mapIndex) {
+  const prefix = `${pathKeyOf(path)}.`;
+  const next = {};
+
+  for (const [key, file] of Object.entries(fileMap)) {
+    if (!key.startsWith(prefix)) {
+      next[key] = file;
+      continue;
+    }
+
+    const remainder = key.slice(prefix.length);
+    const separatorIndex = remainder.indexOf(".");
+    const indexText =
+      separatorIndex === -1 ? remainder : remainder.slice(0, separatorIndex);
+    const index = Number(indexText);
+
+    if (!Number.isInteger(index)) {
+      next[key] = file;
+      continue;
+    }
+
+    const mappedIndex = mapIndex(index);
+    if (mappedIndex == null) continue;
+
+    const suffix = separatorIndex === -1 ? "" : remainder.slice(separatorIndex);
+    next[`${prefix}${mappedIndex}${suffix}`] = file;
+  }
+
+  return next;
+}
+
 function summarizeListItem(itemFields, itemValue, itemLabel, index) {
   let title = "";
+  let titleKey = "";
   for (const key of SUMMARY_NAME_KEYS) {
     if (itemValue?.[key]) {
       title = String(itemValue[key]);
+      titleKey = key;
       break;
     }
   }
@@ -89,6 +124,7 @@ function summarizeListItem(itemFields, itemValue, itemLabel, index) {
     const textField = itemFields.find((f) => f.type === "text");
     if (textField && itemValue?.[textField.name]) {
       title = String(itemValue[textField.name]);
+      titleKey = textField.name;
     }
   }
   if (!title) title = `${itemLabel} ${index + 1}`;
@@ -96,7 +132,7 @@ function summarizeListItem(itemFields, itemValue, itemLabel, index) {
   const imageField = itemFields.find((f) => f.type === "image");
   const image = imageField ? itemValue?.[imageField.name] : "";
 
-  return { title, image };
+  return { title, image, titleKey };
 }
 
 // ---------------------------------------------------------------------------
@@ -109,8 +145,9 @@ export default function AdminSectionEditor({
   onDirtyChange = () => {},
 }) {
   const schema = SECTION_SCHEMAS[nodeKey];
-  const { sections, upsertSection } = useContent();
+  const { sections, contentErrors, upsertSection } = useContent();
   const rawSection = sections?.[nodeKey];
+  const readError = contentErrors?.[nodeKey];
 
   const [draft, setDraft] = useState(null);
   const [initial, setInitial] = useState(null);
@@ -119,6 +156,7 @@ export default function AdminSectionEditor({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editingList, setEditingList] = useState(null);
+  const [editingField, setEditingField] = useState(null);
   const initializedRef = useRef(false);
 
   const isAdmin = currentUser?.role === "administrador";
@@ -169,13 +207,19 @@ export default function AdminSectionEditor({
     });
   };
 
-  const addListItem = (path, itemFields) => {
-    setDraft((prev) => {
-      const current = getIn(prev, path) || [];
-      return setIn(prev, path, [
-        ...current,
-        emptyValueForFields(itemFields),
-      ]);
+  const addListItem = (path, field) => {
+    const current = getIn(draft, path) || [];
+    const index = current.length;
+    const nextItem = emptyValueForFields(field.item);
+
+    setDraft((prev) => setIn(prev, path, [...current, nextItem]));
+    setEditingList({
+      path,
+      index,
+      field,
+      isNew: true,
+      originalValue: null,
+      filesSnapshot: { ...files },
     });
   };
 
@@ -189,29 +233,36 @@ export default function AdminSectionEditor({
       );
     });
     // Limpia archivos pendientes que cuelguen de la fila eliminada.
-    setFiles((prev) => {
-      const prefix = pathKeyOf([...path, index]);
-      const next = {};
-      for (const [key, value] of Object.entries(prev)) {
-        if (!key.startsWith(`${prefix}.`)) next[key] = value;
-      }
-      return next;
-    });
+    setFiles((prev) =>
+      remapListFileKeys(prev, path, (fileIndex) => {
+        if (fileIndex === index) return null;
+        return fileIndex > index ? fileIndex - 1 : fileIndex;
+      }),
+    );
   };
 
   const moveListItem = (path, index, direction) => {
+    const current = getIn(draft, path) || [];
+    const target = index + direction;
+    if (target < 0 || target >= current.length) return;
+
     setDraft((prev) => {
-      const current = getIn(prev, path) || [];
-      const target = index + direction;
-      if (target < 0 || target >= current.length) return prev;
-      const copy = current.slice();
+      const latest = getIn(prev, path) || [];
+      const copy = latest.slice();
       [copy[index], copy[target]] = [copy[target], copy[index]];
       return setIn(prev, path, copy);
     });
+    setFiles((prev) =>
+      remapListFileKeys(prev, path, (fileIndex) => {
+        if (fileIndex === index) return target;
+        if (fileIndex === target) return index;
+        return fileIndex;
+      }),
+    );
   };
 
   const save = async () => {
-    if (!canEditSection || saving) return;
+    if (!canEditSection || saving || readError) return;
     setSaving(true);
     setError("");
     setSuccess("");
@@ -245,14 +296,106 @@ export default function AdminSectionEditor({
     setError("");
     setSuccess("");
     setEditingList(null);
+    setEditingField(null);
   };
 
   const openListItemEditor = (path, index, field) => {
-    setEditingList({ path, index, field });
+    setEditingList({
+      path,
+      index,
+      field,
+      isNew: false,
+      originalValue: deepClone(getIn(draft, [...path, index])),
+      filesSnapshot: { ...files },
+    });
   };
+
+  const closeListItemEditor = (applyChanges) => {
+    if (!editingList) return;
+
+    if (!applyChanges) {
+      if (editingList.isNew) {
+        setDraft((prev) => {
+          const current = getIn(prev, editingList.path) || [];
+          return setIn(
+            prev,
+            editingList.path,
+            current.filter((_, index) => index !== editingList.index),
+          );
+        });
+      } else {
+        setDraft((prev) =>
+          setIn(
+            prev,
+            [...editingList.path, editingList.index],
+            editingList.originalValue,
+          ),
+        );
+      }
+      setFiles(editingList.filesSnapshot);
+    }
+
+    setEditingList(null);
+  };
+
+  const openFieldEditor = (field, path) => {
+    setEditingField({
+      field,
+      path,
+      originalValue: deepClone(getIn(draft, path)),
+      filesSnapshot: { ...files },
+    });
+  };
+
+  const closeFieldEditor = (applyChanges) => {
+    if (!editingField) return;
+
+    if (!applyChanges) {
+      setDraft((prev) =>
+        setIn(prev, editingField.path, editingField.originalValue),
+      );
+      setFiles(editingField.filesSnapshot);
+    }
+
+    setEditingField(null);
+  };
+
+  useEffect(() => {
+    if (!editingList && !editingField) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      if (editingField) {
+        closeFieldEditor(false);
+      } else {
+        closeListItemEditor(false);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  });
 
   if (!schema) {
     return <div className="admin-alert admin-alert-error">Sección desconocida.</div>;
+  }
+
+  if (readError && !draft) {
+    return (
+      <div className="admin-table-card admin-section-load-error" role="alert">
+        <h2>No se pudo cargar {schema.title}</h2>
+        <p>
+          La edición está bloqueada para proteger el contenido publicado.
+          Recarga la página e inténtalo de nuevo.
+        </p>
+      </div>
+    );
   }
 
   if (!draft) {
@@ -284,7 +427,9 @@ export default function AdminSectionEditor({
               type="button"
               className="btn btn-primary"
               onClick={save}
-              disabled={!canEditSection || saving || !dirty}
+              disabled={
+                !canEditSection || saving || !dirty || Boolean(readError)
+              }
             >
               {saving ? (
                 <span className="btn-spinner" aria-hidden="true" />
@@ -302,13 +447,20 @@ export default function AdminSectionEditor({
           </div>
         )}
         {error && <div className="admin-alert admin-alert-error">{error}</div>}
+        {readError && (
+          <div className="admin-alert admin-alert-error" role="alert">
+            No se pudo cargar esta sección. La edición está bloqueada para
+            proteger el contenido publicado. Recarga la página e inténtalo de
+            nuevo.
+          </div>
+        )}
         {success && (
           <div className="admin-alert admin-alert-success">{success}</div>
         )}
 
         <fieldset
-          className="admin-section-fields"
-          disabled={!canEditSection || saving}
+          className="admin-section-fields admin-section-main-fields"
+          disabled={!canEditSection || saving || Boolean(readError)}
         >
           {schema.fields.map((field) => (
             <FieldRenderer
@@ -323,6 +475,7 @@ export default function AdminSectionEditor({
               onRemoveItem={removeListItem}
               onMoveItem={moveListItem}
               onEditItem={openListItemEditor}
+              onEditField={openFieldEditor}
             />
           ))}
         </fieldset>
@@ -333,21 +486,24 @@ export default function AdminSectionEditor({
           undefined && (
           <div
             className="modal-overlay"
-            onClick={() => setEditingList(null)}
+            onClick={() => closeListItemEditor(false)}
           >
             <div
               className="modal-box admin-user-modal admin-section-item-modal"
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admin-list-modal-title"
             >
               <div className="admin-modal-header">
-                <h2>
-                  {(editingList.field.itemLabel || "Elemento")}{" "}
-                  {editingList.index + 1}
+                <h2 id="admin-list-modal-title">
+                  {editingList.isNew ? "Añadir" : "Editar"}{" "}
+                  {(editingList.field.itemLabel || "elemento").toLowerCase()}
                 </h2>
                 <button
                   type="button"
-                  className="action-btn"
-                  onClick={() => setEditingList(null)}
+                  className="modal-close-btn admin-section-modal-close"
+                  onClick={() => closeListItemEditor(false)}
                   aria-label="Cerrar"
                 >
                   <FaTimes aria-hidden="true" />
@@ -355,10 +511,10 @@ export default function AdminSectionEditor({
               </div>
 
               <fieldset
-                className="admin-section-fields"
+                className="admin-section-fields admin-section-modal-fields"
                 disabled={!canEditSection || saving}
               >
-                {editingList.field.item.map((sub) => (
+                {editingList.field.item.map((sub, subIndex) => (
                   <FieldRenderer
                     key={sub.name}
                     field={sub}
@@ -371,6 +527,9 @@ export default function AdminSectionEditor({
                     onRemoveItem={removeListItem}
                     onMoveItem={moveListItem}
                     onEditItem={openListItemEditor}
+                    onEditField={openFieldEditor}
+                    displayMode="form"
+                    shouldAutoFocus={subIndex === 0}
                   />
                 ))}
               </fieldset>
@@ -378,27 +537,100 @@ export default function AdminSectionEditor({
               <div className="modal-actions">
                 <button
                   type="button"
-                  className="btn btn-danger"
-                  onClick={() => {
-                    removeListItem(editingList.path, editingList.index);
-                    setEditingList(null);
-                  }}
-                  disabled={!canEditSection || saving}
+                  className="btn btn-outline"
+                  onClick={() => closeListItemEditor(false)}
+                  disabled={saving}
                 >
-                  <FaTrash className="inline-icon" aria-hidden="true" />{" "}
-                  Eliminar
+                  Cancelar
                 </button>
                 <button
                   type="button"
                   className="btn btn-primary"
-                  onClick={() => setEditingList(null)}
+                  onClick={() => closeListItemEditor(true)}
                 >
-                  Cerrar
+                  <FaCheck className="inline-icon" aria-hidden="true" />
+                  Aplicar cambios
                 </button>
               </div>
             </div>
           </div>
         )}
+
+      {editingField && (
+        <div className="modal-overlay" onClick={() => closeFieldEditor(false)}>
+          <div
+            className="modal-box admin-section-text-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-field-modal-title"
+          >
+            <div className="admin-modal-header">
+              <div>
+                <span className="admin-section-modal-eyebrow">
+                  Contenido editorial
+                </span>
+                <h2 id="admin-field-modal-title">
+                  {editingField.field.label}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn admin-section-modal-close"
+                onClick={() => closeFieldEditor(false)}
+                aria-label="Cerrar"
+              >
+                <FaTimes aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="admin-section-modal-body">
+              <p className="admin-section-modal-help">
+                Edita este contenido y aplícalo al borrador. Se publicará
+                cuando uses “Guardar y publicar”.
+              </p>
+              <fieldset
+                className="admin-section-fields admin-section-modal-fields"
+                disabled={!canEditSection || saving}
+              >
+                <FieldRenderer
+                  field={editingField.field}
+                  path={editingField.path}
+                  draft={draft}
+                  files={files}
+                  onChange={updateValue}
+                  onFileChange={handleFileChange}
+                  onAddItem={addListItem}
+                  onRemoveItem={removeListItem}
+                  onMoveItem={moveListItem}
+                  onEditItem={openListItemEditor}
+                  onEditField={openFieldEditor}
+                  displayMode="form"
+                  shouldAutoFocus
+                />
+              </fieldset>
+            </div>
+
+            <div className="modal-actions admin-section-modal-actions">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => closeFieldEditor(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => closeFieldEditor(true)}
+              >
+                <FaCheck className="inline-icon" aria-hidden="true" />
+                Aplicar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -417,14 +649,21 @@ function FieldRenderer({
   onRemoveItem,
   onMoveItem,
   onEditItem,
+  onEditField,
+  displayMode = "summary",
+  shouldAutoFocus = false,
 }) {
   const value = getIn(draft, path);
+  const inputId = `admin-field-${path.map((segment) => String(segment)).join("-")}`;
 
   if (field.type === "object") {
     return (
-      <div className="admin-section-group">
-        <h3 className="admin-section-group-title">{field.label}</h3>
-        <div className="admin-section-group-body">
+      <section className="admin-section-object">
+        <div className="admin-section-object-header">
+          <h3>{field.label}</h3>
+          <span>Contenido editorial</span>
+        </div>
+        <div className="admin-section-object-body">
           {field.fields.map((sub) => (
             <FieldRenderer
               key={sub.name}
@@ -438,16 +677,20 @@ function FieldRenderer({
               onRemoveItem={onRemoveItem}
               onMoveItem={onMoveItem}
               onEditItem={onEditItem}
+              onEditField={onEditField}
+              displayMode={displayMode}
+              shouldAutoFocus={shouldAutoFocus}
             />
           ))}
         </div>
-      </div>
+      </section>
     );
   }
 
   if (field.type === "list") {
     const items = Array.isArray(value) ? value : [];
     const itemLabel = field.itemLabel || "Elemento";
+    const hasImage = field.item.some((itemField) => itemField.type === "image");
     return (
       <div className="admin-section-group">
         <div className="admin-section-group-header">
@@ -457,7 +700,7 @@ function FieldRenderer({
           <button
             type="button"
             className="btn btn-primary btn-sm"
-            onClick={() => onAddItem(path, field.item)}
+            onClick={() => onAddItem(path, field)}
           >
             <FaPlus className="inline-icon" aria-hidden="true" /> Añadir
           </button>
@@ -469,14 +712,16 @@ function FieldRenderer({
           </p>
         ) : (
           <div className="admin-section-table-scroll">
-            <table className="admin-section-table">
+            <table
+              className={`admin-section-table ${hasImage ? "has-image" : "no-image"}`}
+            >
               <thead>
                 <tr>
-                  <th>Orden</th>
-                  <th>Imagen</th>
-                  <th>Título</th>
-                  <th>Detalle</th>
-                  <th>Acciones</th>
+                  <th scope="col">Orden</th>
+                  {hasImage && <th scope="col">Imagen</th>}
+                  <th scope="col">Título</th>
+                  <th scope="col">Detalle</th>
+                  <th scope="col">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -487,68 +732,85 @@ function FieldRenderer({
                     itemLabel,
                     index,
                   );
-                  const detail = summarizeListDetail(field.item, item);
+                  const detail = summarizeListDetail(
+                    field.item,
+                    item,
+                    summary.titleKey,
+                  );
                   return (
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td>
-                        <span className="admin-section-table-thumb">
-                          {summary.image ? (
-                            <img src={summary.image} alt={`Imagen de ${summary.title}`} />
-                          ) : (
-                            <FaImage aria-hidden="true" />
-                          )}
-                        </span>
-                      </td>
+                      {hasImage && (
+                        <td>
+                          <span className="admin-section-table-thumb">
+                            {summary.image ? (
+                              <img
+                                src={summary.image}
+                                alt={`Imagen de ${summary.title}`}
+                              />
+                            ) : (
+                              <FaImage aria-hidden="true" />
+                            )}
+                          </span>
+                        </td>
+                      )}
                       <td>
                         <strong className="admin-section-table-title">
                           {summary.title}
                         </strong>
-                        <span className="admin-section-table-type">{itemLabel}</span>
+                        <span className="admin-section-table-type">
+                          {itemLabel}
+                        </span>
                       </td>
                       <td>
-                        <span className="admin-section-table-detail">{detail}</span>
+                        <span className="admin-section-table-detail">
+                          {detail}
+                        </span>
                       </td>
                       <td>
                         <span className="admin-section-table-actions">
-                    <button
-                      type="button"
-                      className="action-btn move-btn icon-btn"
-                      onClick={() => onMoveItem(path, index, -1)}
-                      disabled={index === 0}
-                      title="Subir"
-                      aria-label="Subir"
-                    >
-                      <FaArrowUp aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className="action-btn move-btn icon-btn"
-                      onClick={() => onMoveItem(path, index, 1)}
-                      disabled={index === items.length - 1}
-                      title="Bajar"
-                      aria-label="Bajar"
-                    >
-                      <FaArrowDown aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className="action-btn edit-btn icon-btn"
-                      onClick={() => onEditItem(path, index, field)}
-                      title="Editar"
-                      aria-label={`Editar ${summary.title}`}
-                    >
-                      <FaEdit aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className="action-btn del-btn icon-btn"
-                      onClick={() => onRemoveItem(path, index)}
-                      title="Eliminar"
-                      aria-label={`Eliminar ${summary.title}`}
-                    >
-                      <FaTrash aria-hidden="true" />
-                    </button>
+                          <button
+                            type="button"
+                            className="action-btn move-btn icon-btn"
+                            onClick={() => onMoveItem(path, index, -1)}
+                            disabled={index === 0}
+                            title="Subir"
+                            aria-label={`Subir ${summary.title}`}
+                          >
+                            <FaArrowUp aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="action-btn move-btn icon-btn"
+                            onClick={() => onMoveItem(path, index, 1)}
+                            disabled={index === items.length - 1}
+                            title="Bajar"
+                            aria-label={`Bajar ${summary.title}`}
+                          >
+                            <FaArrowDown aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="action-btn edit-btn icon-btn"
+                            onClick={() => onEditItem(path, index, field)}
+                            title="Editar"
+                            aria-label={`Editar ${summary.title}`}
+                          >
+                            <FaEdit aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="action-btn del-btn icon-btn"
+                            onClick={() => {
+                              if (confirm(`¿Eliminar ${summary.title}?`)) {
+                                onRemoveItem(path, index);
+                              }
+                            }}
+                            title="Eliminar"
+                            aria-label={`Eliminar ${summary.title}`}
+                          >
+                            <FaTrash aria-hidden="true" />
+                          </button>
                         </span>
                       </td>
                     </tr>
@@ -558,6 +820,36 @@ function FieldRenderer({
             </table>
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (displayMode === "summary") {
+    const preview = String(value || "").trim();
+    return (
+      <div className="admin-section-copy-row">
+        <div className="admin-section-copy-label-wrap">
+          <span className="admin-section-copy-label">{field.label}</span>
+          <span
+            className={`admin-section-copy-status ${preview ? "is-ready" : "is-empty"}`}
+          >
+            {preview ? "Contenido configurado" : "Pendiente"}
+          </span>
+        </div>
+        <p
+          className={`admin-section-copy-preview ${preview ? "" : "is-empty"}`}
+        >
+          {preview || "Sin contenido. Pulsa Editar para completar este bloque."}
+        </p>
+        <button
+          type="button"
+          className="action-btn edit-btn icon-btn admin-section-copy-edit"
+          onClick={() => onEditField(field, path)}
+          title={`Editar ${field.label}`}
+          aria-label={`Editar ${field.label}`}
+        >
+          <FaEdit aria-hidden="true" />
+        </button>
       </div>
     );
   }
@@ -578,10 +870,12 @@ function FieldRenderer({
   if (field.type === "select") {
     return (
       <div className="modal-field">
-        <label>{field.label}</label>
+        <label htmlFor={inputId}>{field.label}</label>
         <select
+          id={inputId}
           value={value || ""}
           onChange={(e) => onChange(path, e.target.value)}
+          autoFocus={shouldAutoFocus}
         >
           <option value="">— Seleccionar —</option>
           {field.options.map((opt) => (
@@ -597,11 +891,13 @@ function FieldRenderer({
   if (field.type === "textarea") {
     return (
       <div className="modal-field">
-        <label>{field.label}</label>
+        <label htmlFor={inputId}>{field.label}</label>
         <textarea
+          id={inputId}
           value={value || ""}
           onChange={(e) => onChange(path, e.target.value)}
           rows={4}
+          autoFocus={shouldAutoFocus}
         />
       </div>
     );
@@ -609,11 +905,13 @@ function FieldRenderer({
 
   return (
     <div className="modal-field">
-      <label>{field.label}</label>
+      <label htmlFor={inputId}>{field.label}</label>
       <input
+        id={inputId}
         type="text"
         value={value || ""}
         onChange={(e) => onChange(path, e.target.value)}
+        autoFocus={shouldAutoFocus}
       />
     </div>
   );
