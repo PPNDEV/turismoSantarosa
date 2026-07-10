@@ -106,7 +106,15 @@ function getRequiredNodes(pathname) {
     return RTDB_NODES;
   }
 
-  return ROUTE_NODES[pathname] || ROUTE_NODES["/"];
+  if (ROUTE_NODES[pathname]) {
+    return ROUTE_NODES[pathname];
+  }
+
+  const parentRoute = Object.keys(ROUTE_NODES).find(
+    (route) => route !== "/" && pathname.startsWith(`${route}/`),
+  );
+
+  return parentRoute ? ROUTE_NODES[parentRoute] : ROUTE_NODES["/"];
 }
 
 // ---------------------------------------------------------------------------

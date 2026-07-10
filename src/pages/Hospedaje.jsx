@@ -1,13 +1,25 @@
 import { FaBed, FaPhoneAlt } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
+import { buildDetailHref } from "../utils/contentDetails";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1455587734955-081b22074882?w=900";
 
 function HospedajeCard({ item }) {
   return (
+    <Link
+      className="content-card-link"
+      to={buildDetailHref(
+        "hospedaje",
+        item,
+        item.nombre,
+        "hospedaje-jambeli",
+      )}
+      aria-label={`Ver información completa de ${item.nombre}`}
+    >
     <article className="info-card">
       <img
         src={item.imagen || FALLBACK_IMAGE}
@@ -37,6 +49,7 @@ function HospedajeCard({ item }) {
         )}
       </div>
     </article>
+    </Link>
   );
 }
 

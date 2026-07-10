@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { FaLandmark, FaTag } from "react-icons/fa";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
+import { buildDetailHref } from "../utils/contentDetails";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=900";
@@ -90,7 +92,18 @@ export default function EventosPage() {
             {visibles.length > 0 && (
               <div className="eventos-grid eventos-grid-page">
                 {visibles.map((item, index) => (
-                  <div key={`manifestacion-${index}`} className="evento-card">
+                  <Link
+                    key={`manifestacion-${index}`}
+                    className="content-card-link"
+                    to={buildDetailHref(
+                      "eventos",
+                      item,
+                      item.subtipo || item.tipo,
+                      "eventos",
+                    )}
+                    aria-label={`Ver información completa de ${item.subtipo || item.tipo}`}
+                  >
+                  <article className="evento-card">
                     <img
                       src={getImage(item.imagen)}
                       alt={item.subtipo || item.tipo}
@@ -110,7 +123,8 @@ export default function EventosPage() {
                       <h3>{item.subtipo}</h3>
                       <p>{item.descripcion}</p>
                     </div>
-                  </div>
+                  </article>
+                  </Link>
                 ))}
               </div>
             )}

@@ -1,7 +1,9 @@
 import { FaPhoneAlt, FaUtensils } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
+import { buildDetailHref } from "../utils/contentDetails";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900";
@@ -11,8 +13,18 @@ const ISLANDS = [
   { key: "sanGregorio", label: "San Gregorio" },
 ];
 
-function EstablecimientoCard({ item, isla }) {
+function EstablecimientoCard({ item, isla, islandKey }) {
   return (
+    <Link
+      className="content-card-link"
+      to={buildDetailHref(
+        "gastronomia",
+        item,
+        item.nombre,
+        `gastronomia-${islandKey}`,
+      )}
+      aria-label={`Ver información completa de ${item.nombre}`}
+    >
     <article className="info-card">
       <img
         src={item.imagen || FALLBACK_IMAGE}
@@ -42,6 +54,7 @@ function EstablecimientoCard({ item, isla }) {
         )}
       </div>
     </article>
+    </Link>
   );
 }
 
@@ -85,6 +98,7 @@ export default function GastronomiaPage() {
                         key={`${key}-${item.nombre || index}`}
                         item={item}
                         isla={label}
+                        islandKey={key}
                       />
                     ))}
                   </div>

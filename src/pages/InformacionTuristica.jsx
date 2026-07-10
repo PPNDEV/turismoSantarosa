@@ -265,7 +265,7 @@ export default function InformacionTuristica() {
               </h2>
               <p>Cooperativas y rutas fluviales habilitadas.</p>
             </header>
-            {ISLANDS.map(({ key, label }) => {
+            {ISLANDS.map(({ key }) => {
               const items = Array.isArray(cooperativas[key])
                 ? cooperativas[key]
                 : [];

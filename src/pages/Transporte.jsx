@@ -1,15 +1,27 @@
 import { FaRoute, FaShip } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
+import { buildDetailHref } from "../utils/contentDetails";
 
 const ISLANDS = [
   { key: "jambeli", label: "Ruta a Jambelí" },
   { key: "sanGregorio", label: "Ruta a San Gregorio / Costa Rica" },
 ];
 
-function CooperativaCard({ item }) {
+function CooperativaCard({ item, routeKey }) {
   return (
+    <Link
+      className="content-card-link"
+      to={buildDetailHref(
+        "transporte",
+        item,
+        item.nombre,
+        `transporte-${routeKey}`,
+      )}
+      aria-label={`Ver información completa de ${item.nombre}`}
+    >
     <article className="cooperativa-card">
       <h3>{item.nombre}</h3>
       {item.ruta && (
@@ -24,6 +36,7 @@ function CooperativaCard({ item }) {
         </div>
       )}
     </article>
+    </Link>
   );
 }
 
@@ -66,6 +79,7 @@ export default function TransportePage() {
                       <CooperativaCard
                         key={`${key}-${item.nombre || index}`}
                         item={item}
+                        routeKey={key}
                       />
                     ))}
                   </div>

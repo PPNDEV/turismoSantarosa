@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import { useContent } from "../context/useContent";
 import { useLanguage } from "../context/useLanguage";
+import { buildDetailHref } from "../utils/contentDetails";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200";
@@ -24,17 +25,22 @@ const DEFAULT_EDITORIAL = {
 };
 
 // Mapea el campo `icono` del contenido a un icono visual.
-const ICON_BY_KEY = {
-  water: FaWater,
-  walk: FaWalking,
-  tree: FaTree,
-  glass: FaCocktail,
-  fish: FaFish,
-  beach: FaUmbrellaBeach,
-};
-
-function getActivityIcon(icono) {
-  return ICON_BY_KEY[String(icono || "").toLowerCase()] || FaUmbrellaBeach;
+function ActivityIcon({ icono }) {
+  const props = { className: "inline-icon", "aria-hidden": true };
+  switch (String(icono || "").toLowerCase()) {
+    case "water":
+      return <FaWater {...props} />;
+    case "walk":
+      return <FaWalking {...props} />;
+    case "tree":
+      return <FaTree {...props} />;
+    case "glass":
+      return <FaCocktail {...props} />;
+    case "fish":
+      return <FaFish {...props} />;
+    default:
+      return <FaUmbrellaBeach {...props} />;
+  }
 }
 
 function getIntroParagraphs(intro) {
@@ -45,9 +51,17 @@ function getIntroParagraphs(intro) {
 }
 
 function ActivityCard({ activity, index }) {
-  const Icon = getActivityIcon(activity.icono);
-
   return (
+    <Link
+      className="content-card-link"
+      to={buildDetailHref(
+        "actividades",
+        activity,
+        activity.nombre,
+        "actividades",
+      )}
+      aria-label={`Ver información completa de ${activity.nombre}`}
+    >
     <article className="activity-card reveal">
       <div className="activity-card-media">
         <img
@@ -70,11 +84,12 @@ function ActivityCard({ activity, index }) {
           </span>
         </div>
         <h3>
-          <Icon className="inline-icon" aria-hidden="true" /> {activity.nombre}
+          <ActivityIcon icono={activity.icono} /> {activity.nombre}
         </h3>
         <p>{activity.descripcion}</p>
       </div>
     </article>
+    </Link>
   );
 }
 

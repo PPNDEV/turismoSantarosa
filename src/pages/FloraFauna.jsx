@@ -1,14 +1,26 @@
 import { FaLeaf, FaPaw } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useContent } from "../context/useContent";
+import { buildDetailHref } from "../utils/contentDetails";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=900";
 
-function SpeciesCard({ especie, showGrupo }) {
+function SpeciesCard({ especie, showGrupo, category }) {
   const nombre = especie.nombre || especie.nombreComun;
   return (
+    <Link
+      className="content-card-link"
+      to={buildDetailHref(
+        "flora-fauna",
+        especie,
+        nombre,
+        `flora-fauna-${category}`,
+      )}
+      aria-label={`Ver información completa de ${nombre}`}
+    >
     <article className="info-card species-card">
       <img
         src={especie.imagen || FALLBACK_IMAGE}
@@ -33,6 +45,7 @@ function SpeciesCard({ especie, showGrupo }) {
         )}
       </div>
     </article>
+    </Link>
   );
 }
 
@@ -81,6 +94,7 @@ export default function FloraFaunaPage() {
                       key={`fauna-${index}`}
                       especie={especie}
                       showGrupo
+                      category="fauna"
                     />
                   ))}
                 </div>
@@ -95,7 +109,11 @@ export default function FloraFaunaPage() {
                 {flora.descripcion && <p className="info-lead">{flora.descripcion}</p>}
                 <div className="info-grid">
                   {floraEspecies.map((especie, index) => (
-                    <SpeciesCard key={`flora-${index}`} especie={especie} />
+                    <SpeciesCard
+                      key={`flora-${index}`}
+                      especie={especie}
+                      category="flora"
+                    />
                   ))}
                 </div>
               </div>

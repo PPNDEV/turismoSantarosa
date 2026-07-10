@@ -26,6 +26,7 @@ const HospedajePage = lazy(() => import("./pages/Hospedaje"));
 const TransportePage = lazy(() => import("./pages/Transporte"));
 const FloraFaunaPage = lazy(() => import("./pages/FloraFauna"));
 const EventosPage = lazy(() => import("./pages/Eventos"));
+const ContentDetailPage = lazy(() => import("./pages/ContentDetail"));
 const GaleriaPage = lazy(() => import("./pages/Galeria"));
 const ResenasPage = lazy(() => import("./pages/Resenas"));
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
@@ -245,11 +246,35 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/gastronomia" element={<GastronomiaPage />} />
+        <Route
+          path="/gastronomia/:slug"
+          element={<ContentDetailPage type="gastronomia" />}
+        />
         <Route path="/hospedaje" element={<HospedajePage />} />
+        <Route
+          path="/hospedaje/:slug"
+          element={<ContentDetailPage type="hospedaje" />}
+        />
         <Route path="/transporte" element={<TransportePage />} />
+        <Route
+          path="/transporte/:slug"
+          element={<ContentDetailPage type="transporte" />}
+        />
         <Route path="/flora-fauna" element={<FloraFaunaPage />} />
+        <Route
+          path="/flora-fauna/:slug"
+          element={<ContentDetailPage type="flora-fauna" />}
+        />
         <Route path="/actividades" element={<ActividadesPage />} />
+        <Route
+          path="/actividades/:slug"
+          element={<ContentDetailPage type="actividades" />}
+        />
         <Route path="/eventos" element={<EventosPage />} />
+        <Route
+          path="/eventos/:slug"
+          element={<ContentDetailPage type="eventos" />}
+        />
         <Route path="/informacion" element={<InformacionTuristica />} />
         <Route path="/galeria" element={<GaleriaPage />} />
         <Route path="/resenas" element={<ResenasPage />} />
