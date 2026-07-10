@@ -1,0 +1,129 @@
+name: Deploy to Firebase on push to main
+on:
+  push:
+    branches:
+      - main
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      hosting: ${{ steps.detect.outputs.hosting }}
+      firestore: ${{ steps.detect.outputs.firestore }}
+      database: ${{ steps.detect.outputs.database }}
+      functions: ${{ steps.detect.outputs.functions }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: detect
+        run: |
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE=$(git rev-list --max-parents=0 HEAD)
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
+          echo "Archivos cambiados:"
+          echo "$CHANGED"
+
+          if echo "$CHANGED" | grep -qE '^(src/|public/|index\.html$|package(-lock)?\.json$|vite\.config\.js$|eslint\.config\.js$|firebase\.json$|\.firebaserc$)'; then
+            echo "hosting=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hosting=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if echo "$CHANGED" | grep -qE '^(firestore\.rules$|firestore\.indexes\.json$|firebase\.json$|\.firebaserc$)'; then
+            echo "firestore=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "firestore=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if echo "$CHANGED" | grep -qE '^(database\.rules\.json$|firebase\.json$|\.firebaserc$)'; then
+            echo "database=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "database=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if echo "$CHANGED" | grep -qE '^(functions/|firebase\.json$|\.firebaserc$)'; then
+            echo "functions=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "functions=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if echo "$CHANGED" | grep -qE '^storage\.rules$'; then
+            echo "::warning::storage.rules cambio en este push. NO se despliega automaticamente (limitacion de Firebase Storage con service account). Corre manualmente: firebase deploy --only storage --project promoweapp (con una cuenta de usuario, no la service account de CI)."
+          fi
+
+  deploy:
+    needs: changes
+    if: needs.changes.outputs.hosting == 'true' || needs.changes.outputs.firestore == 'true' || needs.changes.outputs.database == 'true' || needs.changes.outputs.functions == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar .env real para el build de produccion
+        if: ${{ !cancelled() && needs.changes.outputs.hosting == 'true' }}
+        env:
+          FRONTEND_ENV_FILE: ${{ secrets.FRONTEND_ENV_FILE }}
+        run: printf '%s' "$FRONTEND_ENV_FILE" > .env
+
+      - name: Instalar dependencias y compilar frontend
+        if: ${{ !cancelled() && needs.changes.outputs.hosting == 'true' }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Desplegar Hosting
+        if: ${{ !cancelled() && needs.changes.outputs.hosting == 'true' }}
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: promoweapp
+
+      - name: Desplegar Firestore rules
+        if: ${{ !cancelled() && needs.changes.outputs.firestore == 'true' }}
+        env:
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SA_KEY" > /tmp/gcp-sa-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-sa-key.json
+          npx firebase-tools@15.8.0 deploy --only firestore:rules --project promoweapp --non-interactive
+          rm -f /tmp/gcp-sa-key.json
+
+      - name: Desplegar Realtime Database rules
+        if: ${{ !cancelled() && needs.changes.outputs.database == 'true' }}
+        env:
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SA_KEY" > /tmp/gcp-sa-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-sa-key.json
+          npx firebase-tools@15.8.0 deploy --only database --project promoweapp --non-interactive
+          rm -f /tmp/gcp-sa-key.json
+
+      - name: Instalar dependencias de functions
+        if: ${{ !cancelled() && needs.changes.outputs.functions == 'true' }}
+        working-directory: functions
+        run: npm ci
+
+      - name: Calcular lista de funciones (para no borrar huerfanas de otras ramas)
+        if: ${{ !cancelled() && needs.changes.outputs.functions == 'true' }}
+        id: fnlist
+        working-directory: functions
+        env:
+          GCLOUD_PROJECT: promoweapp
+          FIREBASE_CONFIG: '{"projectId":"promoweapp","storageBucket":"promoweapp.firebasestorage.app","databaseURL":"https://promoweapp-default-rtdb.firebaseio.com"}'
+        run: |
+          NAMES=$(node -e "console.log(Object.keys(require('./src/index.js')).join(','))")
+          echo "Funciones detectadas en el codigo de main: $NAMES"
+          echo "names=$NAMES" >> "$GITHUB_OUTPUT"
+
+      - name: Desplegar Cloud Functions (solo crea/actualiza, nunca borra)
+        if: ${{ !cancelled() && needs.changes.outputs.functions == 'true' }}
+        env:
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SA_KEY" > /tmp/gcp-sa-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-sa-key.json
+          npx firebase-tools@15.8.0 deploy --only "functions:${{ steps.fnlist.outputs.names }}" --project promoweapp --non-interactive
+          rm -f /tmp/gcp-sa-key.json
