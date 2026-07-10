@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { useContent } from "../context/useContent";
 import { useLanguage } from "../context/useLanguage";
 
@@ -8,33 +7,6 @@ export default function HeroCarousel() {
   const { heroSlides } = useContent();
   const { t } = useLanguage();
   const activeIndex = heroSlides.length > 0 ? current % heroSlides.length : 0;
-
-  const getTranslatedValue = (key, fallback) => {
-    const translated = t(key);
-    return translated === key ? fallback : translated;
-  };
-
-  const activeSlide = heroSlides[activeIndex]
-    ? {
-        ...heroSlides[activeIndex],
-        tag: getTranslatedValue(
-          `heroSlides.${heroSlides[activeIndex].id}.tag`,
-          heroSlides[activeIndex].tag,
-        ),
-        title: getTranslatedValue(
-          `heroSlides.${heroSlides[activeIndex].id}.title`,
-          heroSlides[activeIndex].title,
-        ),
-        sub: getTranslatedValue(
-          `heroSlides.${heroSlides[activeIndex].id}.sub`,
-          heroSlides[activeIndex].sub,
-        ),
-        cta: getTranslatedValue(
-          `heroSlides.${heroSlides[activeIndex].id}.cta`,
-          heroSlides[activeIndex].cta,
-        ),
-      }
-    : null;
 
   const next = useCallback(() => {
     setCurrent((c) => (c + 1) % heroSlides.length);
@@ -63,20 +35,6 @@ export default function HeroCarousel() {
         />
       ))}
       <div className="hero-overlay" />
-
-      <div className="hero-content">
-        <p className="hero-tag">{activeSlide?.tag}</p>
-        <h1 className="hero-title">{activeSlide?.title}</h1>
-        <p className="hero-sub">{activeSlide?.sub}</p>
-        <div className="hero-btns">
-          <Link to={activeSlide?.ctaTo || "/destinos"} className="btn btn-gold">
-            {activeSlide?.cta} →
-          </Link>
-          <Link to="/#como-llegar" className="btn btn-white">
-            {t("hero.howToGetButton")}
-          </Link>
-        </div>
-      </div>
 
       {/* Flechas */}
       <button

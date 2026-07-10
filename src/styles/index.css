@@ -550,45 +550,6 @@ section:nth-child(even) {
     rgba(10, 126, 164, 0.4) 100%
   );
 }
-.hero-content {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: var(--white);
-  padding: 2rem;
-}
-.hero-tag {
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 1rem;
-  font-family: var(--font-heading);
-}
-.hero-title {
-  font-size: clamp(2.5rem, 7vw, 5.5rem);
-  font-weight: 800;
-  line-height: 1.05;
-  margin-bottom: 1.25rem;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
-}
-.hero-sub {
-  font-size: clamp(1rem, 2.5vw, 1.35rem);
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 2.5rem;
-  max-width: 600px;
-}
-.hero-btns {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
 .hero-arrows {
   position: absolute;
   bottom: 2.5rem;
@@ -3128,10 +3089,6 @@ tr:hover td {
   }
   .que-hacer-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-  .hero-btns {
-    flex-direction: column;
-    align-items: center;
   }
   .admin-layout {
     flex-direction: column;
