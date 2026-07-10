@@ -686,48 +686,14 @@ select:focus-visible {
 .hero-slide.active {
   opacity: 1;
 }
-.hero-content {
+.hero-overlay {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: var(--white);
-  padding: 2rem;
-}
-.hero-tag {
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 1rem;
-  font-family: var(--font-heading);
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55);
-}
-.hero-title {
-  font-size: clamp(2.5rem, 7vw, 5.5rem);
-  font-weight: 800;
-  line-height: 1.05;
-  margin-bottom: 1.25rem;
-  text-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.45),
-    0 4px 28px rgba(0, 0, 0, 0.35);
-}
-.hero-sub {
-  font-size: clamp(1rem, 2.5vw, 1.35rem);
-  color: rgba(255, 255, 255, 0.95);
-  margin-bottom: 2.5rem;
-  max-width: 600px;
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
-}
-.hero-btns {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    rgba(13, 33, 55, 0.75) 0%,
+    rgba(10, 126, 164, 0.4) 100%
+  );
 }
 .hero-arrows {
   position: absolute;
@@ -5486,10 +5452,6 @@ tr:hover td {
   .que-hacer-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .hero-btns {
-    flex-direction: column;
-    align-items: center;
-  }
   .admin-layout {
     flex-direction: column;
     height: auto;
@@ -5946,26 +5908,6 @@ tr:hover td {
     height: 100svh;
   }
 
-  .hero-content {
-    padding: 5rem 1rem 4rem;
-  }
-
-  .hero-tag {
-    font-size: 0.72rem;
-    letter-spacing: 0.16em;
-  }
-
-  .hero-title {
-    font-size: clamp(2.1rem, 13vw, 3.25rem);
-    line-height: 1.02;
-  }
-
-  .hero-sub {
-    font-size: 0.98rem;
-    margin-bottom: 1.55rem;
-  }
-
-  .hero-btns .btn,
   .activities-teaser-footer .btn,
   .activities-hero-actions .btn {
     width: 100%;

@@ -1,22 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { useContent } from "../context/useContent";
 import { useLanguage } from "../context/useLanguage";
 
 const SLIDE_AUTO_ADVANCE_MS = 5000;
-const REMOVED_MODULE_LINKS = new Set(["/destinos", "/#como-llegar"]);
-
-function normalizeHeroCtaTo(ctaTo) {
-  return REMOVED_MODULE_LINKS.has(ctaTo) ? "/informacion" : ctaTo || "/informacion";
-}
-
-function normalizeHeroCtaLabel(cta, ctaTo) {
-  if (REMOVED_MODULE_LINKS.has(ctaTo)) {
-    return "Planificar visita";
-  }
-
-  return cta;
-}
 
 export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
@@ -29,41 +15,6 @@ export default function HeroCarousel() {
     current < heroSlides.length
       ? current % heroSlides.length
       : 0;
-
-  const getTranslatedValue = (key, fallback) => {
-    const translated = t(key);
-    return translated === key ? fallback : translated;
-  };
-
-  const activeSlide = heroSlides[activeIndex]
-    ? {
-        ...heroSlides[activeIndex],
-        tag: getTranslatedValue(
-          `heroSlides.${heroSlides[activeIndex].id}.tag`,
-          heroSlides[activeIndex].tag,
-        ),
-        title: getTranslatedValue(
-          `heroSlides.${heroSlides[activeIndex].id}.title`,
-          heroSlides[activeIndex].title,
-        ),
-        sub: getTranslatedValue(
-          `heroSlides.${heroSlides[activeIndex].id}.sub`,
-          heroSlides[activeIndex].sub,
-        ),
-        cta: getTranslatedValue(
-          `heroSlides.${heroSlides[activeIndex].id}.cta`,
-          heroSlides[activeIndex].cta,
-        ),
-        ctaTo: normalizeHeroCtaTo(heroSlides[activeIndex].ctaTo),
-      }
-    : null;
-
-  if (activeSlide) {
-    activeSlide.cta = normalizeHeroCtaLabel(
-      activeSlide.cta,
-      heroSlides[activeIndex]?.ctaTo,
-    );
-  }
 
   const next = useCallback(() => {
     setCurrent((c) => {
@@ -131,23 +82,6 @@ export default function HeroCarousel() {
           )}
         </div>
       ))}
-
-      <div className="hero-content">
-        <p className="hero-tag">{activeSlide?.tag}</p>
-        <h1 className="hero-title">{activeSlide?.title}</h1>
-        <p className="hero-sub">{activeSlide?.sub}</p>
-        <div className="hero-btns">
-          <Link
-            to={activeSlide?.ctaTo || "/informacion"}
-            className="btn btn-gold"
-          >
-            {activeSlide?.cta} →
-          </Link>
-          <Link to="/informacion" className="btn btn-white">
-            {t("footer.links.touristInfo")}
-          </Link>
-        </div>
-      </div>
 
       {/* Flechas */}
       <button
